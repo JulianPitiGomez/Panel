@@ -4,8 +4,6 @@ namespace App\Models;
 
 class Mozo extends BaseClientModel
 {
-    protected $baseTableName = 'mozos';
-    
     protected $fillable = [
         'codigo',
         'nombre',
@@ -14,4 +12,9 @@ class Mozo extends BaseClientModel
     ];
 
     protected $hidden = ['pass'];
+
+    protected function getBaseTableName(): string
+    {
+        return 'mozos';
+    }
 }

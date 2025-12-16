@@ -19,7 +19,7 @@
         </div>
     </header>
     <main class="flex-grow flex items-center justify-center px-4 py-8 bg-[#222036]">
-        <div class="max-w-md mx-auto">
+        <div class="w-full max-w-md mx-auto">
             
             <!-- Formulario de Login -->
             <div class="bg-[#222036] rounded-2xl shadow-xl p-8 ">

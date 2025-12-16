@@ -66,6 +66,6 @@ class VendedorAuthController extends Controller
     public function logout()
     {
         session()->forget(['vendedor_user_id', 'client_id', 'active_module', 'client_table_prefix']);
-        return redirect()->route('home');
+        return redirect()->route('login.vendedores');
     }
 }

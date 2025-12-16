@@ -4,8 +4,6 @@ namespace App\Models;
 
 class Vendedor extends BaseClientModel
 {
-    protected $baseTableName = 'vendedores';
-    
     protected $fillable = [
         'codigo',
         'nombre',
@@ -14,4 +12,9 @@ class Vendedor extends BaseClientModel
     ];
 
     protected $hidden = ['pass'];
+
+    protected function getBaseTableName(): string
+    {
+        return 'vendedores';
+    }
 }

@@ -43,10 +43,10 @@ class ClientMiddleware
                 return session('mozo_user_id') !== null && session('client_id') !== null;
             case 'vendedores':
                 return session('vendedor_user_id') !== null && session('client_id') !== null;
-            case 'vendedores_emp':
-                return session('vendedor_user_id') !== null && session('client_id') !== null;
+            case 'vendedores_empresas':
+                return session('vendedor_empresa_user_id') !== null && session('client_id') !== null;
             case 'monitor':
-                return session('vendedor_user_id') !== null && session('client_id') !== null;
+                return session('monitor_user_id') !== null && session('client_id') !== null;
             default:
                 return false;
         }

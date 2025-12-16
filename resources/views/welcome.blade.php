@@ -85,9 +85,9 @@
                     <div class="hidden lg:block min-w-[200px]"></div>
                     
                     <!-- Vendedores Empresas -->
-                    <a href="#" 
-                    class="group relative bg-gradient-to-r from-[#FFAF22] to-[#FF8C00] hover:from-[#FF8C00] hover:to-[#FFAF22] 
-                            text-white font-bold py-2 pr-8 pl-2 rounded-full shadow-lg hover:shadow-xl 
+                    <a href="{{ route('login.vendedores-empresas') }}" wire:navigate
+                    class="group relative bg-gradient-to-r from-[#FFAF22] to-[#FF8C00] hover:from-[#FF8C00] hover:to-[#FFAF22]
+                            text-white font-bold py-2 pr-8 pl-2 rounded-full shadow-lg hover:shadow-xl
                             transform hover:scale-105 transition-all duration-300 ease-in-out
                             w-[80%] md:min-w-[25%] md:w-auto text-center min-h-[60px]">
                         <div class="flex items-center h-full">
@@ -102,7 +102,7 @@
                     </a>
                     
                     <!-- Monitor -->
-                    <a href="#" 
+                    <a href="{{ route('login.monitor') }}" 
                     class="group relative bg-gradient-to-r from-[#FFAF22] to-[#FF8C00] hover:from-[#FF8C00] hover:to-[#FFAF22] 
                             text-white font-bold py-2 pr-8 pl-2 rounded-full shadow-lg hover:shadow-xl 
                             transform hover:scale-105 transition-all duration-300 ease-in-out

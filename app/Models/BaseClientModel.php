@@ -11,16 +11,16 @@ abstract class BaseClientModel extends Model
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
-        
+
         if (session('client_table_prefix')) {
-            $this->table = session('client_table_prefix') . $this->baseTableName;
+            $this->table = session('client_table_prefix') . $this->getBaseTableName();
         }
     }
-    
+
     /**
      * Get the base table name for the client model.
      *
      * @return string
      */
-    abstract protected function getBaseTableName();
+    abstract protected function getBaseTableName(): string;
 }

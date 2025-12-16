@@ -42,18 +42,38 @@ class MozoAuthController extends Controller
         
         $mozo = DB::connection('client_db')
                   ->table($tableName)
-                  ->where('user', $request->usuario)
+                  ->select('CODIGO as codigo', 'NOMBRE as nombre', 'USER as user', 'PASS as pass',
+                           'COMANDA as comanda', 'BORRAITEM as borraitem',
+                           'PANEL_BORRACC as borracc', 'PANEL_BORRASC as borrasc', 'PRECUENTA as precuenta')
+                  ->where('USER', $request->usuario)
+                  ->where('PASS', $request->password)
                   ->first();
 
-        if ($mozo && Hash::check($request->password, $mozo->pass)) {
+        if ($mozo) {
+            // Obtener nombre del cliente
+            $parametros = DB::connection('client_db')
+                           ->table($cliente->getTablePrefix() . 'parametros')
+                           ->select('fantasia', 'NOMB_EMP')
+                           ->first();
+
+            $nombreCliente = !empty($parametros->fantasia) ? $parametros->fantasia : $parametros->NOMB_EMP;
+
             session([
                 'mozo_user_id' => $mozo->codigo,
+                'mozo_nombre' => $mozo->nombre,
+                'mozo_user' => $mozo->user,
+                'mozo_comanda' => $mozo->comanda,
+                'mozo_borraitem' => $mozo->borraitem,
+                'mozo_borracc' => $mozo->borracc,
+                'mozo_borrasc' => $mozo->borrasc,
+                'mozo_precuenta' => $mozo->precuenta,
                 'client_id' => $cliente->id,
                 'active_module' => 'mozos',
-                'client_table_prefix' => $cliente->getTablePrefix()
+                'client_table_prefix' => $cliente->getTablePrefix(),
+                'cliente_nombre' => $nombreCliente,
             ]);
 
-            return redirect()->route('mozos.dashboard');
+            return redirect()->route('mozos.mesas');
         }
 
         return back()->withErrors(['usuario' => 'Credenciales de mozo incorrectas']);
@@ -61,7 +81,9 @@ class MozoAuthController extends Controller
 
     public function logout()
     {
-        session()->forget(['mozo_user_id', 'client_id', 'active_module', 'client_table_prefix']);
-        return redirect()->route('home');
+        session()->forget(['mozo_user_id', 'mozo_nombre', 'mozo_user', 'mozo_comanda', 'mozo_borraitem',
+                          'mozo_borracc', 'mozo_borrasc', 'mozo_precuenta', 'client_id', 'active_module',
+                          'client_table_prefix', 'cliente_nombre']);
+        return redirect()->route('login.mozos');
     }
 }
