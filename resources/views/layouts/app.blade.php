@@ -4,9 +4,25 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <link href="{{asset('images/logo.ico')}}" rel="shortcut icon" />    
+    <link href="{{asset('images/logo.ico')}}" rel="shortcut icon" />
 
     <title>{{ config('app.name', 'Panel') }}</title>
+
+    <!-- Meta Tags para compartir en redes sociales -->
+    <meta property="og:title" content="Panel Web - bncsoft - Sistemas de Gestion para Pymes y Gastronómicos">
+    <meta property="og:description" content="Sistema integral de gestión para restaurantes, empresas y vendedores. Panel de control, gestión de pedidos, stock, mozos y más.">
+    <meta property="og:image" content="{{ asset('images/logo.png') }}">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:type" content="website">
+
+    <!-- Meta Tags para Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Panel Web - bncsoft - Sistemas de Gestion para Pymes y Gastronómicos">
+    <meta name="twitter:description" content="Sistema integral de gestión para restaurantes, empresas y vendedores.">
+    <meta name="twitter:image" content="{{ asset('images/logo.png') }}">
+
+    <!-- Meta Description para SEO -->
+    <meta name="description" content="Panel Web - bncsoft - Sistemas de Gestion para Pymes y Gastronómicos. Sistema integral de gestión para restaurantes, empresas y vendedores."
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
