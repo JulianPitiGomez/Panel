@@ -174,7 +174,7 @@ class Inicio extends Component
     #[Layout('layouts.app')]
     public function render()
     {
-        return view('panel.inicio');
+        return view('panelresto.inicio');
     }
 
     private function setupClientDatabase()
