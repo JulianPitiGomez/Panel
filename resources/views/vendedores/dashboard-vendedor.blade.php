@@ -20,7 +20,7 @@
     <!-- Selector de cliente -->
     @if($buscandoCliente)
         <!-- Fondo semitransparente -->
-        <div class="fixed inset-0 z-40  backdrop-blur-xs flex items-start justify-center pt-20">
+        <div class="fixed inset-0 z-40 bg-black bg-opacity-50 backdrop-blur-sm flex items-start justify-center pt-20">
             <!-- Modal principal -->
             <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-2 relative border-1 border-gray-700">
                 <div class="flex justify-center items-center bg-[#1E1B35] px-4 py-2 rounded-t">
