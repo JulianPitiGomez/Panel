@@ -133,7 +133,7 @@
     @endforelse
 
     @if($editandoObservacionId)
-        <div class="fixed inset-0 backdrop-blur-xs z-40 flex items-start justify-center pt-20">
+        <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 flex items-start justify-center pt-20">
             <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-2 relative border-1 border-gray-700 p-4">
                 <button wire:click="$set('editandoObservacionId', null)" class="absolute top-2 right-2 text-gray-600 text-xl hover:text-red-600">&times;</button>
 
@@ -149,7 +149,7 @@
     @endif
 
     @if($editandoFechaId)
-        <div class="fixed inset-0 backdrop-blur-xs z-40 flex items-start justify-center pt-20">
+        <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40 flex items-start justify-center pt-20">
             <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-2 relative border-1 border-gray-700 p-4">
                 <button wire:click="$set('editandoFechaId', null)" class="absolute top-2 right-2 text-gray-600 text-xl hover:text-red-600">&times;</button>
 
