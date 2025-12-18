@@ -43,7 +43,6 @@ class Cajas extends Component
         'cajaSelecionada' => ['except' => ''],
         'tipoSaldo' => ['except' => ''],
         'porPagina' => ['except' => 25],
-        'page' => ['except' => 1],
     ];
 
     public function mount()
