@@ -26,7 +26,7 @@ Route::prefix('panel')->middleware(['client:panel'])->group(function () {
     Route::get('/logout', [PanelAuthController::class, 'logout'])->name('logout.panel');
         
     Route::get('/panel', \App\Livewire\Panel\Dashboard::class)->name('panel.dashboard');
-    Route::get('/pànelresto', \App\Livewire\PanelResto\Dashboard::class)->name('panelresto.dashboard');
+    Route::get('/panelresto', \App\Livewire\PanelResto\Dashboard::class)->name('panelresto.dashboard');
     Route::get('/kiosco', \App\Livewire\KioscoRestaurant::class)->name('kiosco');
     
 });
