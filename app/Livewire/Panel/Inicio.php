@@ -83,8 +83,8 @@ class Inicio extends Component
             $compras = DB::connection('client_db')->select("
                 SELECT COALESCE(SUM(importe * IF(tipocomp='NC',-1,1)), 0) as total
                 FROM {$this->tablePrefix}compras
-                WHERE DATE(fecha) >= ?
-                AND DATE(fecha) <= ?
+                WHERE DATE(fecfac) >= ?
+                AND DATE(fecfac) <= ?
             ", [$this->fechaDesde, $this->fechaHasta]);
 
             $this->comprasDelPeriodo = $compras[0]->total ?? 0;
@@ -204,13 +204,12 @@ class Inicio extends Component
         try {
             $comprasDiarias = DB::connection('client_db')->select("
                 SELECT
-                    DATE(fecha) as fecha,
+                    DATE(fecfac) as fecha,
                     SUM(importe * IF(tipocomp='NC',-1,1)) as total
                 FROM {$this->tablePrefix}compras
-                WHERE DATE(fecha) >= ?
-                AND DATE(fecha) <= ?
-                GROUP BY DATE(fecha)
-                ORDER BY fecha
+                WHERE DATE(fecfac) >= ?
+                AND DATE(fecfac) <= ?
+                GROUP BY DATE(fecfac)
             ", [$this->fechaDesde, $this->fechaHasta]);
 
             $this->comprasPorDia = collect($comprasDiarias)->map(function ($item) {
