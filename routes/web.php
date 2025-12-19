@@ -26,7 +26,7 @@ Route::prefix('panel')->middleware(['client:panel'])->group(function () {
     Route::get('/logout', [PanelAuthController::class, 'logout'])->name('logout.panel');
         
     Route::get('/panel', \App\Livewire\Panel\Dashboard::class)->name('panel.dashboard');
-    Route::get('/panelresto', \App\Livewire\PanelResto\Dashboard::class)->name('panelresto.dashboard');
+    Route::get('/panelresto', \App\Livewire\Panelresto\Dashboard::class)->name('panelresto.dashboard');
     Route::get('/kiosco', \App\Livewire\KioscoRestaurant::class)->name('kiosco');
     
 });
@@ -104,6 +104,6 @@ Route::prefix('monitor')->middleware(['client:monitor'])->group(function () {
     Route::get('/logout', [MonitorAuthController::class, 'logout'])->name('logout.monitor');
 
     Route::middleware(['client:monitor'])->group(function () {
-        Route::get('/monitor', \App\Livewire\PanelResto\Monitor::class)->name('monitor.dashboard');
+        Route::get('/monitor', \App\Livewire\Panelresto\Monitor::class)->name('monitor.dashboard');
     });
 });
