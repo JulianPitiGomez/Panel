@@ -130,16 +130,14 @@ class ComprasFechas extends Component
         
         // Obtener datos agrupados por día
         $datosChart = DB::connection('client_db')->select("
-            SELECT 
+            SELECT
                 DATE(fecfac) as fecha,
                 SUM(importe * IF(tipocomp='NC',-1,1)) as total_dia,
                 COUNT(*) as cantidad_facturas
-            FROM {$this->tablePrefix}compras 
-            WHERE DATE(fecfac) >= ? 
+            FROM {$this->tablePrefix}compras
+            WHERE DATE(fecfac) >= ?
             AND DATE(fecfac) <= ?
-            GROUP BY DATE(fecfac)
-            ORDER BY fecfac ASC
-        ", [$this->fechaDesde, $this->fechaHasta]);
+            GROUP BY DATE(fecfac)", [$this->fechaDesde, $this->fechaHasta]);
 
         // Preparar datos para el gráfico
         $this->datosGrafico = collect($datosChart)->map(function ($item) {
