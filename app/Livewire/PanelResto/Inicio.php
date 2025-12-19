@@ -50,6 +50,7 @@ class Inicio extends Component
         $this->cargarProductosMasVendidos();
         $this->cargarVentasPorDepartamento();
         $this->cargarGraficoDiario();
+        $this->dispatch('datos-actualizados');
     }
 
     public function updatedFechaDesde()
