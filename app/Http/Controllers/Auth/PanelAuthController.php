@@ -21,20 +21,25 @@ class PanelAuthController extends Controller
             'password' => 'required',
         ]);
 
-        $cliente = Cliente::where('mail', $request->mail)->first();
+        // Buscar por la combinación de email + code para permitir múltiples sistemas con el mismo email
+        $cliente = Cliente::where('mail', $request->mail)
+                          ->where('code', $request->password)
+                          ->first();
 
-        if ($cliente && $request->password == $cliente->code) {
+        if ($cliente) {
             session([
                 'panel_user_id' => $cliente->id,
                 'client_id' => $cliente->id,
                 'active_module' => 'panel',
                 'cliente_nombre' => $cliente->nombre
             ]);
+
+            // Redirigir según el pack del cliente
             if ($cliente->pack == 'GE3') {
                 return redirect()->route('panel.dashboard');
             } else {
                 return redirect()->route('panelresto.dashboard');
-            }            
+            }
         }
 
         return back()->withErrors(['mail' => 'Credenciales incorrectas']);
