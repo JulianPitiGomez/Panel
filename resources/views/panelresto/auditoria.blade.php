@@ -1,4 +1,4 @@
-<div class="space-y-6" x-data="{ filtrosAbiertos: false, tipoSeleccionado: @entangle('tipoFiltro') }">
+<div class="space-y-6" x-data="{ filtrosAbiertos: window.innerWidth >= 640, tipoSeleccionado: @entangle('tipoFiltro') }">
     <!-- Filtros -->
     <div class="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6">
         <!-- Header de filtros con botón collapse para móvil -->

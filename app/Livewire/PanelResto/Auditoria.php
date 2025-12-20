@@ -17,6 +17,8 @@ class Auditoria extends Component
     public $currentPage = 1;
     public $perPage = 20;
 
+    private $tablePrefix;
+
     public $tiposAuditoria = [
         1 => 'APERTURA DE MESA',
         2 => 'CIERRE DE MESA',
@@ -40,6 +42,8 @@ class Auditoria extends Component
 
     public function mount()
     {
+        $this->setupClientDatabase();
+
         // Fechas por defecto: último mes
         $this->fechaHasta = date('Y-m-d');
         $this->fechaDesde = date('Y-m-d', strtotime('-1 month'));
@@ -82,36 +86,26 @@ class Auditoria extends Component
         $this->currentPage = $page;
     }
 
-    private function getConnection()
+    private function setupClientDatabase()
     {
-        $clienteId = session('cliente_id_resto');
-        $prefijo = session('prefijo_base_resto');
+        $clientId = session('client_id');
+        if ($clientId) {
+            $cliente = \App\Models\Cliente::find($clientId);
 
-        if (!$clienteId || !$prefijo) {
-            return null;
+            if ($cliente) {
+                \Illuminate\Support\Facades\Config::set('database.connections.client_db.database', $cliente->base);
+                DB::purge('client_db');
+                session(['client_table_prefix' => $cliente->getTablePrefix()]);
+                $this->tablePrefix = $cliente->getTablePrefix();
+            }
         }
-
-        return DB::connection($prefijo);
-    }
-
-    private function getTableName()
-    {
-        $clienteId = session('cliente_id_resto');
-        $prefijo = session('prefijo_base_resto');
-
-        if (!$clienteId || !$prefijo) {
-            return null;
-        }
-
-        return $prefijo . '_' . str_pad($clienteId, 6, '0', STR_PAD_LEFT) . 'auditoria';
     }
 
     private function getPaginationInfo()
     {
-        $conn = $this->getConnection();
-        $tableName = $this->getTableName();
+        $this->setupClientDatabase();
 
-        if (!$conn || !$tableName) {
+        if (!$this->tablePrefix) {
             return (object)[
                 'total' => 0,
                 'per_page' => $this->perPage,
@@ -122,7 +116,7 @@ class Auditoria extends Component
             ];
         }
 
-        $query = $conn->table($tableName)
+        $query = DB::connection('client_db')->table($this->tablePrefix . 'auditoria')
             ->whereBetween('FECHA', [$this->fechaDesde, $this->fechaHasta]);
 
         if ($this->tipoFiltro !== '') {
@@ -167,12 +161,11 @@ class Auditoria extends Component
 
     public function render()
     {
-        $conn = $this->getConnection();
-        $tableName = $this->getTableName();
+        $this->setupClientDatabase();
         $registros = collect();
 
-        if ($conn && $tableName) {
-            $query = $conn->table($tableName)
+        if ($this->tablePrefix) {
+            $query = DB::connection('client_db')->table($this->tablePrefix . 'auditoria')
                 ->whereBetween('FECHA', [$this->fechaDesde, $this->fechaHasta]);
 
             if ($this->tipoFiltro !== '') {

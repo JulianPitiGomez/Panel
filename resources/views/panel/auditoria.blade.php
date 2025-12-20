@@ -1,4 +1,4 @@
-<div class="space-y-6" x-data="{ filtrosAbiertos: false }">
+<div class="space-y-6" x-data="{ filtrosAbiertos: window.innerWidth >= 640 }">
     <!-- Filtros -->
     <div class="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6">
         <!-- Header de filtros con botón collapse para móvil -->
@@ -14,7 +14,7 @@
         </div>
 
         <!-- Contenido de filtros -->
-        <div x-show="filtrosAbiertos" x-collapse class="sm:!block">
+        <div class="sm:block" x-show="filtrosAbiertos" x-collapse>
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <!-- Fecha Desde -->
                 <div>
