@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Livewire\PanelResto;
+namespace App\Livewire\Panelresto;
 
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 
 class Dashboard extends Component
 {
-    public $sidebarOpen = false;
+    public $sidebarOpen = true;
     public $currentPage = 'inicio';
 
     protected $queryString = ['currentPage'];

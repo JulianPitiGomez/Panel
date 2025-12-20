@@ -11,7 +11,7 @@
         w-64 bg-[#222036] shadow-xl border-r border-gray-200
         transform lg:transform-none transition-transform lg:transition-none duration-300 ease-in-out
         flex flex-col
-        {{ !$sidebarOpen ? 'sm:hidden' : 'sm:flex' }}
+        sm:flex
     ">
         
         <!-- Header del Sidebar -->
@@ -250,3 +250,12 @@
         </main>
     </div>
 </div>
+
+<script>
+    // Cerrar sidebar automáticamente en móvil al cargar
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.innerWidth < 640) {
+            @this.set('sidebarOpen', false);
+        }
+    });
+</script>
