@@ -253,9 +253,16 @@
 
 <script>
     // Cerrar sidebar automáticamente en móvil al cargar
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('livewire:init', function() {
         if (window.innerWidth < 640) {
-            @this.set('sidebarOpen', false);
+            Livewire.find('{{ $this->getId() }}').set('sidebarOpen', false);
+        }
+    });
+
+    // También verificar después de navegación
+    document.addEventListener('livewire:navigated', function() {
+        if (window.innerWidth < 640) {
+            Livewire.find('{{ $this->getId() }}').set('sidebarOpen', false);
         }
     });
 </script>
