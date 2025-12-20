@@ -101,11 +101,19 @@
                 </button>
 
                 <!-- Buscador de precios -->
-                <button 
+                <button
                     wire:click="navigateTo('monitor'); if(window.innerWidth < 640) $wire.call('toggleSidebar')"
                     class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-orange-50 hover:translate-x-1 group {{ $currentPage === 'monitor' ? 'bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg' : 'text-white hover:text-orange-600' }}">
                     <i class="fas fa-search-dollar mr-3 text-lg {{ $currentPage === 'buscador-precios' ? 'text-white' : 'text-orange-500 group-hover:text-orange-600' }}"></i>
                     <span class="font-secondary font-medium">Pedidos Mostrador</span>
+                </button>
+
+                <!-- Auditoría -->
+                <button
+                    wire:click="navigateTo('auditoria'); if(window.innerWidth < 640) $wire.call('toggleSidebar')"
+                    class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-orange-50 hover:translate-x-1 group {{ $currentPage === 'auditoria' ? 'bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg' : 'text-white hover:text-orange-600' }}">
+                    <i class="fas fa-clipboard-list mr-3 text-lg {{ $currentPage === 'auditoria' ? 'text-white' : 'text-orange-500 group-hover:text-orange-600' }}"></i>
+                    <span class="font-secondary font-medium">Auditoría</span>
                 </button>
 
                 <!-- Separador -->
@@ -180,6 +188,9 @@
                                     @case('monitor')
                                         Pedidos Mostrador
                                         @break
+                                    @case('auditoria')
+                                        Auditoría
+                                        @break
                                     @default
                                         Panel de Gestión
                                 @endswitch
@@ -228,6 +239,9 @@
                         @break                    
                     @case('monitor')
                         @livewire('panelresto.monitor')
+                        @break
+                    @case('auditoria')
+                        @livewire('panelresto.auditoria')
                         @break
                     @default
                         @livewire('panelresto.inicio')
