@@ -7,7 +7,7 @@ use Livewire\Attributes\Layout;
 
 class Dashboard extends Component
 {
-    public $sidebarOpen = true;
+    public $sidebarOpen = false;
     public $currentPage = 'inicio';
 
     protected $queryString = ['currentPage'];
