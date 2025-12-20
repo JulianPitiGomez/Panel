@@ -1,7 +1,8 @@
 import './bootstrap';
-import Alpine from 'alpinejs';
 import collapse from '@alpinejs/collapse';
 
-Alpine.plugin(collapse);
-window.Alpine = Alpine;
-Alpine.start();
+// Livewire ya incluye Alpine.js, solo necesitamos registrar plugins adicionales
+// antes de que Alpine se inicialice
+document.addEventListener('alpine:init', () => {
+    window.Alpine.plugin(collapse);
+});
