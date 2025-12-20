@@ -1,56 +1,65 @@
-<div class="space-y-6">
+<div class="space-y-6" x-data="{ filtrosAbiertos: false }">
     <!-- Filtros -->
     <div class="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6">
-        <div class="flex items-center justify-between mb-4">
-            <h2 class="text-base sm:text-lg font-primary font-semibold text-gray-800 flex items-center">
-                <i class="fas fa-filter text-orange-500 mr-2"></i>
-                Filtros de Búsqueda
-            </h2>
+        <!-- Header de filtros con botón collapse para móvil -->
+        <div class="flex items-center justify-between mb-4 sm:hidden">
+            <h3 class="text-sm font-semibold text-gray-800">
+                <i class="fas fa-filter text-orange-500 mr-2"></i>Filtros
+            </h3>
+            <button @click="filtrosAbiertos = !filtrosAbiertos"
+                    class="px-3 py-1 text-xs bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors">
+                <i class="fas" :class="filtrosAbiertos ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                <span x-text="filtrosAbiertos ? 'Ocultar' : 'Mostrar'"></span>
+            </button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            <div>
-                <label for="fechaDesde" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                    <i class="fas fa-calendar-alt mr-1"></i>Fecha Desde
-                </label>
-                <input type="date"
-                       wire:model="fechaDesde"
-                       id="fechaDesde"
-                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
 
-            <!-- Fecha Hasta -->
-            <div>
-                <label for="fechaHasta" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                    <i class="fas fa-calendar-alt mr-1"></i>Fecha Hasta
-                </label>
-                <input type="date"
-                       wire:model="fechaHasta"
-                       id="fechaHasta"
-                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
+        <!-- Contenido de filtros -->
+        <div x-show="filtrosAbiertos" x-collapse class="sm:!block">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <div>
+                    <label for="fechaDesde" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                        <i class="fas fa-calendar-alt mr-1"></i>Fecha Desde
+                    </label>
+                    <input type="date"
+                           wire:model="fechaDesde"
+                           id="fechaDesde"
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
 
-            <!-- Búsqueda Producto -->
-            <div>
-                <label for="buscarProducto" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                    <i class="fas fa-search mr-1"></i>Buscar Producto
-                </label>
-                <input type="text"
-                       wire:model.live.debounce.300ms="buscarProducto"
-                       id="buscarProducto"
-                       placeholder="Código o nombre..."
-                       class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
+                <!-- Fecha Hasta -->
+                <div>
+                    <label for="fechaHasta" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                        <i class="fas fa-calendar-alt mr-1"></i>Fecha Hasta
+                    </label>
+                    <input type="date"
+                           wire:model="fechaHasta"
+                           id="fechaHasta"
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
 
-            <!-- Botones -->
-            <div class="flex items-end gap-2">
-                <button wire:click="aplicarFiltros"
-                        class="btn-primary flex-1 sm:flex-none text-sm">
-                    <i class="fas fa-filter mr-1"></i><span class="hidden sm:inline">Aplicar</span>
-                </button>
-                <button wire:click="limpiarFiltros"
-                        class="px-3 sm:px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition duration-200 flex-1 sm:flex-none text-sm">
-                    <i class="fas fa-eraser mr-1"></i><span class="hidden sm:inline">Limpiar</span>
-                </button>
+                <!-- Búsqueda Producto -->
+                <div>
+                    <label for="buscarProducto" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                        <i class="fas fa-search mr-1"></i>Buscar Producto
+                    </label>
+                    <input type="text"
+                           wire:model.live.debounce.300ms="buscarProducto"
+                           id="buscarProducto"
+                           placeholder="Código o nombre..."
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <!-- Botones -->
+                <div class="flex items-end gap-2">
+                    <button wire:click="aplicarFiltros"
+                            class="btn-primary flex-1 sm:flex-none text-sm">
+                        <i class="fas fa-filter mr-1"></i><span class="hidden sm:inline">Aplicar</span>
+                    </button>
+                    <button wire:click="limpiarFiltros"
+                            class="px-3 sm:px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition duration-200 flex-1 sm:flex-none text-sm">
+                        <i class="fas fa-eraser mr-1"></i><span class="hidden sm:inline">Limpiar</span>
+                    </button>
+                </div>
             </div>
         </div>
 
