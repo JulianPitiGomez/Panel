@@ -1,3 +1,11 @@
+@php
+function EligeColor($i) {
+    $colores = ['#8C52FF','#5271FF','#FFBD59','#FF5757','#00C2CB','#7ED957','#FF66C4','#5CE1E6','#C9E265','#CB6CE6','#38B6FF','#FFDE59'];
+    if ($i > 11) { $i = $i % 12; }
+    return $colores[$i];
+}
+@endphp
+
 <div class="space-y-6">
     <!-- Mensajes de éxito/error -->
     @if (session()->has('success'))
@@ -521,11 +529,3 @@
 })();
 </script>
 </div>
-
-@php
-function EligeColor($i) {
-    $colores = ['#8C52FF','#5271FF','#FFBD59','#FF5757','#00C2CB','#7ED957','#FF66C4','#5CE1E6','#C9E265','#CB6CE6','#38B6FF','#FFDE59'];
-    if ($i > 11) { $i = $i % 12; }
-    return $colores[$i];
-}
-@endphp
