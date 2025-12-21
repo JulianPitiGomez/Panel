@@ -395,12 +395,12 @@ function EligeColor($i) {
                 $paths = str_replace(',',',lng: ',$paths);
                 $paths = str_replace(';','},',$paths);
                 $paths = str_replace(')','}',$paths);
+                $color = EligeColor($index);
             @endphp
-            var color{{ $index }} = EligeColor({{ $index }});
             newShape[{{ $index }}] = new google.maps.Polygon({
                 paths: [{{ $paths }}],
-                strokeColor: color{{ $index }},
-                fillColor: color{{ $index }},
+                strokeColor: '{{ $color }}',
+                fillColor: '{{ $color }}',
                 fillOpacity: 0.35,
             });
             newShape[{{ $index }}].setMap(map);
@@ -462,14 +462,60 @@ function EligeColor($i) {
             window.googleMapsLoading = false;
             callback();
         };
+        script.onerror = function() {
+            window.googleMapsLoading = false;
+            console.error('Error al cargar Google Maps. Puede estar bloqueado por una extensión del navegador.');
+            var mapCanvas = document.getElementById('mapCanvas');
+            if (mapCanvas) {
+                mapCanvas.innerHTML = '<div class="flex items-center justify-center h-full bg-gray-100 text-gray-600 p-4 text-center">' +
+                    '<div>' +
+                    '<i class="fas fa-exclamation-triangle text-4xl text-orange-500 mb-2"></i>' +
+                    '<p class="font-semibold">No se pudo cargar Google Maps</p>' +
+                    '<p class="text-sm mt-2">Por favor, desactive bloqueadores de anuncios o extensiones que puedan estar bloqueando Google Maps.</p>' +
+                    '</div>' +
+                    '</div>';
+            }
+        };
         document.head.appendChild(script);
     }
 
     // Inicializar cuando el DOM esté listo y Google Maps cargado
     function initDeliveryMap() {
+        // Timeout de 10 segundos para mostrar error si no carga
+        var timeout = setTimeout(function() {
+            if (typeof google === 'undefined' || !google.maps) {
+                console.error('Timeout al cargar Google Maps');
+                var mapCanvas = document.getElementById('mapCanvas');
+                if (mapCanvas && !mapCanvas.querySelector('.bg-gray-100')) {
+                    mapCanvas.innerHTML = '<div class="flex items-center justify-center h-full bg-gray-100 text-gray-600 p-4 text-center">' +
+                        '<div>' +
+                        '<i class="fas fa-exclamation-triangle text-4xl text-orange-500 mb-2"></i>' +
+                        '<p class="font-semibold">Tiempo de espera agotado al cargar Google Maps</p>' +
+                        '<p class="text-sm mt-2">Verifique su conexión a internet o desactive bloqueadores de anuncios.</p>' +
+                        '</div>' +
+                        '</div>';
+                }
+            }
+        }, 10000);
+
         loadGoogleMapsAPI(function() {
+            clearTimeout(timeout);
             if (document.getElementById('mapCanvas')) {
-                initializeMap();
+                try {
+                    initializeMap();
+                } catch (error) {
+                    console.error('Error al inicializar el mapa:', error);
+                    var mapCanvas = document.getElementById('mapCanvas');
+                    if (mapCanvas) {
+                        mapCanvas.innerHTML = '<div class="flex items-center justify-center h-full bg-gray-100 text-gray-600 p-4 text-center">' +
+                            '<div>' +
+                            '<i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-2"></i>' +
+                            '<p class="font-semibold">Error al inicializar el mapa</p>' +
+                            '<p class="text-sm mt-2">' + error.message + '</p>' +
+                            '</div>' +
+                            '</div>';
+                    }
+                }
             }
         });
     }
