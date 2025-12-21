@@ -175,48 +175,63 @@ function EligeColor($i) {
 @endphp
 
 <script>
-    var delivery;
-    var drawingManager;
-    var geocoder;
-    var map;
-    var marker;
+(function() {
+    'use strict';
+
+    // Variables del mapa
+    var delivery, map, marker, geocoder;
+    var poligonos = [];
+    var newShape = [];
     @php
         $coor = explode(",", $ubicacion ?: '-34.60024897372449, -58.38179087851561');
     @endphp
     var latitud = {{ $coor[0] }};
     var longitud = {{ $coor[1] }};
-    var poligonos = [];
     var maxpoligonos = {{ count($zonas) - 1 }};
-    var newShape = [];
 
-    function EligeColor(i) {
+    window.EligeColor = function(i) {
         var colores = ['#8C52FF','#5271FF','#FFBD59','#FF5757','#00C2CB','#7ED957','#FF66C4','#5CE1E6','#C9E265','#CB6CE6','#38B6FF','#FFDE59'];
         if (i > 11) { i = i % 12; }
         return colores[i];
     }
 
     function updateMarkerPosition(latLng) {
-        document.getElementById('puntomapa').value = latLng.lat() + ', ' + latLng.lng();
-        @this.set('ubicacion', latLng.lat() + ', ' + latLng.lng());
-        delivery.setCenter(latLng);
+        var puntomapaEl = document.getElementById('puntomapa');
+        if (puntomapaEl) {
+            puntomapaEl.value = latLng.lat() + ', ' + latLng.lng();
+            if (typeof Livewire !== 'undefined') {
+                Livewire.find(puntomapaEl.closest('[wire\\:id]').getAttribute('wire:id')).set('ubicacion', latLng.lat() + ', ' + latLng.lng());
+            }
+        }
+        if (delivery) {
+            delivery.setCenter(latLng);
+        }
     }
 
-    function cambiarRadio() {
-        var radio = document.getElementById('kmentrega').value;
-        @this.set('kmentrega', radio);
-        delivery.setRadius(parseInt(radio * 1000));
+    window.cambiarRadio = function() {
+        var radioEl = document.getElementById('kmentrega');
+        if (radioEl && delivery) {
+            var radio = radioEl.value;
+            delivery.setRadius(parseInt(radio * 1000));
+        }
     }
 
-    function conZonas() {
-        var checked = document.getElementById('conzonas').checked;
-        @this.set('porzona', checked);
-        document.getElementById("detallezonas").style.display = checked ? "block" : "none";
+    window.conZonas = function() {
+        var conzonasEl = document.getElementById('conzonas');
+        var detallezonasEl = document.getElementById("detallezonas");
+        if (conzonasEl && detallezonasEl) {
+            var checked = conzonasEl.checked;
+            detallezonasEl.style.display = checked ? "block" : "none";
+        }
     }
 
-    function agregapoligono() {
-        document.getElementById("botonzona").style.display = "none";
+    window.agregapoligono = function() {
+        var botonzonaEl = document.getElementById("botonzona");
+        if (!botonzonaEl || !map) return;
+
+        botonzonaEl.style.display = "none";
         maxpoligonos = maxpoligonos + 1;
-        var color = EligeColor(maxpoligonos);
+        var color = window.EligeColor(maxpoligonos);
 
         poligonos[maxpoligonos] = new google.maps.drawing.DrawingManager({
             drawingMode: google.maps.drawing.OverlayType.POLYGON,
@@ -264,38 +279,59 @@ function EligeColor($i) {
             </div>
         `;
 
-        document.getElementById("zonasContainer").insertAdjacentHTML('beforeend', detalle);
+        var zonasContainerEl = document.getElementById("zonasContainer");
+        if (zonasContainerEl) {
+            zonasContainerEl.insertAdjacentHTML('beforeend', detalle);
+        }
 
-        google.maps.event.addListener(poligonos[maxpoligonos], "overlaycomplete", function(event) {
-            newShape[maxpoligonos] = event.overlay;
-            newShape[maxpoligonos].type = event.type;
-            document.getElementById('zona' + maxpoligonos).value = event.overlay.getPath().getArray();
-            poligonos[maxpoligonos].setMap(null);
-            document.getElementById("botonzona").style.display = "block";
+        var currentMax = maxpoligonos;
+        google.maps.event.addListener(poligonos[currentMax], "overlaycomplete", function(event) {
+            newShape[currentMax] = event.overlay;
+            newShape[currentMax].type = event.type;
+            var zonaEl = document.getElementById('zona' + currentMax);
+            if (zonaEl) {
+                zonaEl.value = event.overlay.getPath().getArray();
+            }
+            poligonos[currentMax].setMap(null);
+            var botonEl = document.getElementById("botonzona");
+            if (botonEl) {
+                botonEl.style.display = "block";
+            }
         });
 
-        poligonos[maxpoligonos].setMap(map);
+        poligonos[currentMax].setMap(map);
     }
 
-    function borrazona(n) {
-        document.getElementById("poligono" + n).remove();
+    window.borrazona = function(n) {
+        var poligonoEl = document.getElementById("poligono" + n);
+        if (poligonoEl) {
+            poligonoEl.remove();
+        }
         if (newShape[n]) {
             newShape[n].setMap(null);
         }
     }
 
-    function guardarConfiguracion() {
+    window.guardarConfiguracion = function() {
         var zonas = [];
         var zonasContainer = document.getElementById('zonasContainer');
+        if (!zonasContainer) return;
+
         var zonasDivs = zonasContainer.querySelectorAll('[id^="poligono"]');
 
         zonasDivs.forEach(function(zonaDiv) {
             var index = zonaDiv.id.replace('poligono', '');
-            var id = document.getElementById('id' + index)?.value || 0;
-            var nombre = document.querySelector('[name="nombrezona' + index + '"]')?.value || '';
-            var precio = document.querySelector('[name="preciozona' + index + '"]')?.value || 0;
-            var poligono = document.getElementById('zona' + index)?.value || '';
-            var habilitada = document.querySelector('[name="habilitada' + index + '"]')?.checked || false;
+            var idEl = document.getElementById('id' + index);
+            var nombreEl = document.querySelector('[name="nombrezona' + index + '"]');
+            var precioEl = document.querySelector('[name="preciozona' + index + '"]');
+            var poligonoEl = document.getElementById('zona' + index);
+            var habilitadaEl = document.querySelector('[name="habilitada' + index + '"]');
+
+            var id = idEl ? idEl.value : 0;
+            var nombre = nombreEl ? nombreEl.value : '';
+            var precio = precioEl ? precioEl.value : 0;
+            var poligono = poligonoEl ? poligonoEl.value : '';
+            var habilitada = habilitadaEl ? habilitadaEl.checked : false;
 
             if (nombre && poligono) {
                 zonas.push({
@@ -308,12 +344,23 @@ function EligeColor($i) {
             }
         });
 
-        @this.call('guardar', zonas);
+        var component = document.querySelector('[wire\\:id]');
+        if (component && typeof Livewire !== 'undefined') {
+            Livewire.find(component.getAttribute('wire:id')).call('guardar', zonas);
+        }
     }
 
-    function initialize() {
+    function initializeMap() {
+        var mapCanvas = document.getElementById('mapCanvas');
+        var kmentregaEl = document.getElementById('kmentrega');
+
+        if (!mapCanvas || !kmentregaEl) {
+            console.error('Map canvas or kmentrega element not found');
+            return;
+        }
+
         var latLng = new google.maps.LatLng(latitud, longitud);
-        map = new google.maps.Map(document.getElementById('mapCanvas'), {
+        map = new google.maps.Map(mapCanvas, {
             zoom: 14,
             center: latLng,
             mapTypeId: google.maps.MapTypeId.ROADMAP
@@ -329,7 +376,7 @@ function EligeColor($i) {
             map: map,
             @endif
             center: latLng,
-            radius: parseInt(document.getElementById('kmentrega').value) * 1000,
+            radius: parseInt(kmentregaEl.value) * 1000,
         });
 
         geocoder = new google.maps.Geocoder();
@@ -366,27 +413,73 @@ function EligeColor($i) {
         google.maps.event.addListener(marker, 'dragend', function() {
             updateMarkerPosition(marker.getPosition());
         });
+
+        // Inicializar autocomplete
+        var searchInput = document.getElementById('search_input');
+        if (searchInput && google.maps.places) {
+            var autocomplete = new google.maps.places.Autocomplete(searchInput, {
+                types: ['geocode']
+            });
+
+            google.maps.event.addListener(autocomplete, 'place_changed', function() {
+                var place = autocomplete.getPlace();
+                if (place.geometry && marker && map) {
+                    var newLatLng = new google.maps.LatLng(
+                        place.geometry.location.lat(),
+                        place.geometry.location.lng()
+                    );
+                    marker.setPosition(newLatLng);
+                    map.panTo(newLatLng);
+                    updateMarkerPosition(newLatLng);
+                }
+            });
+        }
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
-        var autocomplete = new google.maps.places.Autocomplete(
-            document.getElementById('search_input'),
-            { types: ['geocode'] }
-        );
+    // Cargar Google Maps API si no está cargado
+    function loadGoogleMapsAPI(callback) {
+        if (typeof google !== 'undefined' && google.maps) {
+            callback();
+            return;
+        }
 
-        google.maps.event.addListener(autocomplete, 'place_changed', function() {
-            var place = autocomplete.getPlace();
-            if (place.geometry) {
-                var newLatLng = new google.maps.LatLng(
-                    place.geometry.location.lat(),
-                    place.geometry.location.lng()
-                );
-                marker.setPosition(newLatLng);
-                map.panTo(newLatLng);
-                updateMarkerPosition(newLatLng);
+        if (window.googleMapsLoading) {
+            var checkGoogleMapsLoaded = setInterval(function() {
+                if (typeof google !== 'undefined' && google.maps) {
+                    clearInterval(checkGoogleMapsLoaded);
+                    callback();
+                }
+            }, 100);
+            return;
+        }
+
+        window.googleMapsLoading = true;
+        var script = document.createElement('script');
+        script.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyBjSiomNNl6sqzJp1a4svteLXY1MTi--Tw&libraries=drawing,places';
+        script.async = true;
+        script.defer = true;
+        script.onload = function() {
+            window.googleMapsLoading = false;
+            callback();
+        };
+        document.head.appendChild(script);
+    }
+
+    // Inicializar cuando el DOM esté listo y Google Maps cargado
+    function initDeliveryMap() {
+        loadGoogleMapsAPI(function() {
+            if (document.getElementById('mapCanvas')) {
+                initializeMap();
             }
         });
-    });
-</script>
+    }
 
-<script src="https://maps.googleapis.com/maps/api/js?v=3.exp&callback=initialize&key=AIzaSyBjSiomNNl6sqzJp1a4svteLXY1MTi--Tw&libraries=drawing,places"></script>
+    // Ejecutar cuando Livewire navegue a esta página
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initDeliveryMap);
+    } else {
+        initDeliveryMap();
+    }
+
+})();
+</script>
