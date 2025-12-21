@@ -105,26 +105,26 @@ class VerVentas extends Component
 
         switch ($this->origenFiltro) {
             case 'SALON':
-                $query->where('observa', 'LIKE', 'VENTAS MESA%');
+                $query->where('OBSERVA', 'LIKE', 'VENTAS MESA%');
                 break;
             case 'MOSTRADOR':
-                $query->where('observa', 'LIKE', 'MOSTRADOR%');
+                $query->where('OBSERVA', 'LIKE', 'MOSTRADOR%');
                 break;
             case 'DELIVERY':
-                $query->where('observa', 'LIKE', 'DELIVERY%');
+                $query->where('OBSERVA', 'LIKE', 'DELIVERY%');
                 break;
             case 'POS':
-                $query->where('observa', 'LIKE', 'PUNTO DE VENTA%');
+                $query->where('OBSERVA', 'LIKE', 'PUNTO DE VENTA%');
                 break;
             case 'OTRAS':
                 $query->where(function($q) {
-                    $q->whereNull('observa')
-                      ->orWhere('observa', '')
+                    $q->whereNull('OBSERVA')
+                      ->orWhere('OBSERVA', '')
                       ->orWhere(function($q2) {
-                          $q2->where('observa', 'NOT LIKE', 'VENTAS MESA%')
-                             ->where('observa', 'NOT LIKE', 'MOSTRADOR%')
-                             ->where('observa', 'NOT LIKE', 'DELIVERY%')
-                             ->where('observa', 'NOT LIKE', 'PUNTO DE VENTA%');
+                          $q2->where('OBSERVA', 'NOT LIKE', 'VENTAS MESA%')
+                             ->where('OBSERVA', 'NOT LIKE', 'MOSTRADOR%')
+                             ->where('OBSERVA', 'NOT LIKE', 'DELIVERY%')
+                             ->where('OBSERVA', 'NOT LIKE', 'PUNTO DE VENTA%');
                       });
                 });
                 break;
@@ -148,8 +148,8 @@ class VerVentas extends Component
         }
 
         $ventas = DB::connection('client_db')->table($this->tablePrefix . 'ventas_encab')
-            ->whereBetween('fecha', [$this->fechaDesde, $this->fechaHasta])
-            ->select('observa', 'importe', 'ticomp')
+            ->whereBetween('FECHA', [$this->fechaDesde, $this->fechaHasta])
+            ->select('OBSERVA', 'IMPORTE', 'TICOMP')
             ->get();
 
         $totales = [
@@ -161,8 +161,8 @@ class VerVentas extends Component
         ];
 
         foreach ($ventas as $venta) {
-            $origen = $this->getOrigenVenta($venta->observa);
-            $importe = $venta->ticomp === 'NC' ? -$venta->importe : $venta->importe;
+            $origen = $this->getOrigenVenta($venta->OBSERVA);
+            $importe = $venta->TICOMP === 'NC' ? -$venta->IMPORTE : $venta->IMPORTE;
             $totales[$origen] += $importe;
         }
 
@@ -185,7 +185,7 @@ class VerVentas extends Component
         }
 
         $query = DB::connection('client_db')->table($this->tablePrefix . 'ventas_encab')
-            ->whereBetween('fecha', [$this->fechaDesde, $this->fechaHasta]);
+            ->whereBetween('FECHA', [$this->fechaDesde, $this->fechaHasta]);
 
         $query = $this->aplicarFiltroOrigen($query);
 
@@ -214,7 +214,7 @@ class VerVentas extends Component
 
         return DB::connection('client_db')->table($this->tablePrefix . 'ventas_det')
             ->where('NROFAC', $nrofac)
-            ->select('codart', 'detart', 'cantidad', 'punit', 'importe')
+            ->select('CODART', 'DETART', 'CANTIDAD', 'PUNIT', 'IMPORTE')
             ->get();
     }
 
@@ -226,23 +226,23 @@ class VerVentas extends Component
 
         if ($this->tablePrefix) {
             $query = DB::connection('client_db')->table($this->tablePrefix . 'ventas_encab')
-                ->whereBetween('fecha', [$this->fechaDesde, $this->fechaHasta]);
+                ->whereBetween('FECHA', [$this->fechaDesde, $this->fechaHasta]);
 
             $query = $this->aplicarFiltroOrigen($query);
 
             $ventas = $query
-                ->orderBy('fecha', 'DESC')
-                ->orderBy('hora', 'DESC')
+                ->orderBy('FECHA', 'DESC')
+                ->orderBy('HORA', 'DESC')
                 ->skip(($this->currentPage - 1) * $this->perPage)
                 ->take($this->perPage)
                 ->get()
                 ->map(function ($venta) {
-                    $venta->fecha_formateada = date('d/m/Y', strtotime($venta->fecha));
-                    $venta->hora_formateada = date('H:i:s', strtotime($venta->hora));
-                    $venta->comprobante = $venta->letra . $venta->numcomp;
-                    $venta->nrofac = $venta->ticomp . $venta->letra . $venta->numcomp;
-                    $venta->importe_calculado = $venta->ticomp === 'NC' ? -$venta->importe : $venta->importe;
-                    $venta->origen = $this->getOrigenVenta($venta->observa);
+                    $venta->fecha_formateada = date('d/m/Y', strtotime($venta->FECHA));
+                    $venta->hora_formateada = date('H:i:s', strtotime($venta->HORA));
+                    $venta->comprobante = $venta->LETRA . $venta->NUMCOMP;
+                    $venta->nrofac = $venta->TICOMP . $venta->LETRA . $venta->NUMCOMP;
+                    $venta->importe_calculado = $venta->TICOMP === 'NC' ? -$venta->IMPORTE : $venta->IMPORTE;
+                    $venta->origen = $this->getOrigenVenta($venta->OBSERVA);
                     return $venta;
                 });
         }

@@ -187,13 +187,13 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                       {{ $venta->ticomp == 'NC' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800' }}">
+                                       {{ $venta->TICOMP == 'NC' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800' }}">
                                     {{ $venta->comprobante }}
                                 </span>
                             </td>
                             <td class="px-6 py-4">
-                                <div class="text-sm text-gray-900 max-w-xs truncate" title="{{ $venta->nombre }}">
-                                    {{ $venta->nombre }}
+                                <div class="text-sm text-gray-900 max-w-xs truncate" title="{{ $venta->NOMBRE ?? 'Sin nombre' }}">
+                                    {{ $venta->NOMBRE ?? 'Sin nombre' }}
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
@@ -213,10 +213,10 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="text-sm text-gray-900">{{ $venta->usuario }}</span>
+                                <span class="text-sm text-gray-900">{{ $venta->USUARIO }}</span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right">
-                                <span class="text-sm font-medium {{ $venta->ticomp == 'NC' ? 'text-red-600' : 'text-gray-900' }}">
+                                <span class="text-sm font-medium {{ $venta->TICOMP == 'NC' ? 'text-red-600' : 'text-gray-900' }}">
                                     ${{ number_format($venta->importe_calculado, 2) }}
                                 </span>
                             </td>
@@ -246,20 +246,20 @@
                                             <tbody class="bg-white divide-y divide-gray-200">
                                                 @foreach($this->getDetalleVenta($venta->nrofac) as $detalle)
                                                     <tr>
-                                                        <td class="px-4 py-2 text-sm text-gray-900">{{ $detalle->codart }}</td>
-                                                        <td class="px-4 py-2 text-sm text-gray-900">{{ $detalle->detart }}</td>
-                                                        <td class="px-4 py-2 text-sm text-gray-900 text-right">{{ number_format($detalle->cantidad, 2) }}</td>
-                                                        <td class="px-4 py-2 text-sm text-gray-900 text-right">${{ number_format($detalle->punit, 2) }}</td>
-                                                        <td class="px-4 py-2 text-sm font-medium text-gray-900 text-right">${{ number_format($detalle->importe, 2) }}</td>
+                                                        <td class="px-4 py-2 text-sm text-gray-900">{{ $detalle->CODART }}</td>
+                                                        <td class="px-4 py-2 text-sm text-gray-900">{{ $detalle->DETART }}</td>
+                                                        <td class="px-4 py-2 text-sm text-gray-900 text-right">{{ number_format($detalle->CANTIDAD, 2) }}</td>
+                                                        <td class="px-4 py-2 text-sm text-gray-900 text-right">${{ number_format($detalle->PUNIT, 2) }}</td>
+                                                        <td class="px-4 py-2 text-sm font-medium text-gray-900 text-right">${{ number_format($detalle->IMPORTE, 2) }}</td>
                                                     </tr>
                                                 @endforeach
                                             </tbody>
                                         </table>
                                     </div>
-                                    @if($venta->observa)
+                                    @if($venta->OBSERVA)
                                         <div class="mt-3 p-3 bg-blue-50 rounded-md">
                                             <p class="text-xs font-medium text-gray-700">Observaciones:</p>
-                                            <p class="text-sm text-gray-900">{{ $venta->observa }}</p>
+                                            <p class="text-sm text-gray-900">{{ $venta->OBSERVA }}</p>
                                         </div>
                                     @endif
                                 </td>
@@ -288,7 +288,7 @@
                         <div class="flex-1">
                             <div class="flex items-center gap-2 mb-1">
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                       {{ $venta->ticomp == 'NC' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800' }}">
+                                       {{ $venta->TICOMP == 'NC' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800' }}">
                                     {{ $venta->comprobante }}
                                 </span>
                                 @php
@@ -306,12 +306,12 @@
                                     {{ $config['label'] }}
                                 </span>
                             </div>
-                            <div class="text-sm text-gray-900 font-medium truncate">{{ $venta->nombre }}</div>
+                            <div class="text-sm text-gray-900 font-medium truncate">{{ $venta->NOMBRE ?? 'Sin nombre' }}</div>
                             <div class="text-xs text-gray-500 mt-1">{{ $venta->fecha_formateada }} - {{ $venta->hora_formateada }}</div>
-                            <div class="text-xs text-gray-500">Usuario: {{ $venta->usuario }}</div>
+                            <div class="text-xs text-gray-500">Usuario: {{ $venta->USUARIO }}</div>
                         </div>
                         <div class="text-right ml-2">
-                            <div class="text-base font-semibold {{ $venta->ticomp == 'NC' ? 'text-red-600' : 'text-gray-900' }}">
+                            <div class="text-base font-semibold {{ $venta->TICOMP == 'NC' ? 'text-red-600' : 'text-gray-900' }}">
                                 ${{ number_format($venta->importe_calculado, 2) }}
                             </div>
                         </div>
@@ -330,19 +330,19 @@
                             <div class="space-y-2">
                                 @foreach($this->getDetalleVenta($venta->nrofac) as $detalle)
                                     <div class="border-b border-gray-200 pb-2 last:border-b-0">
-                                        <div class="text-sm font-medium text-gray-900">{{ $detalle->detart }}</div>
-                                        <div class="text-xs text-gray-600">Código: {{ $detalle->codart }}</div>
+                                        <div class="text-sm font-medium text-gray-900">{{ $detalle->DETART }}</div>
+                                        <div class="text-xs text-gray-600">Código: {{ $detalle->CODART }}</div>
                                         <div class="flex justify-between mt-1">
-                                            <span class="text-xs text-gray-600">Cant: {{ number_format($detalle->cantidad, 2) }} × ${{ number_format($detalle->punit, 2) }}</span>
-                                            <span class="text-sm font-medium text-gray-900">${{ number_format($detalle->importe, 2) }}</span>
+                                            <span class="text-xs text-gray-600">Cant: {{ number_format($detalle->CANTIDAD, 2) }} × ${{ number_format($detalle->PUNIT, 2) }}</span>
+                                            <span class="text-sm font-medium text-gray-900">${{ number_format($detalle->IMPORTE, 2) }}</span>
                                         </div>
                                     </div>
                                 @endforeach
                             </div>
-                            @if($venta->observa)
+                            @if($venta->OBSERVA)
                                 <div class="mt-3 p-2 bg-blue-50 rounded-md">
                                     <p class="text-xs font-medium text-gray-700">Observaciones:</p>
-                                    <p class="text-xs text-gray-900">{{ $venta->observa }}</p>
+                                    <p class="text-xs text-gray-900">{{ $venta->OBSERVA }}</p>
                                 </div>
                             @endif
                         </div>
