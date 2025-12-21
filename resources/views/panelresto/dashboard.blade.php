@@ -116,6 +116,14 @@
                     <span class="font-secondary font-medium">Ver Ventas</span>
                 </button>
 
+                <!-- Configurar Delivery -->
+                <button
+                    wire:click="navigateTo('configurar-delivery'); if(window.innerWidth < 640) $wire.call('toggleSidebar')"
+                    class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-orange-50 hover:translate-x-1 group {{ $currentPage === 'configurar-delivery' ? 'bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg' : 'text-white hover:text-orange-600' }}">
+                    <i class="fas fa-motorcycle mr-3 text-lg {{ $currentPage === 'configurar-delivery' ? 'text-white' : 'text-orange-500 group-hover:text-orange-600' }}"></i>
+                    <span class="font-secondary font-medium">Configurar Delivery</span>
+                </button>
+
                 <!-- Auditoría -->
                 <button
                     wire:click="navigateTo('auditoria'); if(window.innerWidth < 640) $wire.call('toggleSidebar')"
@@ -199,6 +207,9 @@
                                     @case('ver-ventas')
                                         Ver Ventas
                                         @break
+                                    @case('configurar-delivery')
+                                        Configurar Delivery
+                                        @break
                                     @case('auditoria')
                                         Auditoría
                                         @break
@@ -253,6 +264,9 @@
                         @break
                     @case('ver-ventas')
                         @livewire('panelresto.ver-ventas')
+                        @break
+                    @case('configurar-delivery')
+                        @livewire('panelresto.configurar-delivery')
                         @break
                     @case('auditoria')
                         @livewire('panelresto.auditoria')

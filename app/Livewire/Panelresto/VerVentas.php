@@ -84,7 +84,7 @@ class VerVentas extends Component
             return 'OTRAS';
         }
 
-        if (str_starts_with($observa, 'VENTAS MESA')) {
+        if (str_starts_with($observa, 'VENTA MESAS')) {
             return 'SALON';
         } elseif (str_starts_with($observa, 'MOSTRADOR')) {
             return 'MOSTRADOR';
@@ -105,7 +105,7 @@ class VerVentas extends Component
 
         switch ($this->origenFiltro) {
             case 'SALON':
-                $query->where('OBSERVA', 'LIKE', 'VENTAS MESA%');
+                $query->where('OBSERVA', 'LIKE', 'VENTA MESAS%');
                 break;
             case 'MOSTRADOR':
                 $query->where('OBSERVA', 'LIKE', 'MOSTRADOR%');
@@ -121,7 +121,7 @@ class VerVentas extends Component
                     $q->whereNull('OBSERVA')
                       ->orWhere('OBSERVA', '')
                       ->orWhere(function($q2) {
-                          $q2->where('OBSERVA', 'NOT LIKE', 'VENTAS MESA%')
+                          $q2->where('OBSERVA', 'NOT LIKE', 'VENTA MESAS%')
                              ->where('OBSERVA', 'NOT LIKE', 'MOSTRADOR%')
                              ->where('OBSERVA', 'NOT LIKE', 'DELIVERY%')
                              ->where('OBSERVA', 'NOT LIKE', 'PUNTO DE VENTA%');
