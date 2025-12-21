@@ -108,6 +108,14 @@
                     <span class="font-secondary font-medium">Pedidos Mostrador</span>
                 </button>
 
+                <!-- Ver Ventas -->
+                <button
+                    wire:click="navigateTo('ver-ventas'); if(window.innerWidth < 640) $wire.call('toggleSidebar')"
+                    class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-orange-50 hover:translate-x-1 group {{ $currentPage === 'ver-ventas' ? 'bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg' : 'text-white hover:text-orange-600' }}">
+                    <i class="fas fa-receipt mr-3 text-lg {{ $currentPage === 'ver-ventas' ? 'text-white' : 'text-orange-500 group-hover:text-orange-600' }}"></i>
+                    <span class="font-secondary font-medium">Ver Ventas</span>
+                </button>
+
                 <!-- Auditoría -->
                 <button
                     wire:click="navigateTo('auditoria'); if(window.innerWidth < 640) $wire.call('toggleSidebar')"
@@ -188,6 +196,9 @@
                                     @case('monitor')
                                         Pedidos Mostrador
                                         @break
+                                    @case('ver-ventas')
+                                        Ver Ventas
+                                        @break
                                     @case('auditoria')
                                         Auditoría
                                         @break
@@ -239,6 +250,9 @@
                         @break                    
                     @case('monitor')
                         @livewire('panelresto.monitor')
+                        @break
+                    @case('ver-ventas')
+                        @livewire('panelresto.ver-ventas')
                         @break
                     @case('auditoria')
                         @livewire('panelresto.auditoria')
