@@ -74,7 +74,7 @@
                 {{ $slot }}
             </div>
             <!-- Footer -->
-            <div class="fixed bottom-0 left-0 w-full bg-white border-t shadow-inner flex justify-around py-2 text-xs text-gray-600">
+            <div class="fixed bottom-0 left-0 w-full bg-white border-t shadow-inner flex justify-around py-2 text-xs text-gray-600" style="padding-bottom: env(safe-area-inset-bottom);">
                 <a href="{{route('dashboard-vendedor')}}" wire:navigate>
                     <div class="flex flex-col items-center {{ request()->routeIs('dashboard-vendedor') ? 'text-yellow-500' : '' }}">
                         <i class="fa fa-home text-lg"></i>

@@ -5,10 +5,10 @@
         <!-- Header de filtros con botón collapse para móvil -->
         <div class="flex items-center justify-between mb-4 sm:hidden">
             <h3 class="text-sm font-semibold text-gray-800">
-                <i class="fas fa-filter text-orange-500 mr-2"></i>Filtros
+                <i class="fas fa-filter text-[#FFAF22] mr-2"></i>Filtros
             </h3>
             <button @click="filtrosAbiertos = !filtrosAbiertos"
-                    class="px-3 py-1 text-xs bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors">
+                    class="px-3 py-1 text-xs bg-[#FFAF22] text-white rounded-md hover:bg-[#FFAF22]/90 transition-colors">
                 <i class="fas" :class="filtrosAbiertos ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
                 <span x-text="filtrosAbiertos ? 'Ocultar' : 'Mostrar'"></span>
             </button>
@@ -25,7 +25,7 @@
                     <input type="date"
                            wire:model="fechaDesde"
                            id="fechaDesde"
-                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                 </div>
 
                 <!-- Fecha Hasta -->
@@ -36,7 +36,7 @@
                     <input type="date"
                            wire:model="fechaHasta"
                            id="fechaHasta"
-                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                 </div>
 
                 <!-- Búsqueda -->
@@ -48,7 +48,7 @@
                            wire:model.live.debounce.300ms="buscar"
                            id="buscar"
                            placeholder="Nº Factura o Cliente..."
-                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                 </div>
 
                 <!-- Botones -->

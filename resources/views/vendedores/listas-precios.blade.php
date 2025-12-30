@@ -1,4 +1,4 @@
-<div class="px-1 pb-8" x-data="{ mostrarFiltros: false }">
+<div class="px-1 pb-28" x-data="{ mostrarFiltros: false }" style="padding-bottom: calc(7rem + env(safe-area-inset-bottom));">
     <!-- Header -->
     <div class="bg-[#222036] text-white rounded-lg p-4 mb-4 mt-3 shadow-md">
         <h2 class="text-lg font-semibold">LISTAS DE PRECIOS</h2>

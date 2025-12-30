@@ -6,12 +6,16 @@ use App\Http\Controllers\Auth\MozoAuthController;
 use App\Http\Controllers\Auth\VendedorAuthController;
 use App\Http\Controllers\Auth\VendedorEmpresaAuthController;
 use App\Http\Controllers\Auth\MonitorAuthController;
+use App\Http\Controllers\SessionExpiredController;
 
 
 // Página principal pública
 Route::get('/', function () {
     return view('welcome');
 })->name('home');
+
+// Página de sesión expirada
+Route::get('/session-expired', [SessionExpiredController::class, 'show'])->name('session.expired');
 
 // Logout forzado (para cambio de módulos)
 Route::get('/logout-force', function () {

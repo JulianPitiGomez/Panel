@@ -1,4 +1,4 @@
-<div class="px-1 pb-8">
+<div class="px-1 pb-28" style="padding-bottom: calc(7rem + env(safe-area-inset-bottom));">
     <!-- Bienvenida -->
     <div class="bg-[#222036] text-white rounded-lg p-4 mb-4 mt-3 shadow-md">
         <h2 class="text-lg font-semibold">CONSULTAS DE DEUDAS</h2>

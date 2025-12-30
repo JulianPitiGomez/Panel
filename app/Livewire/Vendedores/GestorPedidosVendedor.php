@@ -172,8 +172,8 @@ class GestorPedidosVendedor extends Component
     {
         $this->setupClientDatabase();
 
-        $lispreesp = $this->cliente->lispreesp;
-        $lispre = $this->cliente->LISPRE;
+        $lispreesp = $this->cliente->lispreesp ?? $this->cliente->LISPREESP ?? null;
+        $lispre = $this->cliente->LISPRE ?? $this->cliente->lispre ?? null;
 
         if ($lispreesp) {
             $especial = DB::connection('client_db')

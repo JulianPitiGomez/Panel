@@ -4,7 +4,7 @@
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-3 md:p-6">
         <div class="flex items-center justify-between mb-3 md:mb-4">
             <h2 class="text-base md:text-lg font-primary font-semibold text-gray-800 flex items-center">
-                <i class="fas fa-filter text-orange-500 mr-2 text-sm md:text-base"></i>
+                <i class="fas fa-filter text-[#FFAF22] mr-2 text-sm md:text-base"></i>
                 <span class="hidden sm:inline">Filtros de Búsqueda</span>
                 <span class="sm:hidden">Filtros</span>
             </h2>
@@ -21,7 +21,7 @@
                 <label class="block text-xs md:text-sm font-secondary font-medium text-gray-700 mb-1 md:mb-2">Desde</label>
                 <input type="date"
                        wire:model.live="fechaDesde"
-                       class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent font-secondary">
+                       class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent font-secondary">
             </div>
 
             <!-- Fecha Hasta -->
@@ -29,14 +29,14 @@
                 <label class="block text-xs md:text-sm font-secondary font-medium text-gray-700 mb-1 md:mb-2">Hasta</label>
                 <input type="date"
                        wire:model.live="fechaHasta"
-                       class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent font-secondary">
+                       class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent font-secondary">
             </div>
 
             <!-- Cliente -->
             <div class="col-span-2 lg:col-span-1">
                 <label class="block text-xs md:text-sm font-secondary font-medium text-gray-700 mb-1 md:mb-2">Cliente</label>
                 <select wire:model.live="clienteSeleccionado"
-                        class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent font-secondary">
+                        class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent font-secondary">
                     <option value="">Todos los clientes</option>
                     @foreach($clientes as $cliente)
                         <option value="{{ $cliente->codigo }}">{{ $cliente->nombre }}</option>
@@ -48,7 +48,7 @@
             <div class="col-span-2 lg:col-span-1">
                 <label class="block text-xs md:text-sm font-secondary font-medium text-gray-700 mb-1 md:mb-2">Caja</label>
                 <select wire:model.live="cajaSeleccionada"
-                        class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent font-secondary">
+                        class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent font-secondary">
                     <option value="">Todas las cajas</option>
                     @foreach($cajas as $caja)
                         <option value="{{ $caja->caja }}">Caja {{ $caja->caja }}</option>
@@ -62,7 +62,7 @@
             <label class="flex items-center">
                 <input type="checkbox"
                        wire:model.live="soloSinCerrar"
-                       class="w-4 h-4 text-orange-600 bg-gray-100 border-gray-300 rounded focus:ring-orange-500">
+                       class="w-4 h-4 text-[#FFAF22] bg-gray-100 border-gray-300 rounded focus:ring-[#FFAF22]">
                 <span class="ml-2 text-xs md:text-sm font-secondary text-gray-700">Solo pagos sin cerrar</span>
             </label>
         </div>
@@ -71,27 +71,27 @@
     <!-- Controles de vista -->
     <div class="flex flex-wrap gap-2 md:gap-3">
         <button wire:click="toggleDetalle"
-                class="px-3 md:px-4 py-1.5 md:py-2 rounded-lg transition-colors duration-200 font-secondary text-xs md:text-sm {{ $mostrarDetalle ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+                class="px-3 md:px-4 py-1.5 md:py-2 rounded-lg transition-colors duration-200 font-secondary text-xs md:text-sm {{ $mostrarDetalle ? 'bg-[#FFAF22] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
             <i class="fas fa-list mr-1"></i>
             <span class="hidden sm:inline">{{ $mostrarDetalle ? 'Ocultar' : 'Mostrar' }}</span> Detalle
         </button>
 
         <button wire:click="toggleResumen"
-                class="px-3 md:px-4 py-1.5 md:py-2 rounded-lg transition-colors duration-200 font-secondary text-xs md:text-sm {{ $mostrarResumen ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+                class="px-3 md:px-4 py-1.5 md:py-2 rounded-lg transition-colors duration-200 font-secondary text-xs md:text-sm {{ $mostrarResumen ? 'bg-[#FFAF22] text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
             <i class="fas fa-chart-pie mr-1"></i>
             <span class="hidden sm:inline">{{ $mostrarResumen ? 'Ocultar' : 'Mostrar' }}</span> Resumen
         </button>
     </div>
 
     <!-- Total general -->
-    <div class="bg-gradient-to-r from-orange-50 to-orange-100 rounded-xl p-3 md:p-6 border border-orange-200">
+    <div class="bg-white rounded-xl p-3 md:p-6 border-l-4 border-[#FFAF22] shadow-md border border-gray-200">
         <div class="flex items-center justify-between">
             <div>
                 <h3 class="text-base md:text-lg font-primary font-semibold text-gray-800">Total de Pagos</h3>
                 <p class="text-xs md:text-sm font-secondary text-gray-600">{{ $pagos->total() ?? 0 }} pagos encontrados</p>
             </div>
             <div class="text-right">
-                <p class="text-xl md:text-3xl font-primary font-bold text-orange-600">${{ number_format($totalPagos, 2) }}</p>
+                <p class="text-xl md:text-3xl font-primary font-bold text-[#FFAF22]">${{ number_format($totalPagos, 2) }}</p>
                 <p class="text-xs md:text-sm font-secondary text-gray-600 hidden sm:block">Período: {{ date('d/m/Y', strtotime($fechaDesde)) }} - {{ date('d/m/Y', strtotime($fechaHasta)) }}</p>
             </div>
         </div>
@@ -101,7 +101,7 @@
     @if($mostrarResumen)
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-3 md:p-6">
         <h3 class="text-base md:text-lg font-primary font-semibold text-gray-800 mb-3 md:mb-4 flex items-center">
-            <i class="fas fa-chart-pie text-orange-500 mr-2 text-sm md:text-base"></i>
+            <i class="fas fa-chart-pie text-[#FFAF22] mr-2 text-sm md:text-base"></i>
             <span class="hidden sm:inline">Resumen por Formas de Pago</span>
             <span class="sm:hidden">Resumen</span>
         </h3>
@@ -112,11 +112,11 @@
             <div class="bg-gray-50 rounded-lg p-2 md:p-4 border border-gray-200">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1 md:mb-2">
                     <h4 class="font-secondary font-semibold text-gray-800 text-xs md:text-sm truncate">{{ $forma->forma_pago }}</h4>
-                    <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full font-secondary w-fit">
+                    <span class="text-xs bg-[#FFAF22]/15 text-[#222036] px-2 py-1 rounded-full font-secondary w-fit">
                         {{ $forma->cantidad_pagos }}
                     </span>
                 </div>
-                <p class="text-lg md:text-2xl font-primary font-bold text-orange-600">${{ number_format($forma->total_importe, 2) }}</p>
+                <p class="text-lg md:text-2xl font-primary font-bold text-[#FFAF22]">${{ number_format($forma->total_importe, 2) }}</p>
                 <p class="text-xs md:text-sm font-secondary text-gray-600">
                     {{ number_format(($forma->total_importe / $totalPagos) * 100, 1) }}% del total
                 </p>
@@ -143,7 +143,7 @@
                 <div class="p-3 md:p-6 border-b border-gray-200">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-4">
                         <h3 class="text-base md:text-lg font-primary font-semibold text-gray-800 flex items-center">
-                            <i class="fas fa-list text-orange-500 mr-2 text-sm md:text-base"></i>
+                            <i class="fas fa-list text-[#FFAF22] mr-2 text-sm md:text-base"></i>
                             Pagos por Fecha
                         </h3>
 
@@ -152,7 +152,7 @@
                             <div class="flex items-center gap-2">
                                 <label class="text-xs md:text-sm font-secondary text-gray-600 hidden sm:inline">Mostrar:</label>
                                 <select wire:change="cambiarTamanoPagina($event.target.value)"
-                                        class="px-2 py-1 border border-gray-300 rounded text-xs md:text-sm font-secondary focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                                        class="px-2 py-1 border border-gray-300 rounded text-xs md:text-sm font-secondary focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent">
                                     <option value="10" {{ $paginacionSize == 10 ? 'selected' : '' }}>10</option>
                                     <option value="20" {{ $paginacionSize == 20 ? 'selected' : '' }}>20</option>
                                     <option value="50" {{ $paginacionSize == 50 ? 'selected' : '' }}>50</option>
@@ -187,7 +187,7 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             @foreach($pagos as $pago)
-                            <tr class="hover:bg-gray-50 transition-colors duration-200 {{ $mostrarDetallePago && $pagoSeleccionado && $pagoSeleccionado->NUMERO == $pago->NUMERO ? 'bg-orange-50 border-l-4 border-orange-500' : '' }}">
+                            <tr class="hover:bg-gray-50 transition-colors duration-200 {{ $mostrarDetallePago && $pagoSeleccionado && $pagoSeleccionado->NUMERO == $pago->NUMERO ? 'bg-[#FFAF22]/10 border-l-4 border-[#FFAF22]' : '' }}">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm font-secondary font-medium text-gray-900">
                                         {{ date('d/m/Y', strtotime($pago->FECHA)) }}
@@ -231,7 +231,7 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-center">
                                     <button wire:click="verDetallePago({{ $pago->NUMERO }})"
-                                            class="text-orange-600 hover:text-orange-900 font-secondary text-sm">
+                                            class="text-[#FFAF22] hover:text-[#222036] font-secondary text-sm">
                                         <i class="fas fa-eye mr-1"></i>
                                         Ver Detalle
                                     </button>
@@ -255,7 +255,7 @@
                 <!-- Vista Mobile: Cards -->
                 <div class="lg:hidden divide-y divide-gray-200">
                     @foreach($pagos as $pago)
-                    <div class="p-3 hover:bg-gray-50 transition-colors duration-200 {{ $mostrarDetallePago && $pagoSeleccionado && $pagoSeleccionado->NUMERO == $pago->NUMERO ? 'bg-orange-50 border-l-4 border-orange-500' : '' }}"
+                    <div class="p-3 hover:bg-gray-50 transition-colors duration-200 {{ $mostrarDetallePago && $pagoSeleccionado && $pagoSeleccionado->NUMERO == $pago->NUMERO ? 'bg-[#FFAF22]/10 border-l-4 border-[#FFAF22]' : '' }}"
                          wire:click="verDetallePago({{ $pago->NUMERO }})">
                         <div class="flex justify-between items-start mb-2">
                             <div class="flex-1">
@@ -268,7 +268,7 @@
                                 </div>
                             </div>
                             <div class="text-right ml-2">
-                                <div class="text-base font-secondary font-bold text-orange-600">
+                                <div class="text-base font-secondary font-bold text-[#FFAF22]">
                                     ${{ number_format($pago->TOTAL, 2) }}
                                 </div>
                             </div>
@@ -323,7 +323,7 @@
                                 </span>
                             @else
                                 <button wire:click="previousPage"
-                                        class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200">
+                                        class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-[#FFAF22] hover:bg-[#FFAF22]/10 rounded-lg transition-colors duration-200">
                                     <i class="fas fa-chevron-left"></i>
                                 </button>
                             @endif
@@ -337,7 +337,7 @@
                             {{-- Mostrar primera página si no está en el rango --}}
                             @if($start > 1)
                                 <button wire:click="gotoPage(1)"
-                                        class="hidden sm:inline-flex px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200">
+                                        class="hidden sm:inline-flex px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-[#FFAF22] hover:bg-[#FFAF22]/10 rounded-lg transition-colors duration-200">
                                     1
                                 </button>
                                 @if($start > 2)
@@ -348,12 +348,12 @@
                             {{-- Páginas cercanas a la actual --}}
                             @for($page = $start; $page <= $end; $page++)
                                 @if($page == $pagos->currentPage())
-                                    <span class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary bg-orange-500 text-white rounded-lg">
+                                    <span class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary bg-[#FFAF22] text-white rounded-lg">
                                         {{ $page }}
                                     </span>
                                 @else
                                     <button wire:click="gotoPage({{ $page }})"
-                                            class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200">
+                                            class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-[#FFAF22] hover:bg-[#FFAF22]/10 rounded-lg transition-colors duration-200">
                                         {{ $page }}
                                     </button>
                                 @endif
@@ -365,7 +365,7 @@
                                     <span class="hidden sm:inline px-1 md:px-2 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-400">...</span>
                                 @endif
                                 <button wire:click="gotoPage({{ $pagos->lastPage() }})"
-                                        class="hidden sm:inline-flex px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200">
+                                        class="hidden sm:inline-flex px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-[#FFAF22] hover:bg-[#FFAF22]/10 rounded-lg transition-colors duration-200">
                                     {{ $pagos->lastPage() }}
                                 </button>
                             @endif
@@ -373,7 +373,7 @@
                             {{-- Botón Siguiente --}}
                             @if($pagos->hasMorePages())
                                 <button wire:click="nextPage"
-                                        class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200">
+                                        class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-[#FFAF22] hover:bg-[#FFAF22]/10 rounded-lg transition-colors duration-200">
                                     <i class="fas fa-chevron-right"></i>
                                 </button>
                             @else
@@ -405,7 +405,7 @@
                 <!-- Header del Panel -->
                 <div class="flex items-center justify-between p-3 md:p-4 border-b border-gray-200 bg-gray-50">
                     <h3 class="text-base md:text-lg font-primary font-semibold text-gray-900 flex items-center">
-                        <i class="fas fa-receipt text-orange-500 mr-2 text-sm md:text-base"></i>
+                        <i class="fas fa-receipt text-[#FFAF22] mr-2 text-sm md:text-base"></i>
                         Pago #{{ $pagoSeleccionado->NUMERO }}
                     </h3>
                     <button wire:click="cerrarDetallePago" class="text-gray-400 hover:text-gray-600 p-1">
@@ -426,7 +426,7 @@
                         </div>
                         <div class="flex justify-between">
                             <span class="font-secondary font-medium text-gray-600">Total:</span>
-                            <span class="font-secondary font-bold text-orange-600">${{ number_format($pagoSeleccionado->TOTAL, 2) }}</span>
+                            <span class="font-secondary font-bold text-[#FFAF22]">${{ number_format($pagoSeleccionado->TOTAL, 2) }}</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="font-secondary font-medium text-gray-600">Caja:</span>
@@ -466,7 +466,7 @@
                 <div class="flex-1 overflow-y-auto">
                     <div class="p-3 md:p-4">
                         <h4 class="font-secondary font-semibold text-gray-800 mb-2 md:mb-3 flex items-center text-sm md:text-base">
-                            <i class="fas fa-credit-card text-orange-500 mr-2 text-sm"></i>
+                            <i class="fas fa-credit-card text-[#FFAF22] mr-2 text-sm"></i>
                             Formas de Pago
                         </h4>
 
@@ -513,7 +513,7 @@
                 <div class="border-t border-gray-200 p-3 md:p-4 bg-gray-50">
                     <div class="flex justify-between items-center">
                         <span class="font-secondary font-bold text-gray-900 text-sm md:text-base">TOTAL PAGO:</span>
-                        <span class="font-primary font-black text-lg md:text-xl text-orange-600">
+                        <span class="font-primary font-black text-lg md:text-xl text-[#FFAF22]">
                             ${{ number_format($pagoSeleccionado->TOTAL, 2) }}
                         </span>
                     </div>

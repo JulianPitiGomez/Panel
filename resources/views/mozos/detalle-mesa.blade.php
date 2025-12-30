@@ -40,8 +40,8 @@
                 </div>
                 <button wire:click="verPromociones"
                         {{ ($requiereComensales && $comensales < 1) ? 'disabled' : '' }}
-                        class="px-3 py-2 rounded-lg text-sm {{ ($requiereComensales && $comensales < 1) ? 'bg-gray-400 text-gray-200 cursor-not-allowed' : 'bg-yellow-500 text-white hover:bg-yellow-600' }}">
-                    <i class="fa fa-tags"></i>
+                        class="p-3 rounded-lg {{ ($requiereComensales && $comensales < 1) ? 'bg-gray-400 text-gray-200 cursor-not-allowed' : 'bg-yellow-500 text-white hover:bg-yellow-600 active:bg-yellow-700' }} transition-colors shadow-sm">
+                    <i class="fa fa-tags text-xl"></i>
                 </button>
             </div>
 
@@ -87,7 +87,7 @@
         </div>
 
         <!-- Área de contenido scrolleable -->
-        <div class="flex-1 overflow-y-auto p-2 pb-16">
+        <div class="flex-1 overflow-y-auto p-2 pb-28" style="padding-bottom: calc(7rem + env(safe-area-inset-bottom)); -webkit-overflow-scrolling: touch;">
             <!-- Mensajes Flash -->
             @if (session()->has('success'))
                 <div class="bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-lg mb-2 text-sm">
@@ -131,11 +131,21 @@
                                     <div class="font-bold text-green-600 text-sm">
                                         ${{ number_format($item->TOTAL, 2) }}
                                     </div>
-                                    @if(!str_starts_with(strtoupper($item->NOMART), 'SERVICIO DE MESA') && ((session('mozo_borracc') && $item->IMPRESA) || (session('mozo_borrasc') && !$item->IMPRESA)))
-                                        <button @click="confirmar(() => $wire.eliminarProducto({{ $item->RENGLON }}), '¿Eliminar este producto?')"
-                                                class="mt-1 px-2 py-0.5 bg-red-500 text-white rounded text-xs">
-                                            <i class="fa fa-trash"></i>
-                                        </button>
+                                    @if(!str_starts_with(strtoupper($item->NOMART), 'SERVICIO DE MESA'))
+                                        <div class="mt-2 flex gap-2 justify-end">
+                                            @if(!$item->IMPRESA)
+                                                <button wire:click="modificarProducto({{ $item->RENGLON }}, {{ $item->CODART }})"
+                                                        class="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 active:bg-blue-700 transition-colors shadow-md">
+                                                    <i class="fa fa-edit text-base"></i>
+                                                </button>
+                                            @endif
+                                            @if((session('mozo_borracc') && $item->IMPRESA) || (session('mozo_borrasc') && !$item->IMPRESA))
+                                                <button @click="confirmar(() => $wire.eliminarProducto({{ $item->RENGLON }}), '¿Eliminar este producto?')"
+                                                        class="px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 active:bg-red-700 transition-colors shadow-md">
+                                                    <i class="fa fa-trash text-base"></i>
+                                                </button>
+                                            @endif
+                                        </div>
                                     @endif
                                 </div>
                             </div>
@@ -152,7 +162,7 @@
         </div>
 
         <!-- Barra de navegación inferior fija -->
-        <div class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg">
+        <div class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg" style="padding-bottom: env(safe-area-inset-bottom);">
             <div class="grid gap-1 p-2" style="grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));">
                 <!-- Botón Agregar -->
                 <button wire:click="mostrarBuscador"
@@ -293,15 +303,19 @@
                             <div class="space-y-2">
                                 @foreach($productos as $producto)
                                     <button wire:click="seleccionarProducto({{ $producto->codigo }})"
-                                            class="w-full text-left p-3 border rounded-lg hover:bg-gray-50 transition hover:border-yellow-500">
+                                            class="w-full text-left p-3 border rounded-lg hover:bg-gray-50 transition {{ $producto->agotado ? 'border-red-300 bg-red-50' : 'hover:border-yellow-500' }}">
                                         <div class="flex justify-between items-center">
                                             <div class="flex-1 pr-2">
-                                                <div class="font-medium text-gray-800 text-sm">{{ $producto->nombre }}</div>
+                                                <div class="font-medium text-gray-800 text-sm flex items-center gap-2">
+                                                    {{ $producto->nombre }}
+                                                    @if($producto->agotado)
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-red-500 text-white">
+                                                            <i class="fa fa-exclamation-triangle mr-1"></i>AGOTADO
+                                                        </span>
+                                                    @endif
+                                                </div>
                                                 <div class="text-xs text-gray-600">
                                                     Cód: {{ $producto->codigo }}
-                                                    @if($producto->agotado)
-                                                        <span class="text-red-500 font-semibold">(Agotado)</span>
-                                                    @endif
                                                 </div>
                                             </div>
                                             <div class="text-green-600 font-bold text-sm">

@@ -28,7 +28,7 @@
                 <div class="flex justify-evenly items-center flex-wrap gap-6">
                     <!-- Panel de Control -->
                     <a href="{{ route('login.panel') }}" wire:navigate
-                    class="group relative bg-gradient-to-r from-[#FFAF22] to-[#FF8C00] hover:from-[#FF8C00] hover:to-[#FFAF22] 
+                    class="group relative bg-gradient-to-r from-[#FFAF22] to-[#FFAF22] hover:from-[#FFAF22] hover:to-[#FFAF22] 
                             text-white font-bold py-2 pr-8 pl-2 rounded-full shadow-lg hover:shadow-xl 
                             transform hover:scale-105 transition-all duration-300 ease-in-out
                             w-[80%] md:min-w-[25%] md:w-auto text-center min-h-[60px]">
@@ -46,7 +46,7 @@
                     
                     <!-- Adhesión Mozos -->
                     <a href="{{ route('login.mozos') }}" wire:navigate
-                    class="group relative bg-gradient-to-r from-[#FFAF22] to-[#FF8C00] hover:from-[#FF8C00] hover:to-[#FFAF22] 
+                    class="group relative bg-gradient-to-r from-[#FFAF22] to-[#FFAF22] hover:from-[#FFAF22] hover:to-[#FFAF22] 
                             text-white font-bold py-2 pr-8 pl-2 rounded-full shadow-lg hover:shadow-xl 
                             transform hover:scale-105 transition-all duration-300 ease-in-out
                             w-[80%] md:min-w-[25%] md:w-auto text-center min-h-[60px]">
@@ -63,7 +63,7 @@
                     
                     <!-- Vendedores Preventista -->
                     <a href="{{ route('login.vendedores') }}" wire:navigate
-                    class="group relative bg-gradient-to-r from-[#FFAF22] to-[#FF8C00] hover:from-[#FF8C00] hover:to-[#FFAF22] 
+                    class="group relative bg-gradient-to-r from-[#FFAF22] to-[#FFAF22] hover:from-[#FFAF22] hover:to-[#FFAF22] 
                             text-white font-bold py-2 pr-8 pl-2 rounded-full shadow-lg hover:shadow-xl 
                             transform hover:scale-105 transition-all duration-300 ease-in-out
                             w-[80%] md:min-w-[25%] md:w-auto text-center min-h-[60px]">
@@ -86,7 +86,7 @@
                     
                     <!-- Vendedores Empresas -->
                     <a href="{{ route('login.vendedores-empresas') }}" wire:navigate
-                    class="group relative bg-gradient-to-r from-[#FFAF22] to-[#FF8C00] hover:from-[#FF8C00] hover:to-[#FFAF22]
+                    class="group relative bg-gradient-to-r from-[#FFAF22] to-[#FFAF22] hover:from-[#FFAF22] hover:to-[#FFAF22]
                             text-white font-bold py-2 pr-8 pl-2 rounded-full shadow-lg hover:shadow-xl
                             transform hover:scale-105 transition-all duration-300 ease-in-out
                             w-[80%] md:min-w-[25%] md:w-auto text-center min-h-[60px]">
@@ -103,7 +103,7 @@
                     
                     <!-- Monitor -->
                     <a href="{{ route('login.monitor') }}" 
-                    class="group relative bg-gradient-to-r from-[#FFAF22] to-[#FF8C00] hover:from-[#FF8C00] hover:to-[#FFAF22] 
+                    class="group relative bg-gradient-to-r from-[#FFAF22] to-[#FFAF22] hover:from-[#FFAF22] hover:to-[#FFAF22] 
                             text-white font-bold py-2 pr-8 pl-2 rounded-full shadow-lg hover:shadow-xl 
                             transform hover:scale-105 transition-all duration-300 ease-in-out
                             w-[80%] md:min-w-[25%] md:w-auto text-center min-h-[60px]">

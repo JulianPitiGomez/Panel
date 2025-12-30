@@ -6,13 +6,13 @@
         <!-- Columna de pedidos en preparación -->
         <div class="flex-1 bg-white rounded-3xl shadow-2xl overflow-hidden">
             <!-- Header de la columna -->
-            <div class="bg-gradient-to-r from-amber-500 to-orange-500 text-white p-6">
+            <div class="bg-gradient-to-r from-[#FFAF22] to-[#FFAF22]/90 text-white p-6">
                 <div class="flex items-center justify-center">
                     <svg class="w-10 h-10 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                     <h2 class="text-4xl font-bold">EN PREPARACIÓN </h2>
-                    <span class="bg-white text-orange-600 bg-opacity-20 px-4 py-2 rounded-full text-lg font-semibold">
+                    <span class="bg-white text-[#FFAF22] bg-opacity-20 px-4 py-2 rounded-full text-lg font-semibold">
                         {{ count($pedidosEnPreparacion) }} 
                     </span>
                 </div>                
@@ -23,19 +23,19 @@
                 @if(count($pedidosEnPreparacion) > 0)
                     <div id="preparacion-list" class="space-y-4">
                         @foreach($pedidosEnPreparacion as $pedido)
-                            <div class="bg-gradient-to-r from-amber-50 to-orange-50 border-l-8 border-amber-500 rounded-xl p-6 shadow-lg transform hover:scale-102 transition-transform duration-200">
+                            <div class="bg-white border-l-8 border-[#FFAF22] rounded-xl p-6 shadow-lg transform hover:scale-102 transition-transform duration-200 border border-gray-200">
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center">
-                                        <div class="bg-amber-500 text-white rounded h-16 flex items-center justify-center mr-6">
+                                        <div class="bg-[#FFAF22] text-white rounded h-16 flex items-center justify-center mr-6">
                                             <span class="text-2xl font-bold">#{{ $pedido->id }}</span>
                                         </div>
                                         <div>
                                             <h3 class="text-3xl font-bold text-gray-800">{{ $pedido->nombre ?: 'Pedido #' . $pedido->id }}</h3>
-                                            <p class="text-lg text-amber-600 font-semibold">Preparando...</p>
+                                            <p class="text-lg text-[#FFAF22] font-semibold">Preparando...</p>
                                         </div>
                                     </div>
                                     <div class="animate-spin">
-                                        <svg class="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg class="w-8 h-8 text-[#FFAF22]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                                         </svg>
                                     </div>
@@ -115,7 +115,7 @@
     <!-- Indicador de actualización automática -->
     <div class="fixed bottom-4 right-4 bg-gray-800 bg-opacity-90 text-white px-4 py-2 rounded-full text-sm">
         <div class="flex items-center">
-            <div class="w-2 h-2 bg-orange-400 rounded-full mr-2 animate-pulse"></div>
+            <div class="w-2 h-2 bg-[#FFAF22] rounded-full mr-2 animate-pulse"></div>
             BCN Soft
         </div>
     </div>

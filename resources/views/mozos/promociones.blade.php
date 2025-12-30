@@ -6,7 +6,7 @@
     </div>
 
     <!-- Área scrolleable -->
-    <div class="flex-1 overflow-y-auto p-3 pb-20">
+    <div class="flex-1 overflow-y-auto p-3 pb-28" style="padding-bottom: calc(7rem + env(safe-area-inset-bottom)); -webkit-overflow-scrolling: touch;">
         @if(!$promoSeleccionada)
             <!-- Lista de Promociones -->
             @if(count($promociones) > 0)
@@ -74,7 +74,7 @@
     </div>
 
     <!-- Barra inferior fija -->
-    <div class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg">
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg" style="padding-bottom: env(safe-area-inset-bottom);">
         <div class="p-3">
             @if($promoSeleccionada)
                 <!-- Botones cuando hay promoción seleccionada -->

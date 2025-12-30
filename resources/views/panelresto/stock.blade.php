@@ -5,13 +5,13 @@
         <div class="flex gap-2">
             <button wire:click="cambiarPestana('articulos')"
                     class="flex-1 px-3 md:px-6 py-2 md:py-3 rounded-lg transition-all duration-200 font-secondary text-xs md:text-sm font-medium
-                           {{ $pestanaActiva === 'articulos' ? 'bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+                           {{ $pestanaActiva === 'articulos' ? 'bg-gradient-to-r from-[#FFAF22] to-[#FFAF22]/90 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
                 <i class="fas fa-box mr-2"></i>
                 Artículos
             </button>
             <button wire:click="cambiarPestana('materias')"
                     class="flex-1 px-3 md:px-6 py-2 md:py-3 rounded-lg transition-all duration-200 font-secondary text-xs md:text-sm font-medium
-                           {{ $pestanaActiva === 'materias' ? 'bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+                           {{ $pestanaActiva === 'materias' ? 'bg-gradient-to-r from-[#FFAF22] to-[#FFAF22]/90 text-white shadow-lg' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
                 <i class="fas fa-flask mr-2"></i>
                 Materias Primas
             </button>
@@ -22,11 +22,11 @@
         <!-- SECCIÓN ARTÍCULOS -->
 
         <!-- Resumen Artículos -->
-        <div class="bg-gradient-to-r from-orange-50 to-orange-100 rounded-xl p-3 md:p-6 border border-orange-200">
+        <div class="bg-white rounded-xl p-3 md:p-6 border-l-4 border-[#FFAF22] shadow-md border border-gray-200">
             <div class="grid grid-cols-2 gap-3 md:gap-6">
                 <div>
                     <h3 class="text-sm md:text-lg font-primary font-semibold text-gray-800">Total Artículos</h3>
-                    <p class="text-xl md:text-3xl font-primary font-bold text-orange-600">{{ number_format($totalArticulos) }}</p>
+                    <p class="text-xl md:text-3xl font-primary font-bold text-[#FFAF22]">{{ number_format($totalArticulos) }}</p>
                 </div>
                 <div class="text-right">
                     <h3 class="text-sm md:text-lg font-primary font-semibold text-gray-800">Valorizado Total</h3>
@@ -39,7 +39,7 @@
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-3 md:p-6">
             <div class="flex items-center justify-between mb-3 md:mb-4">
                 <h2 class="text-base md:text-lg font-primary font-semibold text-gray-800 flex items-center">
-                    <i class="fas fa-filter text-orange-500 mr-2 text-sm md:text-base"></i>
+                    <i class="fas fa-filter text-[#FFAF22] mr-2 text-sm md:text-base"></i>
                     <span class="hidden sm:inline">Filtros de Búsqueda</span>
                     <span class="sm:hidden">Filtros</span>
                 </h2>
@@ -57,14 +57,14 @@
                     <input type="text"
                            wire:model.live.debounce.500ms="buscarArticulo"
                            placeholder="Código o nombre..."
-                           class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent font-secondary">
+                           class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent font-secondary">
                 </div>
 
                 <!-- Departamento -->
                 <div class="col-span-2 lg:col-span-1">
                     <label class="block text-xs md:text-sm font-secondary font-medium text-gray-700 mb-1 md:mb-2">Departamento</label>
                     <select wire:model.live="departamentoSeleccionado"
-                            class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent font-secondary">
+                            class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent font-secondary">
                         <option value="">Todos los departamentos</option>
                         @foreach($departamentos as $depto)
                             <option value="{{ $depto->CODIGO }}">{{ $depto->NOMBRE }}</option>
@@ -76,7 +76,7 @@
                 <div class="col-span-2 lg:col-span-1">
                     <label class="block text-xs md:text-sm font-secondary font-medium text-gray-700 mb-1 md:mb-2">Estado Stock</label>
                     <select wire:model.live="estadoStockArticulo"
-                            class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent font-secondary">
+                            class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent font-secondary">
                         <option value="">Todos</option>
                         <option value="negativo">Stock Negativo</option>
                         <option value="positivo">Stock Positivo</option>
@@ -88,7 +88,7 @@
                 <div class="col-span-2 lg:col-span-1">
                     <label class="block text-xs md:text-sm font-secondary font-medium text-gray-700 mb-1 md:mb-2">Mostrar</label>
                     <select wire:model.live="porPaginaArticulos"
-                            class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent font-secondary">
+                            class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent font-secondary">
                         <option value="25">25</option>
                         <option value="50">50</option>
                         <option value="100">100</option>
@@ -192,7 +192,7 @@
                                 </span>
                             @else
                                 <button wire:click="previousPage"
-                                        class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200">
+                                        class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-[#FFAF22] hover:bg-[#FFAF22]/10 rounded-lg transition-colors duration-200">
                                     <i class="fas fa-chevron-left"></i>
                                 </button>
                             @endif
@@ -204,7 +204,7 @@
 
                             @if($start > 1)
                                 <button wire:click="gotoPage(1)"
-                                        class="hidden sm:inline-flex px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200">
+                                        class="hidden sm:inline-flex px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-[#FFAF22] hover:bg-[#FFAF22]/10 rounded-lg transition-colors duration-200">
                                     1
                                 </button>
                                 @if($start > 2)
@@ -214,12 +214,12 @@
 
                             @for($page = $start; $page <= $end; $page++)
                                 @if($page == $articulos->currentPage())
-                                    <span class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary bg-orange-500 text-white rounded-lg">
+                                    <span class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary bg-[#FFAF22] text-white rounded-lg">
                                         {{ $page }}
                                     </span>
                                 @else
                                     <button wire:click="gotoPage({{ $page }})"
-                                            class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200">
+                                            class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-[#FFAF22] hover:bg-[#FFAF22]/10 rounded-lg transition-colors duration-200">
                                         {{ $page }}
                                     </button>
                                 @endif
@@ -230,14 +230,14 @@
                                     <span class="hidden sm:inline px-1 md:px-2 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-400">...</span>
                                 @endif
                                 <button wire:click="gotoPage({{ $articulos->lastPage() }})"
-                                        class="hidden sm:inline-flex px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200">
+                                        class="hidden sm:inline-flex px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-[#FFAF22] hover:bg-[#FFAF22]/10 rounded-lg transition-colors duration-200">
                                     {{ $articulos->lastPage() }}
                                 </button>
                             @endif
 
                             @if($articulos->hasMorePages())
                                 <button wire:click="nextPage"
-                                        class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200">
+                                        class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-[#FFAF22] hover:bg-[#FFAF22]/10 rounded-lg transition-colors duration-200">
                                     <i class="fas fa-chevron-right"></i>
                                 </button>
                             @else
@@ -280,7 +280,7 @@
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-3 md:p-6">
             <div class="flex items-center justify-between mb-3 md:mb-4">
                 <h2 class="text-base md:text-lg font-primary font-semibold text-gray-800 flex items-center">
-                    <i class="fas fa-filter text-orange-500 mr-2 text-sm md:text-base"></i>
+                    <i class="fas fa-filter text-[#FFAF22] mr-2 text-sm md:text-base"></i>
                     <span class="hidden sm:inline">Filtros de Búsqueda</span>
                     <span class="sm:hidden">Filtros</span>
                 </h2>
@@ -298,14 +298,14 @@
                     <input type="text"
                            wire:model.live.debounce.500ms="buscarMateria"
                            placeholder="Código o nombre..."
-                           class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent font-secondary">
+                           class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent font-secondary">
                 </div>
 
                 <!-- Estado Stock -->
                 <div class="col-span-2 lg:col-span-1">
                     <label class="block text-xs md:text-sm font-secondary font-medium text-gray-700 mb-1 md:mb-2">Estado Stock</label>
                     <select wire:model.live="estadoStockMateria"
-                            class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent font-secondary">
+                            class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent font-secondary">
                         <option value="">Todos</option>
                         <option value="negativo">Stock Negativo</option>
                         <option value="positivo">Stock Positivo</option>
@@ -317,7 +317,7 @@
                 <div class="col-span-2 lg:col-span-1">
                     <label class="block text-xs md:text-sm font-secondary font-medium text-gray-700 mb-1 md:mb-2">Mostrar</label>
                     <select wire:model.live="porPaginaMaterias"
-                            class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent font-secondary">
+                            class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent font-secondary">
                         <option value="25">25</option>
                         <option value="50">50</option>
                         <option value="100">100</option>
@@ -425,7 +425,7 @@
                                 </span>
                             @else
                                 <button wire:click="previousPage"
-                                        class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200">
+                                        class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-[#FFAF22] hover:bg-[#FFAF22]/10 rounded-lg transition-colors duration-200">
                                     <i class="fas fa-chevron-left"></i>
                                 </button>
                             @endif
@@ -437,7 +437,7 @@
 
                             @if($start > 1)
                                 <button wire:click="gotoPage(1)"
-                                        class="hidden sm:inline-flex px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200">
+                                        class="hidden sm:inline-flex px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-[#FFAF22] hover:bg-[#FFAF22]/10 rounded-lg transition-colors duration-200">
                                     1
                                 </button>
                                 @if($start > 2)
@@ -447,12 +447,12 @@
 
                             @for($page = $start; $page <= $end; $page++)
                                 @if($page == $materias->currentPage())
-                                    <span class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary bg-orange-500 text-white rounded-lg">
+                                    <span class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary bg-[#FFAF22] text-white rounded-lg">
                                         {{ $page }}
                                     </span>
                                 @else
                                     <button wire:click="gotoPage({{ $page }})"
-                                            class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200">
+                                            class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-[#FFAF22] hover:bg-[#FFAF22]/10 rounded-lg transition-colors duration-200">
                                         {{ $page }}
                                     </button>
                                 @endif
@@ -463,14 +463,14 @@
                                     <span class="hidden sm:inline px-1 md:px-2 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-400">...</span>
                                 @endif
                                 <button wire:click="gotoPage({{ $materias->lastPage() }})"
-                                        class="hidden sm:inline-flex px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200">
+                                        class="hidden sm:inline-flex px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-[#FFAF22] hover:bg-[#FFAF22]/10 rounded-lg transition-colors duration-200">
                                     {{ $materias->lastPage() }}
                                 </button>
                             @endif
 
                             @if($materias->hasMorePages())
                                 <button wire:click="nextPage"
-                                        class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200">
+                                        class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-[#FFAF22] hover:bg-[#FFAF22]/10 rounded-lg transition-colors duration-200">
                                     <i class="fas fa-chevron-right"></i>
                                 </button>
                             @else

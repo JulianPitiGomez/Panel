@@ -1,7 +1,14 @@
 <div class="flex flex-col h-full bg-gray-50">
     <!-- Header compacto -->
     <div class="bg-white shadow-sm p-3 flex-shrink-0">
-        <h2 class="text-lg font-bold text-gray-800">{{ $producto->nombre }}</h2>
+        <div class="flex items-center gap-2">
+            <h2 class="text-lg font-bold text-gray-800">{{ $producto->nombre }}</h2>
+            @if($producto->agotado)
+                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-red-500 text-white">
+                    <i class="fa fa-exclamation-triangle mr-1"></i>AGOTADO
+                </span>
+            @endif
+        </div>
         @if($producto->precio > 0.01)
             <p class="text-sm text-green-600 font-semibold">${{ number_format($producto->precio, 2) }}</p>
         @endif
@@ -11,7 +18,7 @@
     </div>
 
     <!-- Área scrolleable -->
-    <div class="flex-1 overflow-y-auto p-3 pb-36">
+    <div class="flex-1 overflow-y-auto p-3 pb-44" style="padding-bottom: calc(11rem + env(safe-area-inset-bottom)); -webkit-overflow-scrolling: touch;">
         <!-- Cantidad (si no es solo_unitario) -->
         @if(!$cambiar)
             <div class="bg-white rounded-lg shadow-sm p-3 mb-3">
@@ -115,7 +122,7 @@
     </div>
 
     <!-- Barra inferior fija con total y botones -->
-    <div class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg">
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg" style="padding-bottom: env(safe-area-inset-bottom);">
         <div class="p-3">
             <!-- Total -->
             <div class="flex justify-between items-center mb-3 pb-3 border-b">

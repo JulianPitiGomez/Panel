@@ -4,7 +4,7 @@
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-primary font-semibold text-gray-800 flex items-center">
-                <i class="fas fa-boxes text-orange-500 mr-2"></i>
+                <i class="fas fa-boxes text-[#FFAF22] mr-2"></i>
                 Filtros de Stock
             </h2>
             <button wire:click="limpiarFiltros" 
@@ -20,7 +20,7 @@
             <input type="text" 
                    wire:model.live.debounce.300ms="busqueda"
                    placeholder="Ingresa código o nombre del artículo..."
-                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent font-secondary">
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent font-secondary">
         </div>
 
         <!-- Filtros por categoría -->
@@ -29,7 +29,7 @@
             <div>
                 <label class="block text-sm font-secondary font-medium text-gray-700 mb-2">Marca</label>
                 <select wire:model.live="marcaSeleccionada" 
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent font-secondary">
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent font-secondary">
                     <option value="">Todas las marcas</option>
                     @foreach($marcas as $marca)
                         <option value="{{ $marca->codigo }}">{{ $marca->nombre }}</option>
@@ -41,7 +41,7 @@
             <div>
                 <label class="block text-sm font-secondary font-medium text-gray-700 mb-2">Proveedor</label>
                 <select wire:model.live="proveedorSeleccionado" 
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent font-secondary">
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent font-secondary">
                     <option value="">Todos los proveedores</option>
                     @foreach($proveedores as $proveedor)
                         <option value="{{ $proveedor->codigo }}">{{ $proveedor->nombre }}</option>
@@ -53,7 +53,7 @@
             <div>
                 <label class="block text-sm font-secondary font-medium text-gray-700 mb-2">Rubro</label>
                 <select wire:model.live="rubroSeleccionado" 
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent font-secondary">
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent font-secondary">
                     <option value="">Todos los rubros</option>
                     @foreach($rubros as $rubro)
                         <option value="{{ $rubro->codigo }}">{{ $rubro->nombre }}</option>
@@ -65,7 +65,7 @@
             <div>
                 <label class="block text-sm font-secondary font-medium text-gray-700 mb-2">Departamento</label>
                 <select wire:model.live="departamentoSeleccionado" 
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent font-secondary">
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent font-secondary">
                     <option value="">Todos los departamentos</option>
                     @foreach($departamentos as $departamento)
                         <option value="{{ $departamento->codigo }}">{{ $departamento->nombre }}</option>
@@ -78,7 +78,7 @@
         <div>
             <label class="block text-sm font-secondary font-medium text-gray-700 mb-2">Tipo de Stock</label>
             <select wire:model.live="tipoStock" 
-                    class="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent font-secondary">
+                    class="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent font-secondary">
                 <option value="">Todos los stocks</option>
                 <option value="positivo">Stock Positivo (mayor a 0)</option>
                 <option value="negativo">Stock Negativo (0 o menor)</option>
@@ -113,14 +113,14 @@
             </div>
         </div>
 
-        <div class="bg-gradient-to-r from-orange-50 to-orange-100 rounded-xl p-6 border border-orange-200">
+        <div class="bg-white rounded-xl p-6 border-l-4 border-[#FFAF22] shadow-md border border-gray-200">
             <div class="flex items-center justify-between">
                 <div>
                     <h3 class="text-lg font-primary font-semibold text-gray-800">Valor Stock (Venta)</h3>
                     <p class="text-sm font-secondary text-gray-600">Total a precio de venta</p>
                 </div>
                 <div class="text-right">
-                    <p class="text-3xl font-primary font-bold text-orange-600">${{ number_format($totalStockVenta, 2) }}</p>
+                    <p class="text-3xl font-primary font-bold text-[#FFAF22]">${{ number_format($totalStockVenta, 2) }}</p>
                 </div>
             </div>
         </div>
@@ -131,7 +131,7 @@
         <div class="p-6 border-b border-gray-200">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <h3 class="text-lg font-primary font-semibold text-gray-800 flex items-center">
-                    <i class="fas fa-warehouse text-orange-500 mr-2"></i>
+                    <i class="fas fa-warehouse text-[#FFAF22] mr-2"></i>
                     Stock de Artículos
                 </h3>
                 
@@ -140,7 +140,7 @@
                     <div class="flex items-center gap-2">
                         <label class="text-sm font-secondary text-gray-600">Mostrar:</label>
                         <select wire:change="cambiarTamanoPagina($event.target.value)" 
-                                class="px-2 py-1 border border-gray-300 rounded text-sm font-secondary focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                                class="px-2 py-1 border border-gray-300 rounded text-sm font-secondary focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent">
                             <option value="25" {{ $paginacionSize == 25 ? 'selected' : '' }}>25</option>
                             <option value="50" {{ $paginacionSize == 50 ? 'selected' : '' }}>50</option>
                             <option value="100" {{ $paginacionSize == 100 ? 'selected' : '' }}>100</option>
@@ -163,7 +163,7 @@
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-6 py-3 text-left">
-                            <button wire:click="ordenarPor('codigo')" class="flex items-center text-xs font-secondary font-medium text-gray-500 uppercase tracking-wider hover:text-orange-600">
+                            <button wire:click="ordenarPor('codigo')" class="flex items-center text-xs font-secondary font-medium text-gray-500 uppercase tracking-wider hover:text-[#FFAF22]">
                                 Código
                                 @if($ordenarPor === 'codigo')
                                     <i class="fas fa-sort-{{ $direccionOrden === 'asc' ? 'up' : 'down' }} ml-1"></i>
@@ -173,7 +173,7 @@
                             </button>
                         </th>
                         <th class="px-6 py-3 text-left">
-                            <button wire:click="ordenarPor('nombre')" class="flex items-center text-xs font-secondary font-medium text-gray-500 uppercase tracking-wider hover:text-orange-600">
+                            <button wire:click="ordenarPor('nombre')" class="flex items-center text-xs font-secondary font-medium text-gray-500 uppercase tracking-wider hover:text-[#FFAF22]">
                                 Nombre
                                 @if($ordenarPor === 'nombre')
                                     <i class="fas fa-sort-{{ $direccionOrden === 'asc' ? 'up' : 'down' }} ml-1"></i>
@@ -247,7 +247,7 @@
                         <td class="px-6 py-4 whitespace-nowrap text-center">
                             @if($articulo->stockotro)
                                 <button wire:click="verStockRelacionado('{{ $articulo->codigo }}')" 
-                                        class="text-orange-600 hover:text-orange-900 font-secondary text-sm">
+                                        class="text-[#FFAF22] hover:text-[#222036] font-secondary text-sm">
                                     <i class="fas fa-link mr-1"></i>
                                     Ver Relacionados
                                 </button>
@@ -273,7 +273,7 @@
                     {{-- Botón Primera Página --}}
                     @if($articulos->currentPage() > 3)
                         <button wire:click="gotoPage(1)" 
-                                class="px-3 py-2 text-sm font-secondary text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200">
+                                class="px-3 py-2 text-sm font-secondary text-gray-600 hover:text-[#FFAF22] hover:bg-[#FFAF22]/10 rounded-lg transition-colors duration-200">
                             <i class="fas fa-angle-double-left"></i>
                         </button>
                     @endif
@@ -285,7 +285,7 @@
                         </span>
                     @else
                         <button wire:click="previousPage" 
-                                class="px-3 py-2 text-sm font-secondary text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200">
+                                class="px-3 py-2 text-sm font-secondary text-gray-600 hover:text-[#FFAF22] hover:bg-[#FFAF22]/10 rounded-lg transition-colors duration-200">
                             <i class="fas fa-chevron-left"></i>
                         </button>
                     @endif
@@ -298,7 +298,7 @@
 
                     @if($start > 1)
                         <button wire:click="gotoPage(1)" 
-                                class="px-3 py-2 text-sm font-secondary text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200">
+                                class="px-3 py-2 text-sm font-secondary text-gray-600 hover:text-[#FFAF22] hover:bg-[#FFAF22]/10 rounded-lg transition-colors duration-200">
                             1
                         </button>
                         @if($start > 2)
@@ -308,12 +308,12 @@
 
                     @for($page = $start; $page <= $end; $page++)
                         @if($page == $articulos->currentPage())
-                            <span class="px-3 py-2 text-sm font-secondary bg-orange-500 text-white rounded-lg">
+                            <span class="px-3 py-2 text-sm font-secondary bg-[#FFAF22] text-white rounded-lg">
                                 {{ $page }}
                             </span>
                         @else
                             <button wire:click="gotoPage({{ $page }})" 
-                                    class="px-3 py-2 text-sm font-secondary text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200">
+                                    class="px-3 py-2 text-sm font-secondary text-gray-600 hover:text-[#FFAF22] hover:bg-[#FFAF22]/10 rounded-lg transition-colors duration-200">
                                 {{ $page }}
                             </button>
                         @endif
@@ -324,7 +324,7 @@
                             <span class="px-2 py-2 text-sm font-secondary text-gray-400">...</span>
                         @endif
                         <button wire:click="gotoPage({{ $articulos->lastPage() }})" 
-                                class="px-3 py-2 text-sm font-secondary text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200">
+                                class="px-3 py-2 text-sm font-secondary text-gray-600 hover:text-[#FFAF22] hover:bg-[#FFAF22]/10 rounded-lg transition-colors duration-200">
                             {{ $articulos->lastPage() }}
                         </button>
                     @endif
@@ -332,7 +332,7 @@
                     {{-- Botón Siguiente --}}
                     @if($articulos->hasMorePages())
                         <button wire:click="nextPage" 
-                                class="px-3 py-2 text-sm font-secondary text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200">
+                                class="px-3 py-2 text-sm font-secondary text-gray-600 hover:text-[#FFAF22] hover:bg-[#FFAF22]/10 rounded-lg transition-colors duration-200">
                             <i class="fas fa-chevron-right"></i>
                         </button>
                     @else
@@ -344,7 +344,7 @@
                     {{-- Botón Última Página --}}
                     @if($articulos->currentPage() < $articulos->lastPage() - 2)
                         <button wire:click="gotoPage({{ $articulos->lastPage() }})" 
-                                class="px-3 py-2 text-sm font-secondary text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200">
+                                class="px-3 py-2 text-sm font-secondary text-gray-600 hover:text-[#FFAF22] hover:bg-[#FFAF22]/10 rounded-lg transition-colors duration-200">
                             <i class="fas fa-angle-double-right"></i>
                         </button>
                     @endif
@@ -363,7 +363,7 @@
     </div>
     <!-- Modal de Stock Relacionado -->
     @if($verModal)
-    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 border-t-4 border-orange-500">
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 border-t-4 border-[#FFAF22]">
         <!-- Overlay -->        
         <div class="fixed inset-0 bg-gray-500 bg-opacity-50 backdrop-blur-sm" wire:click="cerrarModal"></div>
         <!-- Modal Content -->
@@ -414,7 +414,7 @@
             
             <!-- Footer -->
             <div class="flex justify-end p-6 border-t bg-gray-50">
-                <button wire:click="cerrarModal" class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 font-secondary">
+                <button wire:click="cerrarModal" class="px-4 py-2 bg-[#FFAF22]/90 text-white rounded-lg hover:bg-[#FFAF22]/90 font-secondary">
                     Cerrar
                 </button>
             </div>

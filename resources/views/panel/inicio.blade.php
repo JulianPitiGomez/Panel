@@ -3,19 +3,19 @@
     <div class="bg-white rounded-xl shadow-md p-4 border border-gray-100">
         <div class="flex flex-col gap-4">
             <h3 class="text-lg font-primary font-semibold text-gray-800 flex items-center">
-                <i class="fas fa-calendar-alt text-orange-500 mr-3"></i>
+                <i class="fas fa-calendar-alt text-[#FFAF22] mr-3"></i>
                 Filtros de Período
             </h3>
             <div class="flex flex-row gap-2 items-end">
                 <div class="flex-1">
                     <label class="block text-xs font-secondary text-gray-600 mb-1">Desde</label>
                     <input type="date" wire:model.live="fechaDesde"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#FFAF22] focus:border-[#FFAF22]">
                 </div>
                 <div class="flex-1">
                     <label class="block text-xs font-secondary text-gray-600 mb-1">Hasta</label>
                     <input type="date" wire:model.live="fechaHasta"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#FFAF22] focus:border-[#FFAF22]">
                 </div>
                 <div>
                     <button wire:click="cargarDatos" wire:loading.attr="disabled"
@@ -72,13 +72,13 @@
         </div>
 
         <!-- Deudas a Pagar -->
-        <div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-5 border border-orange-200 shadow-md">
+        <div class="bg-white rounded-xl p-5 border-l-4 border-[#FFAF22] shadow-md border border-gray-200">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-xs font-secondary text-orange-700 mb-1">Deudas a Pagar</p>
-                    <p class="text-2xl font-primary font-bold text-orange-800">${{ number_format($deudasAPagar, 2) }}</p>
+                    <p class="text-xs font-secondary text-gray-600 mb-1">Deudas a Pagar</p>
+                    <p class="text-2xl font-primary font-bold text-[#FFAF22]">${{ number_format($deudasAPagar, 2) }}</p>
                 </div>
-                <div class="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center shadow-lg">
+                <div class="w-12 h-12 bg-[#FFAF22] rounded-lg flex items-center justify-center shadow-lg">
                     <i class="fas fa-credit-card text-white text-xl"></i>
                 </div>
             </div>
@@ -88,7 +88,7 @@
     <!-- Gráfico de Barras: Ventas y Compras -->
     <div class="bg-white rounded-xl shadow-md p-6 border border-gray-100">
         <h3 class="text-lg font-primary font-semibold text-gray-800 mb-4 flex items-center">
-            <i class="fas fa-chart-bar text-orange-500 mr-3"></i>
+            <i class="fas fa-chart-bar text-[#FFAF22] mr-3"></i>
             Ventas y Compras por Día
         </h3>
         <div class="relative" style="height: 350px;"

@@ -29,7 +29,7 @@
                     <!-- Campo Email -->
                     <div class="mb-6">
                         <label for="mail" class="block font-secondary font-semibold text-white text-sm mb-3">
-                            <i class="fas fa-envelope text-orange-500 mr-2"></i>
+                            <i class="fas fa-envelope text-[#FFAF22] mr-2"></i>
                             Correo Electrónico
                         </label>
                         <input type="email" 
@@ -50,7 +50,7 @@
                     <!-- Campo Contraseña -->
                     <div class="mb-8">
                         <label for="password" class="block font-secondary font-semibold text-white text-sm mb-3">
-                            <i class="fas fa-lock text-orange-500 mr-2"></i>
+                            <i class="fas fa-lock text-[#FFAF22] mr-2"></i>
                             Contraseña
                         </label>
                         <input type="password" 
@@ -77,8 +77,8 @@
                             </div>
                         </button>
                         
-                        <a href="{{ route('home') }}"  wire:navigate
-                           class="block w-full text-center py-3 px-4 border-2 border-gray-300 text-gray-700 font-secondary font-semibold rounded-xl hover:border-orange-500 hover:text-orange-500 transition-colors">
+                        <a href="{{ route('home') }}" wire:navigate
+                           class="block w-full text-center py-3 px-4 border-2 border-white text-white font-secondary font-semibold rounded-xl hover:border-[#FFAF22] hover:text-[#FFAF22] transition-colors">
                             <div class="flex items-center justify-center space-x-2">
                                 <i class="fas fa-arrow-left"></i>
                                 <span>Volver al Inicio</span>
@@ -92,7 +92,7 @@
             <div class="text-center mt-6">
                 <p class="text-sm font-secondary text-gray-500">
                     ¿Problemas para acceder? 
-                    <a href="https://api.whatsapp.com/send/?phone=5491128654468&text=%C2%A1Buen+d%C3%ADa%21+Tengo+problemas+para+acceder+al+panel&type=phone_number&app_absent=0" class="text-orange-500 hover:text-orange-600 font-semibold" target="_blank">Contacta soporte</a>
+                    <a href="https://api.whatsapp.com/send/?phone=5491128654468&text=%C2%A1Buen+d%C3%ADa%21+Tengo+problemas+para+acceder+al+panel&type=phone_number&app_absent=0" class="text-[#FFAF22] hover:text-orange-600 font-semibold" target="_blank">Contacta soporte</a>
                 </p>
             </div>
         </div>

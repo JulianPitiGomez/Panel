@@ -4,13 +4,13 @@
         <div class="container mx-auto px-3 py-3">
             <div class="flex items-center justify-between">
                 <h1 class="text-lg md:text-2xl font-primary font-bold text-gray-900 flex items-center">
-                    <i class="fas fa-utensils text-orange-500 mr-2 text-sm md:text-base"></i>
+                    <i class="fas fa-utensils text-[#FFAF22] mr-2 text-sm md:text-base"></i>
                     <span class="hidden sm:inline">Panel de Mesas</span>
                     <span class="sm:hidden">Mesas</span>
                 </h1>
                 <div class="flex items-center gap-2">
                     <button wire:click="actualizarMesas"
-                            class="flex items-center px-2 md:px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors duration-200 font-secondary text-xs md:text-sm">
+                            class="flex items-center px-2 md:px-4 py-2 bg-[#FFAF22]/90 text-white rounded-lg hover:bg-[#FFAF22]/90 transition-colors duration-200 font-secondary text-xs md:text-sm">
                         <i class="fas fa-sync-alt md:mr-2"></i>
                         <span class="hidden md:inline">Actualizar</span>
                     </button>
@@ -29,7 +29,7 @@
             <nav class="flex space-x-4 md:space-x-8 overflow-x-auto">
                 @foreach($salones as $salon)
                 <button wire:click="seleccionarSalon({{ $salon->codigo }})"
-                        class="flex-shrink-0 py-3 px-1 border-b-2 font-secondary font-medium text-xs md:text-sm transition-colors duration-200 {{ $salonActivo == $salon->codigo ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
+                        class="flex-shrink-0 py-3 px-1 border-b-2 font-secondary font-medium text-xs md:text-sm transition-colors duration-200 {{ $salonActivo == $salon->codigo ? 'border-[#FFAF22] text-[#FFAF22]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}">
                     <i class="fas fa-door-open mr-1"></i>
                     {{ $salon->nombre }}
                 </button>
@@ -134,7 +134,7 @@
                 <!-- Header del Panel -->
                 <div class="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
                     <h3 class="text-base md:text-lg font-primary font-semibold text-gray-900 flex items-center">
-                        <i class="{{ $this->getIconoMesa($mesaSeleccionada->RECURSO) }} text-orange-500 mr-2 text-sm md:text-base"></i>
+                        <i class="{{ $this->getIconoMesa($mesaSeleccionada->RECURSO) }} text-[#FFAF22] mr-2 text-sm md:text-base"></i>
                         Mesa {{ $mesaSeleccionada->NUMERO }}
                     </h3>
                     <button wire:click="cerrarDetalle" class="text-gray-400 hover:text-gray-600 p-1">
@@ -207,7 +207,7 @@
                             @endif
 
                             @if($item->observa)
-                            <div class="mt-2 text-xs text-amber-600">
+                            <div class="mt-2 text-xs text-[#FFAF22]">
                                 <i class="fas fa-comment mr-1"></i>
                                 {{ $item->observa }}
                             </div>
@@ -236,7 +236,7 @@
                 <div class="border-t border-gray-200 p-4 bg-gray-50">
                     <div class="flex justify-between items-center">
                         <span class="font-secondary font-bold text-gray-900 text-sm md:text-base">TOTAL:</span>
-                        <span class="font-primary font-black text-lg md:text-xl text-orange-600">
+                        <span class="font-primary font-black text-lg md:text-xl text-[#FFAF22]">
                             ${{ number_format($totalMesa, 2) }}
                         </span>
                     </div>

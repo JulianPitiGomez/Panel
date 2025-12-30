@@ -101,43 +101,18 @@ class DetalleMesa extends Component
     {
         if (strlen($this->busqueda) >= 2) {
             $this->productos = $this->mozosService->buscarArticulos($this->busqueda);
-            $this->mostrarBusqueda = true;
         } else {
             $this->productos = [];
-            $this->mostrarBusqueda = false;
         }
     }
 
     public function seleccionarProducto($codigo)
     {
-        // Verificar si tiene opcionales
-        if ($this->mozosService->tieneOpcionales($codigo)) {
-            $this->redirectRoute('mozos.agregar-opcionales', [
-                'mesa' => $this->numeroMesa,
-                'codigo' => $codigo
-            ], navigate: true);
-            return;
-        }
-
-        // Si no tiene opcionales, agregar directamente
-        try {
-            $this->mozosService->agregarProducto([
-                'mesa' => $this->numeroMesa,
-                'codigo' => $codigo,
-                'cantidad' => 1,
-                'comensales' => $this->comensales,
-                'caracteristicas' => ''
-            ]);
-
-            $this->busqueda = '';
-            $this->productos = [];
-            $this->mostrarBusqueda = false;
-            $this->cargarDatosMesa();
-
-            session()->flash('success', 'Producto agregado correctamente');
-        } catch (\Exception $e) {
-            session()->flash('error', $e->getMessage());
-        }
+        // Siempre redirigir a la pantalla de agregar para pedir cantidad y observaciones
+        $this->redirectRoute('mozos.agregar-opcionales', [
+            'mesa' => $this->numeroMesa,
+            'codigo' => $codigo
+        ], navigate: true);
     }
 
     public function eliminarProducto($renglon)

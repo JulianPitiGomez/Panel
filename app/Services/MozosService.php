@@ -116,9 +116,10 @@ class MozosService
                 throw new \Exception('El artículo ' . $data['codigo'] . ' no está habilitado para mesas. Debe activar la opción "lMesas" en la configuración del artículo.');
             }
 
-            if ($articu->agotado) {
-                throw new \Exception('El artículo "' . $articu->nombre . '" está marcado como agotado');
-            }
+            // Permitir agregar productos agotados (se muestra aviso visual en la interfaz)
+            // if ($articu->agotado) {
+            //     throw new \Exception('El artículo "' . $articu->nombre . '" está marcado como agotado');
+            // }
 
             $tasa = $articu->tasa ?? 0;
             $total = $articu->precio * $data['cantidad'];

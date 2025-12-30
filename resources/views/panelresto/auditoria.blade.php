@@ -4,10 +4,10 @@
         <!-- Header de filtros con botón collapse para móvil -->
         <div class="flex items-center justify-between mb-4 sm:hidden">
             <h3 class="text-sm font-semibold text-gray-800">
-                <i class="fas fa-filter text-orange-500 mr-2"></i>Filtros
+                <i class="fas fa-filter text-[#FFAF22] mr-2"></i>Filtros
             </h3>
             <button @click="filtrosAbiertos = !filtrosAbiertos"
-                    class="px-3 py-1 text-xs bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors">
+                    class="px-3 py-1 text-xs bg-[#FFAF22] text-white rounded-md hover:bg-[#FFAF22]/90 transition-colors">
                 <i class="fas" :class="filtrosAbiertos ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
                 <span x-text="filtrosAbiertos ? 'Ocultar' : 'Mostrar'"></span>
             </button>
@@ -24,7 +24,7 @@
                     <input type="date"
                            wire:model="fechaDesde"
                            id="fechaDesde"
-                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                 </div>
 
                 <!-- Fecha Hasta -->
@@ -35,7 +35,7 @@
                     <input type="date"
                            wire:model="fechaHasta"
                            id="fechaHasta"
-                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                 </div>
 
                 <!-- Tipo -->
@@ -45,7 +45,7 @@
                     </label>
                     <select wire:model="tipoFiltro"
                             id="tipoFiltro"
-                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                         <option value="">Todos</option>
                         @foreach($tiposAuditoria as $key => $tipo)
                             <option value="{{ $key }}">{{ $tipo }}</option>
@@ -62,7 +62,7 @@
                            wire:model="usuarioFiltro"
                            id="usuarioFiltro"
                            placeholder="Usuario..."
-                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                 </div>
 
                 <!-- Mesa -->
@@ -74,7 +74,7 @@
                            wire:model="mesaFiltro"
                            id="mesaFiltro"
                            placeholder="Nº Mesa..."
-                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                 </div>
 
                 <!-- Pedido -->
@@ -86,7 +86,7 @@
                            wire:model="pedidoFiltro"
                            id="pedidoFiltro"
                            placeholder="Nº Pedido..."
-                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                 </div>
 
                 <!-- Comandado (solo visible si tipo es 4 u 8) -->
@@ -96,7 +96,7 @@
                     </label>
                     <select wire:model="comandadoFiltro"
                             id="comandadoFiltro"
-                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                         <option value="">Todos</option>
                         <option value="CC">Comandado (CC)</option>
                         <option value="SC">Sin Comandar (SC)</option>
@@ -168,7 +168,7 @@
                                             1 => 'bg-green-100 text-green-800',
                                             2 => 'bg-red-100 text-red-800',
                                             3 => 'bg-purple-100 text-purple-800',
-                                            4 => 'bg-orange-100 text-orange-800',
+                                            4 => 'bg-[#FFAF22] text-white',
                                             5 => 'bg-red-200 text-red-900',
                                             6 => 'bg-blue-100 text-blue-800',
                                             7 => 'bg-indigo-100 text-indigo-800',
@@ -177,7 +177,7 @@
                                             10 => 'bg-rose-100 text-rose-800',
                                             11 => 'bg-emerald-100 text-emerald-800',
                                             12 => 'bg-cyan-100 text-cyan-800',
-                                            13 => 'bg-amber-100 text-amber-800',
+                                            13 => 'bg-gray-100 text-gray-800',
                                             14 => 'bg-red-100 text-red-800',
                                             15 => 'bg-purple-200 text-purple-900',
                                             16 => 'bg-teal-100 text-teal-800',
@@ -241,7 +241,7 @@
                                         1 => 'bg-green-100 text-green-800',
                                         2 => 'bg-red-100 text-red-800',
                                         3 => 'bg-purple-100 text-purple-800',
-                                        4 => 'bg-orange-100 text-orange-800',
+                                        4 => 'bg-[#FFAF22] text-white',
                                         5 => 'bg-red-200 text-red-900',
                                         6 => 'bg-blue-100 text-blue-800',
                                         7 => 'bg-indigo-100 text-indigo-800',
@@ -250,7 +250,7 @@
                                         10 => 'bg-rose-100 text-rose-800',
                                         11 => 'bg-emerald-100 text-emerald-800',
                                         12 => 'bg-cyan-100 text-cyan-800',
-                                        13 => 'bg-amber-100 text-amber-800',
+                                        13 => 'bg-gray-100 text-gray-800',
                                         14 => 'bg-red-100 text-red-800',
                                         15 => 'bg-purple-200 text-purple-900',
                                         16 => 'bg-teal-100 text-teal-800',

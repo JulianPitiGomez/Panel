@@ -6,18 +6,17 @@
 
     <!-- ===== SIDEBAR ===== -->
     <div class="
-        {{ $sidebarOpen ? 'translate-x-0' : '-translate-x-full sm:translate-x-0' }}
-        fixed sm:static inset-y-0 left-0 z-50 sm:z-auto
+        {{ $sidebarOpen ? 'translate-x-0 sm:static' : '-translate-x-full fixed' }}
+        fixed inset-y-0 left-0 z-50 sm:z-auto
         w-64 bg-[#222036] shadow-xl border-r border-gray-200
-        transform lg:transform-none transition-transform lg:transition-none duration-300 ease-in-out
+        transform transition-transform duration-300 ease-in-out
         flex flex-col
-        sm:flex
     ">
         
         <!-- Header del Sidebar -->
         <div class="flex items-center justify-between p-6 border-b border-gray-200 bg-[#222036] flex-shrink-0">
             <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-500 rounded-lg flex items-center justify-center shadow-md">
+                <div class="w-10 h-10 bg-[#FFAF22] rounded-lg flex items-center justify-center shadow-md">
                     <span class="text-white font-bold text-lg font-primary">P</span>
                 </div>
                 <div>
@@ -25,9 +24,9 @@
                     <p class="text-xs font-secondary text-white">Panel Web</p>
                 </div>
             </div>
-            <button 
+            <button
                 wire:click="toggleSidebar"
-                class="p-2 rounded-lg hover:bg-orange-500 transition-colors duration-200 lg:block">
+                class="p-2 rounded-lg hover:bg-[#FFAF22] transition-colors duration-200">
                 <i class="fas fa-times text-white"></i>
             </button>
         </div>
@@ -37,82 +36,82 @@
             <div class="space-y-2">
                 
                 <!-- Inicio/Dashboard -->
-                <button 
+                <button
                     wire:click="navigateTo('inicio') ; if(window.innerWidth < 640) $wire.call('toggleSidebar')"
-                    class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-orange-50 hover:translate-x-1 group {{ $currentPage === 'inicio' ? 'bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg' : 'text-white hover:text-orange-600' }}">
-                    <i class="fas fa-home mr-3 text-lg {{ $currentPage === 'inicio' ? 'text-white' : 'text-orange-500 group-hover:text-orange-600' }}"></i>
+                    class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'inicio' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
+                    <i class="fas fa-home mr-3 text-lg {{ $currentPage === 'inicio' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
                     <span class="font-secondary font-medium">Inicio</span>
                 </button>
 
                 <!-- Ventas por fechas -->
-                <button 
+                <button
                     wire:click="navigateTo('ventas-fechas') ; if(window.innerWidth < 640) $wire.call('toggleSidebar')"
-                    class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-orange-50 hover:translate-x-1 group {{ $currentPage === 'ventas-fechas' ? 'bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg' : 'text-white hover:text-orange-600' }}">
-                    <i class="fas fa-chart-line mr-3 text-lg {{ $currentPage === 'ventas-fechas' ? 'text-white' : 'text-orange-500 group-hover:text-orange-600' }}"></i>
+                    class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'ventas-fechas' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
+                    <i class="fas fa-chart-line mr-3 text-lg {{ $currentPage === 'ventas-fechas' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
                     <span class="font-secondary font-medium">Ventas por fechas</span>
                 </button>
 
                 <!-- Compras por fechas -->
-                <button 
+                <button
                     wire:click="navigateTo('compras-fechas') ; if(window.innerWidth < 640) $wire.call('toggleSidebar')"
-                    class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-orange-50 hover:translate-x-1 group {{ $currentPage === 'compras-fechas' ? 'bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg' : 'text-white hover:text-orange-600' }}">
-                    <i class="fas fa-shopping-cart mr-3 text-lg {{ $currentPage === 'compras-fechas' ? 'text-white' : 'text-orange-500 group-hover:text-orange-600' }}"></i>
+                    class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'compras-fechas' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
+                    <i class="fas fa-shopping-cart mr-3 text-lg {{ $currentPage === 'compras-fechas' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
                     <span class="font-secondary font-medium">Compras por fechas</span>
                 </button>
 
                 <!-- Articulos Vendidos -->
-                <button 
+                <button
                     wire:click="navigateTo('articulos-vendidos') ; if(window.innerWidth < 640) $wire.call('toggleSidebar')"
-                    class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-orange-50 hover:translate-x-1 group {{ $currentPage === 'articulos-vendidos' ? 'bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg' : 'text-white hover:text-orange-600' }}">
-                    <i class="fas fa-box mr-3 text-lg {{ $currentPage === 'articulos-vendidos' ? 'text-white' : 'text-orange-500 group-hover:text-orange-600' }}"></i>
+                    class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'articulos-vendidos' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
+                    <i class="fas fa-box mr-3 text-lg {{ $currentPage === 'articulos-vendidos' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
                     <span class="font-secondary font-medium">Articulos Vendidos</span>
                 </button>
 
                 <!-- Cobranzas a clientes -->
-                <button 
+                <button
                     wire:click="navigateTo('cobranzas-clientes'); if(window.innerWidth < 640) $wire.call('toggleSidebar')"
-                    class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-orange-50 hover:translate-x-1 group {{ $currentPage === 'cobranzas-clientes' ? 'bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg' : 'text-white hover:text-orange-600' }}">
-                    <i class="fas fa-hand-holding-usd mr-3 text-lg {{ $currentPage === 'cobranzas-clientes' ? 'text-white' : 'text-orange-500 group-hover:text-orange-600' }}"></i>
+                    class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'cobranzas-clientes' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
+                    <i class="fas fa-hand-holding-usd mr-3 text-lg {{ $currentPage === 'cobranzas-clientes' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
                     <span class="font-secondary font-medium">Cobranzas a clientes</span>
                 </button>
 
                 <!-- Pagos a proveedores -->
-                <button 
+                <button
                     wire:click="navigateTo('pagos-proveedores') ; if(window.innerWidth < 640) $wire.call('toggleSidebar')"
-                    class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-orange-50 hover:translate-x-1 group {{ $currentPage === 'pagos-proveedores' ? 'bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg' : 'text-white hover:text-orange-600' }}">
-                    <i class="fas fa-credit-card mr-3 text-lg {{ $currentPage === 'pagos-proveedores' ? 'text-white' : 'text-orange-500 group-hover:text-orange-600' }}"></i>
+                    class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'pagos-proveedores' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
+                    <i class="fas fa-credit-card mr-3 text-lg {{ $currentPage === 'pagos-proveedores' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
                     <span class="font-secondary font-medium">Pagos a proveedores</span>
                 </button>
 
                 <!-- Stock -->
-                <button 
+                <button
                     wire:click="navigateTo('stock') ; if(window.innerWidth < 640) $wire.call('toggleSidebar')"
-                    class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-orange-50 hover:translate-x-1 group {{ $currentPage === 'stock' ? 'bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg' : 'text-white hover:text-orange-600' }}">
-                    <i class="fas fa-warehouse mr-3 text-lg {{ $currentPage === 'stock' ? 'text-white' : 'text-orange-500 group-hover:text-orange-600' }}"></i>
+                    class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'stock' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
+                    <i class="fas fa-warehouse mr-3 text-lg {{ $currentPage === 'stock' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
                     <span class="font-secondary font-medium">Stock</span>
                 </button>
 
                 <!-- Cajas -->
-                <button 
+                <button
                     wire:click="navigateTo('cajas'); if(window.innerWidth < 640) $wire.call('toggleSidebar')"
-                    class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-orange-50 hover:translate-x-1 group {{ $currentPage === 'cajas' ? 'bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg' : 'text-white hover:text-orange-600' }}">
-                    <i class="fas fa-cash-register mr-3 text-lg {{ $currentPage === 'cajas' ? 'text-white' : 'text-orange-500 group-hover:text-orange-600' }}"></i>
+                    class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'cajas' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
+                    <i class="fas fa-cash-register mr-3 text-lg {{ $currentPage === 'cajas' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
                     <span class="font-secondary font-medium">Cajas</span>
                 </button>
 
                 <!-- Buscador de precios -->
                 <button
                     wire:click="navigateTo('buscador-precios'); if(window.innerWidth < 640) $wire.call('toggleSidebar')"
-                    class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-orange-50 hover:translate-x-1 group {{ $currentPage === 'buscador-precios' ? 'bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg' : 'text-white hover:text-orange-600' }}">
-                    <i class="fas fa-search-dollar mr-3 text-lg {{ $currentPage === 'buscador-precios' ? 'text-white' : 'text-orange-500 group-hover:text-orange-600' }}"></i>
+                    class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'buscador-precios' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
+                    <i class="fas fa-search-dollar mr-3 text-lg {{ $currentPage === 'buscador-precios' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
                     <span class="font-secondary font-medium">Buscador de precios</span>
                 </button>
 
                 <!-- Auditoría -->
                 <button
                     wire:click="navigateTo('auditoria'); if(window.innerWidth < 640) $wire.call('toggleSidebar')"
-                    class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-orange-50 hover:translate-x-1 group {{ $currentPage === 'auditoria' ? 'bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg' : 'text-white hover:text-orange-600' }}">
-                    <i class="fas fa-clipboard-list mr-3 text-lg {{ $currentPage === 'auditoria' ? 'text-white' : 'text-orange-500 group-hover:text-orange-600' }}"></i>
+                    class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'auditoria' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
+                    <i class="fas fa-clipboard-list mr-3 text-lg {{ $currentPage === 'auditoria' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
                     <span class="font-secondary font-medium">Auditoría</span>
                 </button>
 
@@ -132,7 +131,7 @@
         <!-- Footer del Sidebar -->
         <div class="border-t border-gray-200 p-4 bg-[#222036] flex-shrink-0">
             <div class="flex items-center space-x-2">
-                <div class="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-500 rounded-md flex items-center justify-center">
+                <div class="w-8 h-8 bg-[#FFAF22] rounded-md flex items-center justify-center">
                     <span class="text-white font-bold text-sm font-primary">{{ session('panel_user_id') }}</span>
                 </div>
                 <div class="flex-1 min-w-0">
@@ -152,9 +151,9 @@
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-4">
                         <!-- Botón hamburguesa -->
-                        <button 
+                        <button
                             wire:click="toggleSidebar"
-                            class="p-2 rounded-lg hover:bg-orange-500 transition-colors duration-200">
+                            class="p-2 rounded-lg hover:bg-[#FFAF22] transition-colors duration-200">
                             <i class="fas fa-bars text-white text-lg"></i>
                         </button>
                         

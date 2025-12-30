@@ -4,10 +4,10 @@
         <!-- Header de filtros con botón collapse para móvil -->
         <div class="flex items-center justify-between mb-4 sm:hidden">
             <h3 class="text-sm font-semibold text-gray-800">
-                <i class="fas fa-filter text-orange-500 mr-2"></i>Filtros
+                <i class="fas fa-filter text-[#FFAF22] mr-2"></i>Filtros
             </h3>
             <button @click="filtrosAbiertos = !filtrosAbiertos"
-                    class="px-3 py-1 text-xs bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors">
+                    class="px-3 py-1 text-xs bg-[#FFAF22] text-white rounded-md hover:bg-[#FFAF22]/90 transition-colors">
                 <i class="fas" :class="filtrosAbiertos ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
                 <span x-text="filtrosAbiertos ? 'Ocultar' : 'Mostrar'"></span>
             </button>
@@ -24,7 +24,7 @@
                     <input type="date"
                            wire:model="fechaDesde"
                            id="fechaDesde"
-                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                 </div>
 
                 <!-- Fecha Hasta -->
@@ -35,7 +35,7 @@
                     <input type="date"
                            wire:model="fechaHasta"
                            id="fechaHasta"
-                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                 </div>
 
                 <!-- Tipo -->
@@ -45,7 +45,7 @@
                     </label>
                     <select wire:model="tipoFiltro"
                             id="tipoFiltro"
-                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                         <option value="">Todos</option>
                         @foreach($tiposAuditoria as $key => $tipo)
                             <option value="{{ $key }}">{{ $tipo }}</option>
@@ -62,7 +62,7 @@
                            wire:model="usuarioFiltro"
                            id="usuarioFiltro"
                            placeholder="Nombre de usuario..."
-                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                 </div>
             </div>
 
@@ -122,7 +122,7 @@
                                     @switch($registro->TIPO)
                                         @case(1) bg-red-100 text-red-800 @break
                                         @case(2) bg-blue-100 text-blue-800 @break
-                                        @case(3) bg-orange-100 text-orange-800 @break
+                                        @case(3) bg-[#FFAF22] text-white @break
                                         @case(4) bg-purple-100 text-purple-800 @break
                                         @case(5) bg-green-100 text-green-800 @break
                                         @case(6) bg-yellow-100 text-yellow-800 @break
@@ -163,7 +163,7 @@
                                 @switch($registro->TIPO)
                                     @case(1) bg-red-100 text-red-800 @break
                                     @case(2) bg-blue-100 text-blue-800 @break
-                                    @case(3) bg-orange-100 text-orange-800 @break
+                                    @case(3) bg-[#FFAF22] text-white @break
                                     @case(4) bg-purple-100 text-purple-800 @break
                                     @case(5) bg-green-100 text-green-800 @break
                                     @case(6) bg-yellow-100 text-yellow-800 @break

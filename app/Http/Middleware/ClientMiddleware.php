@@ -17,19 +17,33 @@ class ClientMiddleware
             return redirect()->route('logout.force');
         }
 
-        // Si es una ruta de autenticación, permitir acceso
-        if ($request->routeIs(['login.*', 'authenticate.*'])) {
+        // Si es una ruta de autenticación o sesión expirada, permitir acceso
+        if ($request->routeIs(['login.*', 'authenticate.*', 'session.expired'])) {
             return $next($request);
         }
 
         // Verificar autenticación según el módulo
         if (!$this->isAuthenticated($moduleType)) {
+            // Detectar si había una sesión previa (sesión expirada)
+            // Verificamos si hubo actividad previa en este módulo
+            $hadSession = session()->has('last_module') && session('last_module') === $moduleType;
+
+            if ($hadSession) {
+                // Limpiar sesión antes de redirigir
+                session()->flush();
+                return redirect()->route('session.expired', ['module' => $moduleType]);
+            }
+
+            // Primera visita, redirigir directamente al login
             return redirect()->route('login.' . $moduleType);
         }
 
+        // Guardar el módulo actual en la sesión para detección de expiración
+        session(['last_module' => $moduleType]);
+
         // Configurar conexión de base de datos del cliente
         $this->setupClientDatabase();
-        
+
 
         return $next($request);
     }

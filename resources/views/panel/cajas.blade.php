@@ -2,7 +2,7 @@
     <!-- Encabezado -->
     <div>
         <h1 class="text-lg md:text-2xl font-primary font-bold text-gray-900 mb-1 md:mb-2">
-            <i class="fas fa-cash-register text-orange-500 mr-2 text-base md:text-2xl"></i>
+            <i class="fas fa-cash-register text-[#FFAF22] mr-2 text-base md:text-2xl"></i>
             Gestión de Cajas
         </h1>
         <p class="text-gray-600 font-secondary text-xs md:text-base">Consulta de turnos de caja cerrados y sus movimientos</p>
@@ -63,7 +63,7 @@
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-3 md:p-6">
         <div class="flex items-center justify-between mb-3 md:mb-4">
             <h2 class="text-base md:text-lg font-primary font-semibold text-gray-800 flex items-center">
-                <i class="fas fa-filter text-orange-500 mr-2 text-sm md:text-base"></i>
+                <i class="fas fa-filter text-[#FFAF22] mr-2 text-sm md:text-base"></i>
                 <span class="hidden sm:inline">Filtros de Búsqueda</span>
                 <span class="sm:hidden">Filtros</span>
             </h2>
@@ -76,7 +76,7 @@
                     <input type="text"
                            wire:model.live.debounce.500ms="buscar"
                            placeholder="Número..."
-                           class="w-full pl-8 md:pl-10 pr-4 py-1.5 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 font-secondary text-xs md:text-sm">
+                           class="w-full pl-8 md:pl-10 pr-4 py-1.5 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-[#FFAF22] font-secondary text-xs md:text-sm">
                     <i class="fas fa-search absolute left-2 md:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs md:text-sm"></i>
                 </div>
             </div>
@@ -86,7 +86,7 @@
                 <label class="block text-xs md:text-sm font-secondary font-medium text-gray-700 mb-1 md:mb-2">Desde</label>
                 <input type="date"
                        wire:model.live="fechaDesde"
-                       class="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 font-secondary text-xs md:text-sm">
+                       class="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-[#FFAF22] font-secondary text-xs md:text-sm">
             </div>
 
             <!-- Fecha Hasta -->
@@ -94,14 +94,14 @@
                 <label class="block text-xs md:text-sm font-secondary font-medium text-gray-700 mb-1 md:mb-2">Hasta</label>
                 <input type="date"
                        wire:model.live="fechaHasta"
-                       class="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 font-secondary text-xs md:text-sm">
+                       class="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-[#FFAF22] font-secondary text-xs md:text-sm">
             </div>
 
             <!-- Caja -->
             <div class="col-span-2 lg:col-span-1">
                 <label class="block text-xs md:text-sm font-secondary font-medium text-gray-700 mb-1 md:mb-2">N° de Caja</label>
                 <select wire:model.live="cajaSelecionada"
-                        class="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 font-secondary text-xs md:text-sm">
+                        class="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-[#FFAF22] font-secondary text-xs md:text-sm">
                     <option value="">Todas las cajas</option>
                     @foreach($numerosCaja as $numero)
                         <option value="{{ $numero }}">Caja {{ $numero }}</option>
@@ -113,7 +113,7 @@
             <div class="col-span-2 lg:col-span-1">
                 <label class="block text-xs md:text-sm font-secondary font-medium text-gray-700 mb-1 md:mb-2">Tipo de Saldo</label>
                 <select wire:model.live="tipoSaldo"
-                        class="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 font-secondary text-xs md:text-sm">
+                        class="w-full px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-[#FFAF22] font-secondary text-xs md:text-sm">
                     <option value="">Todos</option>
                     <option value="faltante">Con Faltante</option>
                     <option value="sobrante">Con Sobrante</option>
@@ -144,7 +144,7 @@
                         <div class="flex items-center gap-2">
                             <label class="text-xs md:text-sm font-secondary font-medium text-gray-700 hidden sm:inline">Mostrar:</label>
                             <select wire:model.live="porPagina"
-                                    class="border border-gray-300 rounded-lg px-2 md:px-3 py-1 text-xs md:text-sm font-secondary focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                    class="border border-gray-300 rounded-lg px-2 md:px-3 py-1 text-xs md:text-sm font-secondary focus:ring-2 focus:ring-[#FFAF22] focus:border-[#FFAF22]">
                                 <option value="25">25</option>
                                 <option value="50">50</option>
                                 <option value="100">100</option>
@@ -172,10 +172,10 @@
                                 </th>
                                 <th class="px-6 py-3 text-left">
                                     <button wire:click="ordenar('fecha')" 
-                                            class="flex items-center space-x-1 text-xs font-secondary font-semibold text-gray-700 uppercase tracking-wider hover:text-orange-600 transition-colors duration-200">
+                                            class="flex items-center space-x-1 text-xs font-secondary font-semibold text-gray-700 uppercase tracking-wider hover:text-[#FFAF22] transition-colors duration-200">
                                         <span>Fecha</span>
                                         @if($ordenarPor === 'fecha')
-                                            <i class="fas fa-sort-{{ $ordenarDireccion === 'asc' ? 'up' : 'down' }} text-orange-500"></i>
+                                            <i class="fas fa-sort-{{ $ordenarDireccion === 'asc' ? 'up' : 'down' }} text-[#FFAF22]"></i>
                                         @else
                                             <i class="fas fa-sort text-gray-400"></i>
                                         @endif
@@ -183,10 +183,10 @@
                                 </th>
                                 <th class="px-6 py-3 text-left">
                                     <button wire:click="ordenar('hora')" 
-                                            class="flex items-center space-x-1 text-xs font-secondary font-semibold text-gray-700 uppercase tracking-wider hover:text-orange-600 transition-colors duration-200">
+                                            class="flex items-center space-x-1 text-xs font-secondary font-semibold text-gray-700 uppercase tracking-wider hover:text-[#FFAF22] transition-colors duration-200">
                                         <span>Hora</span>
                                         @if($ordenarPor === 'hora')
-                                            <i class="fas fa-sort-{{ $ordenarDireccion === 'asc' ? 'up' : 'down' }} text-orange-500"></i>
+                                            <i class="fas fa-sort-{{ $ordenarDireccion === 'asc' ? 'up' : 'down' }} text-[#FFAF22]"></i>
                                         @else
                                             <i class="fas fa-sort text-gray-400"></i>
                                         @endif
@@ -194,10 +194,10 @@
                                 </th>
                                 <th class="px-6 py-3 text-center">
                                     <button wire:click="ordenar('caja')" 
-                                            class="flex items-center space-x-1 text-xs font-secondary font-semibold text-gray-700 uppercase tracking-wider hover:text-orange-600 transition-colors duration-200">
+                                            class="flex items-center space-x-1 text-xs font-secondary font-semibold text-gray-700 uppercase tracking-wider hover:text-[#FFAF22] transition-colors duration-200">
                                         <span>Caja</span>
                                         @if($ordenarPor === 'caja')
-                                            <i class="fas fa-sort-{{ $ordenarDireccion === 'asc' ? 'up' : 'down' }} text-orange-500"></i>
+                                            <i class="fas fa-sort-{{ $ordenarDireccion === 'asc' ? 'up' : 'down' }} text-[#FFAF22]"></i>
                                         @else
                                             <i class="fas fa-sort text-gray-400"></i>
                                         @endif
@@ -208,10 +208,10 @@
                                 </th>
                                 <th class="px-6 py-3 text-right">
                                     <button wire:click="ordenar('saldo')" 
-                                            class="flex items-center space-x-1 text-xs font-secondary font-semibold text-gray-700 uppercase tracking-wider hover:text-orange-600 transition-colors duration-200">
+                                            class="flex items-center space-x-1 text-xs font-secondary font-semibold text-gray-700 uppercase tracking-wider hover:text-[#FFAF22] transition-colors duration-200">
                                         <span>Diferencia</span>
                                         @if($ordenarPor === 'saldo')
-                                            <i class="fas fa-sort-{{ $ordenarDireccion === 'asc' ? 'up' : 'down' }} text-orange-500"></i>
+                                            <i class="fas fa-sort-{{ $ordenarDireccion === 'asc' ? 'up' : 'down' }} text-[#FFAF22]"></i>
                                         @else
                                             <i class="fas fa-sort text-gray-400"></i>
                                         @endif
@@ -224,7 +224,7 @@
                             <tr class="hover:bg-gray-50 transition-colors duration-200">
                                 <td class="px-6 py-4 whitespace-nowrap text-center">
                                     <button wire:click="verDetalleCaja({{ $caja->id }})" 
-                                            class="inline-flex items-center px-3 py-1.5 border border-orange-300 rounded-lg text-sm font-secondary font-medium text-orange-700 bg-orange-50 hover:bg-orange-100 hover:border-orange-400 transition-colors duration-200">
+                                            class="inline-flex items-center px-3 py-1.5 border border-[#FFAF22]/40 rounded-lg text-sm font-secondary font-medium text-[#FFAF22] bg-[#FFAF22]/10 hover:bg-[#FFAF22]/15 hover:border-[#FFAF22]/50 transition-colors duration-200">
                                         <i class="fas fa-eye mr-1"></i>
                                         Ver Detalle
                                     </button>
@@ -333,7 +333,7 @@
                                 </span>
                             @else
                                 <button wire:click="previousPage"
-                                        class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200">
+                                        class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-[#FFAF22] hover:bg-[#FFAF22]/10 rounded-lg transition-colors duration-200">
                                     <i class="fas fa-chevron-left"></i>
                                 </button>
                             @endif
@@ -347,7 +347,7 @@
                             {{-- Mostrar primera página si no está en el rango --}}
                             @if($start > 1)
                                 <button wire:click="gotoPage(1)"
-                                        class="hidden sm:inline-flex px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200">
+                                        class="hidden sm:inline-flex px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-[#FFAF22] hover:bg-[#FFAF22]/10 rounded-lg transition-colors duration-200">
                                     1
                                 </button>
                                 @if($start > 2)
@@ -358,12 +358,12 @@
                             {{-- Páginas cercanas a la actual --}}
                             @for($page = $start; $page <= $end; $page++)
                                 @if($page == $cajas->currentPage())
-                                    <span class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary bg-orange-500 text-white rounded-lg">
+                                    <span class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary bg-[#FFAF22] text-white rounded-lg">
                                         {{ $page }}
                                     </span>
                                 @else
                                     <button wire:click="gotoPage({{ $page }})"
-                                            class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200">
+                                            class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-[#FFAF22] hover:bg-[#FFAF22]/10 rounded-lg transition-colors duration-200">
                                         {{ $page }}
                                     </button>
                                 @endif
@@ -375,7 +375,7 @@
                                     <span class="hidden sm:inline px-1 md:px-2 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-400">...</span>
                                 @endif
                                 <button wire:click="gotoPage({{ $cajas->lastPage() }})"
-                                        class="hidden sm:inline-flex px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200">
+                                        class="hidden sm:inline-flex px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-[#FFAF22] hover:bg-[#FFAF22]/10 rounded-lg transition-colors duration-200">
                                     {{ $cajas->lastPage() }}
                                 </button>
                             @endif
@@ -383,7 +383,7 @@
                             {{-- Botón Siguiente --}}
                             @if($cajas->hasMorePages())
                                 <button wire:click="nextPage"
-                                        class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors duration-200">
+                                        class="px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-secondary text-gray-600 hover:text-[#FFAF22] hover:bg-[#FFAF22]/10 rounded-lg transition-colors duration-200">
                                     <i class="fas fa-chevron-right"></i>
                                 </button>
                             @else
@@ -413,7 +413,7 @@
                 <!-- Header del Panel -->
                 <div class="flex items-center justify-between p-3 md:p-4 border-b border-gray-200 bg-gray-50">
                     <h3 class="text-base md:text-lg font-primary font-semibold text-gray-900 flex items-center">
-                        <i class="fas fa-cash-register text-orange-500 mr-2 text-sm md:text-base"></i>
+                        <i class="fas fa-cash-register text-[#FFAF22] mr-2 text-sm md:text-base"></i>
                         Detalle Caja {{ $cajaSeleccionada->caja ?? '' }}
                     </h3>
                     <button wire:click="cerrarPanel" class="text-gray-400 hover:text-gray-600 p-1">
@@ -488,7 +488,7 @@
                                 @if($detalle->efectivo != 0)
                                 <div class="flex justify-between">
                                     <span class="text-gray-600">Efectivo:</span>
-                                    <span class="font-medium {{ $detalle->efectivo > 0 ? 'text-blue-600' : 'text-orange-600' }}">
+                                    <span class="font-medium {{ $detalle->efectivo > 0 ? 'text-blue-600' : 'text-[#FFAF22]' }}">
                                         ${{ number_format($detalle->efectivo, 2) }}
                                     </span>
                                 </div>
@@ -556,7 +556,7 @@
                 <!-- Footer del Panel -->
                 <div class="border-t border-gray-200 p-3 md:p-4 bg-gray-50">
                     <button wire:click="cerrarPanel"
-                            class="w-full px-3 md:px-4 py-1.5 md:py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors duration-200 font-secondary text-xs md:text-sm">
+                            class="w-full px-3 md:px-4 py-1.5 md:py-2 bg-[#FFAF22]/90 text-white rounded-lg hover:bg-[#FFAF22]/90 transition-colors duration-200 font-secondary text-xs md:text-sm">
                         <i class="fas fa-times mr-1"></i>
                         Cerrar Panel
                     </button>

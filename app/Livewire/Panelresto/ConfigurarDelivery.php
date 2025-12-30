@@ -41,7 +41,6 @@ class ConfigurarDelivery extends Component
             return;
         }
 
-        // Cargar configuración del comercio
         $comercio = DB::connection('client_db')->table($this->tablePrefix . 'comercio_web')
             ->select('*')
             ->first();
@@ -54,25 +53,31 @@ class ConfigurarDelivery extends Component
             $this->ubicacion = '-34.60024897372449, -58.38179087851561';
         }
 
-        // Cargar zonas
         $this->zonas = DB::connection('client_db')->table($this->tablePrefix . 'zonas')
             ->select('*')
             ->get()
             ->toArray();
     }
 
-    public function guardar($datosZonas)
+    public function actualizarUbicacion($ubicacion)
+    {
+        $this->ubicacion = $ubicacion;
+    }
+
+    public function guardarConfiguracion($datosZonas)
     {
         $this->setupClientDatabase();
 
         if (!$this->tablePrefix) {
-            session()->flash('error', 'No se pudo conectar a la base de datos del cliente');
+            $this->dispatch('mostrarMensaje', [
+                'tipo' => 'error',
+                'mensaje' => 'No se pudo conectar a la base de datos del cliente'
+            ]);
             return;
         }
 
         DB::beginTransaction();
         try {
-            // Actualizar configuración del comercio
             DB::connection('client_db')->table($this->tablePrefix . 'comercio_web')
                 ->update([
                     'kmentrega' => $this->kmentrega,
@@ -80,17 +85,14 @@ class ConfigurarDelivery extends Component
                     'porzona' => $this->porzona ? 1 : 0
                 ]);
 
-            // Obtener zonas actuales
             $zonasActuales = DB::connection('client_db')->table($this->tablePrefix . 'zonas')
                 ->select('id')
                 ->get()
                 ->pluck('id')
                 ->toArray();
 
-            // IDs de zonas que vienen del formulario
             $zonasFormulario = [];
 
-            // Procesar cada zona del formulario
             foreach ($datosZonas as $zona) {
                 if (empty($zona['poligono'])) {
                     continue;
@@ -99,7 +101,6 @@ class ConfigurarDelivery extends Component
                 $habilitada = isset($zona['habilitada']) && $zona['habilitada'] ? 1 : 0;
 
                 if ($zona['id'] == 0) {
-                    // Nueva zona
                     DB::connection('client_db')->table($this->tablePrefix . 'zonas')->insert([
                         'poligono' => $zona['poligono'],
                         'precio' => $zona['precio'],
@@ -107,7 +108,6 @@ class ConfigurarDelivery extends Component
                         'habilitada' => $habilitada
                     ]);
                 } else {
-                    // Actualizar zona existente
                     DB::connection('client_db')->table($this->tablePrefix . 'zonas')
                         ->where('id', $zona['id'])
                         ->update([
@@ -120,7 +120,6 @@ class ConfigurarDelivery extends Component
                 }
             }
 
-            // Eliminar zonas que ya no están en el formulario
             $zonasAEliminar = array_diff($zonasActuales, $zonasFormulario);
             if (!empty($zonasAEliminar)) {
                 DB::connection('client_db')->table($this->tablePrefix . 'zonas')
@@ -131,16 +130,25 @@ class ConfigurarDelivery extends Component
             DB::commit();
 
             $this->cargarConfiguracion();
-            session()->flash('success', 'Configuración guardada correctamente');
+
+            $this->dispatch('mostrarMensaje', [
+                'tipo' => 'success',
+                'mensaje' => 'Configuración guardada correctamente'
+            ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            session()->flash('error', 'Error al guardar la configuración: ' . $e->getMessage());
+            $this->dispatch('mostrarMensaje', [
+                'tipo' => 'error',
+                'mensaje' => 'Error al guardar: ' . $e->getMessage()
+            ]);
         }
     }
 
     public function render()
     {
-        return view('panelresto.configurar-delivery');
+        return view('panelresto.configurar-delivery', [
+            'googleMapsApiKey' => config('app.google_maps_api_key', env('GOOGLE_MAPS_API_KEY'))
+        ]);
     }
 }

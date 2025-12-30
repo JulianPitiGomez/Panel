@@ -3,7 +3,7 @@
     <div class="bg-gray-800 border-b border-gray-700 p-4">
         <div class="container mx-auto flex items-center justify-between">
             <h1 class="text-2xl font-primary font-bold text-white flex items-center">
-                <i class="fas fa-barcode text-orange-500 mr-3"></i>
+                <i class="fas fa-barcode text-[#FFAF22] mr-3"></i>
                 Consulta de Precios
             </h1>
             <div class="text-sm text-gray-300 font-secondary">
@@ -39,7 +39,7 @@
                             wire:model.live.debounce.500ms="codigoProducto" 
                             wire:keydown.enter="buscarProducto"
                             placeholder="Código del producto..."
-                            class="w-full px-6 py-4 text-2xl font-secondary text-center border-2 border-gray-600 rounded-xl bg-gray-800 text-white placeholder-gray-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50 transition-all duration-200"
+                            class="w-full px-6 py-4 text-2xl font-secondary text-center border-2 border-gray-600 rounded-xl bg-gray-800 text-white placeholder-gray-400 focus:border-[#FFAF22] focus:ring-2 focus:ring-[#FFAF22] focus:ring-opacity-50 transition-all duration-200"
                             autofocus
                             autocomplete="off"
                             autocorrect="off"
@@ -82,7 +82,7 @@
                         <span class="font-bold text-lg">¡OFERTA!</span>
                     </div>
                     
-                    <div class="bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl p-8 shadow-2xl border-4 border-red-400">
+                    <div class="bg-gradient-to-r from-red-500 to-[#FFAF22] rounded-2xl p-8 shadow-2xl border-4 border-red-400">
                         <!-- Precio Original Tachado -->
                         <div class="text-2xl text-red-100 font-secondary mb-2">
                             <span class="line-through opacity-75">Precio normal: ${{ $this->getPrecioOriginal() }}</span>
@@ -168,7 +168,7 @@
                 <div class="bg-gray-800 bg-opacity-50 rounded-xl p-4">
                     <p class="text-lg font-secondary text-gray-300">
                         <i class="fas fa-clock mr-2"></i>
-                        La pantalla se limpiará automáticamente en <span id="contador" class="font-bold text-orange-500">{{ $tiempoMostrar }}</span> segundos
+                        La pantalla se limpiará automáticamente en <span id="contador" class="font-bold text-[#FFAF22]">{{ $tiempoMostrar }}</span> segundos
                     </p>
                 </div>
             </div>
@@ -237,7 +237,7 @@
                     } else if (segundosRestantes <= 5) {
                         contadorElement.className = 'font-bold text-yellow-500';
                     } else {
-                        contadorElement.className = 'font-bold text-orange-500';
+                        contadorElement.className = 'font-bold text-[#FFAF22]';
                     }
                 }
 

@@ -4,10 +4,10 @@
         <!-- Header de filtros con botón collapse para móvil -->
         <div class="flex items-center justify-between mb-4 sm:hidden">
             <h3 class="text-sm font-semibold text-gray-800">
-                <i class="fas fa-filter text-orange-500 mr-2"></i>Filtros
+                <i class="fas fa-filter text-[#FFAF22] mr-2"></i>Filtros
             </h3>
             <button @click="filtrosAbiertos = !filtrosAbiertos"
-                    class="px-3 py-1 text-xs bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors">
+                    class="px-3 py-1 text-xs bg-[#FFAF22] text-white rounded-md hover:bg-[#FFAF22]/90 transition-colors">
                 <i class="fas" :class="filtrosAbiertos ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
                 <span x-text="filtrosAbiertos ? 'Ocultar' : 'Mostrar'"></span>
             </button>
@@ -24,7 +24,7 @@
                     <input type="date"
                            wire:model="fechaDesde"
                            id="fechaDesde"
-                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                 </div>
 
                 <!-- Fecha Hasta -->
@@ -35,7 +35,7 @@
                     <input type="date"
                            wire:model="fechaHasta"
                            id="fechaHasta"
-                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                 </div>
 
                 <!-- Origen de Venta -->
@@ -45,7 +45,7 @@
                     </label>
                     <select wire:model="origenFiltro"
                             id="origenFiltro"
-                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                         <option value="">Todos</option>
                         <option value="SALON">Salón</option>
                         <option value="MOSTRADOR">Mostrador</option>
@@ -98,14 +98,14 @@
             </div>
 
             <!-- Delivery -->
-            <div class="bg-orange-50 p-4 rounded-lg">
+            <div class="bg-[#FFAF22]/10 p-4 rounded-lg">
                 <div class="flex items-center">
-                    <div class="p-2 bg-orange-100 rounded-lg mr-3">
-                        <i class="fas fa-motorcycle text-orange-600"></i>
+                    <div class="p-2 bg-[#FFAF22]/15 rounded-lg mr-3">
+                        <i class="fas fa-motorcycle text-[#FFAF22]"></i>
                     </div>
                     <div>
                         <p class="text-sm text-gray-600">Delivery</p>
-                        <p class="text-xl font-semibold text-orange-600">${{ number_format($totalesPorOrigen['DELIVERY'], 2) }}</p>
+                        <p class="text-xl font-semibold text-[#FFAF22]">${{ number_format($totalesPorOrigen['DELIVERY'], 2) }}</p>
                     </div>
                 </div>
             </div>
