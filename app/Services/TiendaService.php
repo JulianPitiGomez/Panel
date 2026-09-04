@@ -20,8 +20,12 @@ class TiendaService
     public const MODO_PUBLICA = 'publica';
     public const MODO_PRIVADA = 'privada';
 
-    /** Clave dentro del JSON de config_clientes_web.configuracion */
+    /** Claves dentro del JSON de config_clientes_web.configuracion */
     public const CLAVE_MODO = 'tienda_modo';
+    public const CLAVE_ESQUEMA = 'tienda_esquema_version';
+
+    /** Version del esquema satelite (docs/tienda/esquema-tienda-vN.sql) que espera este codigo */
+    public const ESQUEMA_VERSION = 1;
 
     /**
      * Habilitada para este cliente?
@@ -85,6 +89,20 @@ class TiendaService
         }
 
         return config('tienda.modo_default', self::MODO_PUBLICA);
+    }
+
+    /**
+     * Version del esquema satelite aplicada en la base de este cliente (0 = sin tablas).
+     * La escribe quien aplica el SQL (hoy a mano; en produccion, el comando de provision).
+     */
+    public static function esquemaVersion(int $clienteId): int
+    {
+        return (int) (self::configuracionWeb($clienteId)[self::CLAVE_ESQUEMA] ?? 0);
+    }
+
+    public static function esquemaAlDia(int $clienteId): bool
+    {
+        return self::esquemaVersion($clienteId) >= self::ESQUEMA_VERSION;
     }
 
     /** Lista modo => etiqueta, para los selects del panel. */
