@@ -490,6 +490,15 @@
                         <p class="text-xs text-gray-400">Útil para productos pesables (ej: 0.5 kg, 1.25 kg). Si está desactivado, solo se permiten cantidades enteras.</p>
                     </div>
                 </label>
+
+                {{-- Vender sin stock --}}
+                <label class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition mt-3">
+                    <input type="checkbox" wire:model.live="datosComercio.tienda_vende_sin_stock" class="w-4 h-4 rounded text-[#FFAF22] focus:ring-[#FFAF22]">
+                    <div>
+                        <span class="text-sm font-medium text-gray-700">Permitir vender sin stock</span>
+                        <p class="text-xs text-gray-400">Activado: la tienda muestra la disponibilidad pero no frena la compra. Desactivado: la cantidad se limita a lo disponible (stock menos lo comprometido en pedidos pendientes) y los artículos en cero no se pueden agregar.</p>
+                    </div>
+                </label>
             </div>
 
             <!-- Botón guardar todo -->

@@ -48,8 +48,8 @@ return [
     | Estados del pedido en GESTION (pedidos_encab.estado). Es la unica lista:
     | ningun componente repite estas letras. Fivewin es quien las escribe.
     |   P pendiente, A en armado, F facturado (los tres existen hoy)
-    |   N anulado, R rechazado: los agrega el usuario en Fivewin; las letras son
-    |   provisorias hasta que confirme cuales usa. Ver TiendaEstadoPedido.
+    |   N anulado, R rechazado: confirmados el 2026-09-04 (los escribe Fivewin).
+    |   Ver TiendaEstadoPedido.
     */
     'estados_gestion' => [
         'P' => 'Pendiente',

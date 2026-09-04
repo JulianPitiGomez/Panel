@@ -97,6 +97,10 @@
                                 <p class="text-sm font-bold mt-1" style="color: {{ $colores['precio'] }}">
                                     ${{ number_format($item['precio'], 2, ',', '.') }}
                                 </p>
+                                @php $ivaItem = \App\Services\TiendaPrecioService::desglosar((float) $item['precio'], $item['tasa'] ?? null); @endphp
+                                @if($ivaItem['iva'] > 0)
+                                    <p class="text-[10px] text-gray-400">Incluye IVA {{ \App\Services\TiendaPrecioService::etiquetaTasa($ivaItem['tasa']) }}: ${{ number_format($ivaItem['iva'], 2, ',', '.') }}</p>
+                                @endif
                             </div>
                             <button wire:click="eliminarItem({{ $index }})"
                                     class="text-red-400 hover:text-red-600 transition flex-shrink-0 p-1">
@@ -205,6 +209,17 @@
                             <span class="text-gray-500">Productos ({{ count($carrito) }})</span>
                             <span class="font-medium">${{ number_format($total, 2, ',', '.') }}</span>
                         </div>
+                        @if($resumenIva['iva'] > 0)
+                            <div class="text-xs text-gray-400 pt-1 border-t border-dashed border-gray-200">
+                                <p class="mb-0.5">Los precios incluyen IVA:</p>
+                                @foreach($resumenIva['por_tasa'] as $t)
+                                    <div class="flex justify-between">
+                                        <span>IVA {{ \App\Services\TiendaPrecioService::etiquetaTasa($t['tasa']) }} sobre ${{ number_format($t['neto'], 2, ',', '.') }}</span>
+                                        <span>${{ number_format($t['iva'], 2, ',', '.') }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
 
                     <div class="flex justify-between text-lg font-bold border-t pt-3">

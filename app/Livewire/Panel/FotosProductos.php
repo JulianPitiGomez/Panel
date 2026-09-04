@@ -58,6 +58,7 @@ class FotosProductos extends Component
         'estilo_header' => 'completo',
         'modo_cantidad' => 'rapido',
         'permite_decimal' => false,
+        'tienda_vende_sin_stock' => true,   // ver TiendaStockService
     ];
 
     // Tienda config

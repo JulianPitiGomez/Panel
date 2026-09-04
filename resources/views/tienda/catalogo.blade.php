@@ -222,12 +222,21 @@
                     <p class="text-[10px] text-gray-400 mt-1 text-center">Podés ingresar valores decimales (ej: 0.5, 1.25)</p>
                 @endif
 
+                @if(!$vendeSinStock)
+                    <p class="text-[11px] mt-1 text-center {{ $productoModal['disponible'] > 0 ? 'text-gray-500' : 'text-red-500' }}">
+                        Disponible: {{ \App\Services\TiendaStockService::formato($productoModal['disponible']) }}
+                    </p>
+                @endif
+
                 <div class="mt-4 flex items-center justify-between text-sm">
                     <span class="text-gray-500">Subtotal:</span>
                     <span class="font-bold text-base" style="color: {{ $colores['precio'] }}">
                         ${{ number_format($productoModal['precio'] * (float) $cantidadModal, 2, ',', '.') }}
                     </span>
                 </div>
+                @if(($productoModal['iva'] ?? 0) > 0)
+                    <p class="text-[10px] text-gray-400 text-right">Incluye IVA {{ \App\Services\TiendaPrecioService::etiquetaTasa($productoModal['tasa']) }}: ${{ number_format($productoModal['iva'] * (float) $cantidadModal, 2, ',', '.') }}</p>
+                @endif
 
                 <button wire:click="confirmarCantidadModal"
                         class="w-full mt-4 py-3 text-white font-semibold rounded-lg transition-opacity hover:opacity-90 flex items-center justify-center gap-2"

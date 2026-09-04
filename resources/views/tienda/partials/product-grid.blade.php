@@ -1,3 +1,9 @@
+@if($avisoStock)
+    <div class="mb-3 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2">
+        <i class="fas fa-box-open"></i> <span>{{ $avisoStock }}</span>
+        <button type="button" wire:click="$set('avisoStock', '')" class="ml-auto text-amber-500 hover:text-amber-700"><i class="fas fa-times"></i></button>
+    </div>
+@endif
 @if(count($productos) > 0)
     <div class="grid grid-cols-2 gap-3
         @if($columnasDesktop == 2) md:grid-cols-2
@@ -27,9 +33,17 @@
                                 <span class="text-sm font-bold" style="color: {{ $colores['precio'] }}">
                                     ${{ number_format($this->obtenerPrecio($producto), 2, ',', '.') }}
                                 </span>
+                                @php $ivaCard = $this->ivaIncluido($producto); $sinStock = !$vendeSinStock && $this->disponibleDe($producto->CODIGO) <= 0; @endphp
+                                @if($ivaCard > 0)
+                                    <span class="text-[9px] text-gray-400 block leading-tight">Incl. IVA ${{ number_format($ivaCard, 2, ",", ".") }}</span>
+                                @endif
+                                @if($sinStock)
+                                    <span class="text-[10px] text-red-400 block"><i class="fas fa-circle text-[6px] mr-0.5"></i> Sin stock</span>
+                                @endif
                                 <button wire:click="{{ $modoCantidad === 'modal' ? 'abrirModalCantidad' : 'agregarAlCarrito' }}('{{ $producto->CODIGO }}')"
+                                        @if(!$vendeSinStock && $this->disponibleDe($producto->CODIGO) <= 0) disabled title="Sin stock" @endif
                                         wire:loading.attr="disabled" wire:target="agregarAlCarrito('{{ $producto->CODIGO }}')"
-                                        class="w-7 h-7 text-white text-xs rounded-md flex items-center justify-center transition-opacity hover:opacity-90"
+                                        class="w-7 h-7 text-white text-xs rounded-md flex items-center justify-center transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
                                         style="background-color: {{ $colores['boton'] }}">
                                     <span wire:loading.remove wire:target="agregarAlCarrito('{{ $producto->CODIGO }}')"><i class="fas fa-cart-plus"></i></span>
                                     <span wire:loading wire:target="agregarAlCarrito('{{ $producto->CODIGO }}')"><i class="fas fa-spinner fa-spin"></i></span>
@@ -56,19 +70,27 @@
                                 {{ $producto->NOMBRE }}
                             </h3>
                             <div class="flex items-center gap-2 mt-1">
-                                @if($producto->STOCKACT > 0)
-                                    <span class="text-[10px] text-green-600"><i class="fas fa-circle text-[6px] mr-0.5"></i> En stock</span>
-                                @else
+                                @if($this->disponibleDe($producto->CODIGO) > 0)
+                                    <span class="text-[10px] text-green-600"><i class="fas fa-circle text-[6px] mr-0.5"></i> Disponible: {{ AppServicesTiendaStockService::formato($this->disponibleDe($producto->CODIGO)) }}</span>
+                                    @else
                                     <span class="text-[10px] text-red-400"><i class="fas fa-circle text-[6px] mr-0.5"></i> Sin stock</span>
-                                @endif
+                                    @endif
                             </div>
                             <div class="mt-auto pt-2">
                                 <span class="text-base font-bold block" style="color: {{ $colores['precio'] }}">
                                     ${{ number_format($this->obtenerPrecio($producto), 2, ',', '.') }}
                                 </span>
+                                @php $ivaCard = $this->ivaIncluido($producto); $sinStock = !$vendeSinStock && $this->disponibleDe($producto->CODIGO) <= 0; @endphp
+                                @if($ivaCard > 0)
+                                    <span class="text-[9px] text-gray-400 block leading-tight">Incl. IVA ${{ number_format($ivaCard, 2, ",", ".") }}</span>
+                                @endif
+                                @if($sinStock)
+                                    <span class="text-[10px] text-red-400 block"><i class="fas fa-circle text-[6px] mr-0.5"></i> Sin stock</span>
+                                @endif
                                 <button wire:click="{{ $modoCantidad === 'modal' ? 'abrirModalCantidad' : 'agregarAlCarrito' }}('{{ $producto->CODIGO }}')"
+                                        @if(!$vendeSinStock && $this->disponibleDe($producto->CODIGO) <= 0) disabled title="Sin stock" @endif
                                         wire:loading.attr="disabled" wire:target="agregarAlCarrito('{{ $producto->CODIGO }}')"
-                                        class="w-full mt-2 py-2 text-white text-xs font-semibold rounded-lg transition-opacity hover:opacity-90 flex items-center justify-center gap-1"
+                                        class="w-full mt-2 py-2 text-white text-xs font-semibold rounded-lg transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1"
                                         style="background-color: {{ $colores['boton'] }}">
                                     <span wire:loading.remove wire:target="agregarAlCarrito('{{ $producto->CODIGO }}')"><i class="fas fa-cart-plus mr-1"></i> Agregar al carrito</span>
                                     <span wire:loading wire:target="agregarAlCarrito('{{ $producto->CODIGO }}')"><i class="fas fa-spinner fa-spin"></i></span>
@@ -97,9 +119,17 @@
                                 <span class="text-sm font-bold block" style="color: {{ $colores['precio'] }}">
                                     ${{ number_format($this->obtenerPrecio($producto), 2, ',', '.') }}
                                 </span>
+                                @php $ivaCard = $this->ivaIncluido($producto); $sinStock = !$vendeSinStock && $this->disponibleDe($producto->CODIGO) <= 0; @endphp
+                                @if($ivaCard > 0)
+                                    <span class="text-[9px] text-gray-400 block leading-tight">Incl. IVA ${{ number_format($ivaCard, 2, ",", ".") }}</span>
+                                @endif
+                                @if($sinStock)
+                                    <span class="text-[10px] text-red-400 block"><i class="fas fa-circle text-[6px] mr-0.5"></i> Sin stock</span>
+                                @endif
                                 <button wire:click="{{ $modoCantidad === 'modal' ? 'abrirModalCantidad' : 'agregarAlCarrito' }}('{{ $producto->CODIGO }}')"
+                                        @if(!$vendeSinStock && $this->disponibleDe($producto->CODIGO) <= 0) disabled title="Sin stock" @endif
                                         wire:loading.attr="disabled" wire:target="agregarAlCarrito('{{ $producto->CODIGO }}')"
-                                        class="w-full mt-2 py-1.5 text-white text-xs font-semibold rounded-lg transition-opacity hover:opacity-90 flex items-center justify-center gap-1"
+                                        class="w-full mt-2 py-1.5 text-white text-xs font-semibold rounded-lg transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1"
                                         style="background-color: {{ $colores['boton'] }}">
                                     <span wire:loading.remove wire:target="agregarAlCarrito('{{ $producto->CODIGO }}')"><i class="fas fa-cart-plus"></i> Agregar</span>
                                     <span wire:loading wire:target="agregarAlCarrito('{{ $producto->CODIGO }}')"><i class="fas fa-spinner fa-spin"></i></span>

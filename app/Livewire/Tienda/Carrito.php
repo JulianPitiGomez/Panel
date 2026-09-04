@@ -224,6 +224,18 @@ class Carrito extends Component
 
         $this->setupClientDatabase();
 
+        // Revalidar stock al confirmar: entre armar el carrito y confirmar pueden pasar horas
+        if (!\App\Services\TiendaStockService::vendeSinStock(session('tienda_datos', []))) {
+            $faltantes = (new \App\Services\TiendaStockService($this->tablePrefix))->faltantes($this->carrito);
+            if (!empty($faltantes)) {
+                $lista = collect($faltantes)->map(fn ($f) => "{$f['nombre']} (pediste " . \App\Services\TiendaStockService::formato($f['pedido']) . ", hay " . \App\Services\TiendaStockService::formato($f['disponible']) . ")")->implode('; ');
+                session()->flash('error', "No hay stock suficiente para: {$lista}. Ajustá las cantidades.");
+                return;
+            }
+        }
+
+        $resumenIva = \App\Services\TiendaPrecioService::resumenIva($this->carrito);
+
         $compradorId = session('tienda_comprador_id');
         $compradorNombre = session('tienda_comprador_nombre');
         $compradorVendedor = session('tienda_comprador_vendedor');
@@ -243,7 +255,7 @@ class Carrito extends Component
 
         // Encabezado, detalle y satelite en una sola transaccion: o entra todo o no entra nada.
         // Lo que va a pedidos_encab / pedidos_det es exactamente lo de siempre (regla del proyecto).
-        $pedidoId = DB::connection('client_db')->transaction(function () use ($compradorId, $compradorNombre, $compradorVendedor, $vendedorNombre, $compradorDescuento) {
+        $pedidoId = DB::connection('client_db')->transaction(function () use ($compradorId, $compradorNombre, $compradorVendedor, $vendedorNombre, $compradorDescuento, $resumenIva) {
 
         $pedidoId = DB::connection('client_db')
             ->table("{$this->tablePrefix}pedidos_encab")
@@ -279,7 +291,9 @@ class Carrito extends Component
         }
 
         // Fila satelite del ecommerce (comprador web, entrega, pago, comision, estado web)
-        (new \App\Services\TiendaPedidoService($this->tablePrefix))->registrarSatelite($pedidoId, (int) session('tienda_config_id'));
+        (new \App\Services\TiendaPedidoService($this->tablePrefix))->registrarSatelite($pedidoId, (int) session('tienda_config_id'), [
+            'iva_incluido' => $resumenIva['iva'],
+        ]);
 
         return $pedidoId;
         });
@@ -363,6 +377,7 @@ class Carrito extends Component
     {
         return view('tienda.carrito', [
             'total' => $this->getTotal(),
+            'resumenIva' => \App\Services\TiendaPrecioService::resumenIva($this->carrito),
         ]);
     }
 }

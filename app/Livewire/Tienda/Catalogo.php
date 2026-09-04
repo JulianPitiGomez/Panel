@@ -41,6 +41,9 @@ class Catalogo extends Component
     public $estiloHeader = 'completo';
     public $modoCantidad = 'rapido';
     public $permiteDecimal = false;
+    public $vendeSinStock = true;      // config web del comercio (TiendaStockService)
+    public $disponibles = [];          // codigo => disponible, de la pagina visible
+    public $avisoStock = '';           // cuando se recorta una cantidad por falta de stock
 
     // Modal cantidad
     public $modalCantidadAbierto = false;
@@ -77,6 +80,7 @@ class Catalogo extends Component
         $this->estiloHeader = $datos['estilo_header'] ?? 'completo';
         $this->modoCantidad = $datos['modo_cantidad'] ?? 'rapido';
         $this->permiteDecimal = (bool) ($datos['permite_decimal'] ?? false);
+        $this->vendeSinStock = \App\Services\TiendaStockService::vendeSinStock($datos);
 
         $this->cargarFiltros();
     }
@@ -185,8 +189,9 @@ class Catalogo extends Component
         $query = DB::connection('client_db')
             ->table("{$this->tablePrefix}articu as a")
             ->leftJoin("{$this->tablePrefix}articu_fotos as f", 'a.CODIGO', '=', 'f.codigo')
+            ->leftJoin("{$this->tablePrefix}ivas as i", 'a.IVA', '=', 'i.codigo')
             ->where('a.NOSALE', 0)
-            ->select('a.CODIGO', 'a.NOMBRE', 'a.PRECIOVEN', 'a.REVENTA', 'a.STOCKACT', 'a.DEPTO', 'a.RUBRO', 'a.MARCA', 'f.url as foto_url');
+            ->select('a.CODIGO', 'a.NOMBRE', 'a.PRECIOVEN', 'a.REVENTA', 'a.STOCKACT', 'a.DEPTO', 'a.RUBRO', 'a.MARCA', 'f.url as foto_url', 'i.tasa as tasa_iva');
 
         if ($this->busqueda) {
             $palabras = array_filter(explode(' ', trim($this->busqueda)));
@@ -229,7 +234,33 @@ class Catalogo extends Component
             ->take($this->porPagina)
             ->get();
 
+        // Disponible real (STOCKACT - comprometido en pedidos abiertos): una sola consulta para la pagina
+        $this->disponibles = (new \App\Services\TiendaStockService($this->tablePrefix))->disponibleDe($productos);
+
         return $productos;
+    }
+
+    /** Disponible de un producto de la pagina actual. */
+    public function disponibleDe($codigo): float
+    {
+        return (float) ($this->disponibles[$codigo] ?? 0);
+    }
+
+    /** IVA incluido en el precio unitario que se muestra (0 si el articulo es exento / tasa cero). */
+    public function ivaIncluido($producto): float
+    {
+        return \App\Services\TiendaPrecioService::desglosar((float) $this->obtenerPrecio($producto), $producto->tasa_iva ?? null)['iva'];
+    }
+
+    /** Cantidad ya cargada en el carrito para un articulo. */
+    private function enCarrito($codigo): float
+    {
+        foreach ($this->carrito as $item) {
+            if ($item['codigo'] == $codigo) {
+                return (float) $item['cantidad'];
+            }
+        }
+        return 0.0;
     }
 
     public function obtenerPrecio($producto)
@@ -268,17 +299,23 @@ class Catalogo extends Component
         $producto = DB::connection('client_db')
             ->table("{$this->tablePrefix}articu as a")
             ->leftJoin("{$this->tablePrefix}articu_fotos as f", 'a.CODIGO', '=', 'f.codigo')
+            ->leftJoin("{$this->tablePrefix}ivas as i", 'a.IVA', '=', 'i.codigo')
             ->where('a.CODIGO', $codigo)
-            ->select('a.CODIGO', 'a.NOMBRE', 'a.PRECIOVEN', 'a.REVENTA', 'f.url as foto_url')
+            ->select('a.CODIGO', 'a.NOMBRE', 'a.PRECIOVEN', 'a.REVENTA', 'a.STOCKACT', 'f.url as foto_url', 'i.tasa as tasa_iva')
             ->first();
 
         if (!$producto) return;
+
+        $disponible = (new \App\Services\TiendaStockService($this->tablePrefix))->disponible($codigo) - $this->enCarrito($codigo);
 
         $this->productoModal = [
             'codigo' => $producto->CODIGO,
             'nombre' => $producto->NOMBRE,
             'precio' => $this->obtenerPrecio($producto),
             'foto_url' => $producto->foto_url,
+            'tasa' => (float) ($producto->tasa_iva ?? 0),
+            'iva' => $this->ivaIncluido($producto),
+            'disponible' => max($disponible, 0),
         ];
         $this->cantidadModal = $this->permiteDecimal ? 1 : 1;
         $this->modalCantidadAbierto = true;
@@ -324,11 +361,28 @@ class Catalogo extends Component
         $producto = DB::connection('client_db')
             ->table("{$this->tablePrefix}articu as a")
             ->leftJoin("{$this->tablePrefix}articu_fotos as f", 'a.CODIGO', '=', 'f.codigo')
+            ->leftJoin("{$this->tablePrefix}ivas as i", 'a.IVA', '=', 'i.codigo')
             ->where('a.CODIGO', $codigo)
-            ->select('a.CODIGO', 'a.NOMBRE', 'a.PRECIOVEN', 'a.REVENTA', 'a.STOCKACT', 'f.url as foto_url')
+            ->select('a.CODIGO', 'a.NOMBRE', 'a.PRECIOVEN', 'a.REVENTA', 'a.STOCKACT', 'f.url as foto_url', 'i.tasa as tasa_iva')
             ->first();
 
         if (!$producto) return;
+
+        $this->avisoStock = '';
+
+        // Si el comercio no vende sin stock, la cantidad se limita al disponible (descontando lo que ya esta en el carrito)
+        if (!$this->vendeSinStock) {
+            $disponible = (new \App\Services\TiendaStockService($this->tablePrefix))->disponible($codigo) - $this->enCarrito($codigo);
+            if ($disponible <= 0) {
+                $this->avisoStock = "No hay más stock disponible de {$producto->NOMBRE}.";
+                $this->dispatch('stock-insuficiente');
+                return;
+            }
+            if ($cantidadAgregar > $disponible) {
+                $cantidadAgregar = $this->permiteDecimal ? round($disponible, 2) : (int) floor($disponible);
+                $this->avisoStock = "De {$producto->NOMBRE} solo quedan " . \App\Services\TiendaStockService::formato($disponible) . ". Se agregó esa cantidad.";
+            }
+        }
 
         $precio = $this->obtenerPrecio($producto);
 
@@ -338,6 +392,7 @@ class Catalogo extends Component
             if ($item['codigo'] == $codigo) {
                 $this->carrito[$key]['cantidad'] += $cantidadAgregar;
                 $this->carrito[$key]['subtotal'] = $this->carrito[$key]['cantidad'] * $this->carrito[$key]['precio'];
+                $this->carrito[$key]['tasa'] = (float) ($producto->tasa_iva ?? 0);
                 $existente = true;
                 break;
             }
@@ -353,6 +408,7 @@ class Catalogo extends Component
                 'cantidad' => $cantidadAgregar,
                 'subtotal' => $precio * $cantidadAgregar,
                 'foto_url' => $producto->foto_url,
+                'tasa' => (float) ($producto->tasa_iva ?? 0),
             ];
         }
 
