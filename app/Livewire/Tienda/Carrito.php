@@ -19,6 +19,7 @@ class Carrito extends Component
 
     public $carrito = [];
     public $emailComprador = '';
+    public $passwordComprador = '';
     public $parafecha;
     public $observaciones = '';
 
@@ -49,8 +50,8 @@ class Carrito extends Component
             'boton' => $datos['color_boton'] ?? '#FFAF22',
         ];
 
-        // Si es modo privado, el comprador ya está validado
-        if (\App\Services\TiendaService::esPrivada($this->modo) && session('tienda_comprador_id')) {
+        // Comprador ya logueado (por el login de la tienda o desde este mismo carrito)
+        if (session('tienda_comprador_web_id')) {
             $this->compradorValidado = true;
             $this->compradorNombre = session('tienda_comprador_nombre');
         }
@@ -118,9 +119,6 @@ class Carrito extends Component
     {
         $this->carrito = [];
         session(['tienda_carrito' => []]);
-        $this->compradorValidado = false;
-        $this->compradorNombre = '';
-        $this->emailComprador = '';
     }
 
     public function getTotal()
@@ -128,52 +126,54 @@ class Carrito extends Component
         return collect($this->carrito)->sum('subtotal');
     }
 
-    public function validarEmail()
+    /**
+     * Ingreso del comprador desde el carrito (tienda publica): mail + contrasena
+     * contra tienda_compradores, igual que el login de la tienda privada.
+     * Identificarse solo por mail dejaba usar la lista de precios de otro cliente.
+     */
+    public function ingresarComprador()
     {
         $this->compradorError = '';
 
-        if (empty($this->emailComprador)) {
-            $this->compradorError = 'Ingresa tu email';
+        if (empty($this->emailComprador) || empty($this->passwordComprador)) {
+            $this->compradorError = 'Ingresá tu email y tu contraseña.';
             return;
         }
 
         $this->setupClientDatabase();
 
-        $comprador = DB::connection('client_db')
-            ->table("{$this->tablePrefix}clientes")
-            ->where('MAIL', $this->emailComprador)
-            ->first();
+        $compradores = new \App\Services\TiendaCompradorService($this->tablePrefix);
+        $login = $compradores->autenticar($this->emailComprador, $this->passwordComprador);
+        $this->passwordComprador = '';
 
-        if (!$comprador) {
-            $this->compradorError = 'Email no registrado. Contacta al comercio para registrarte.';
-            return;
+        switch ($login['resultado']) {
+            case \App\Services\TiendaCompradorService::LOGIN_OK:
+                $compradores->iniciarSesion($login['comprador']);
+                break;
+            case \App\Services\TiendaCompradorService::LOGIN_PENDIENTE:
+                $this->compradorError = 'Tu cuenta todavía está pendiente de aprobación por el comercio.';
+                return;
+            case \App\Services\TiendaCompradorService::LOGIN_RECHAZADO:
+                $this->compradorError = 'Tu cuenta no está habilitada. Consultá con el comercio.';
+                return;
+            default:
+                $this->compradorError = 'Email o contraseña incorrectos.';
+                return;
         }
 
-        // Guardar datos del comprador en sesión
-        session([
-            'tienda_comprador_id' => $comprador->CODIGO,
-            'tienda_comprador_nombre' => $comprador->NOMBRE,
-            'tienda_comprador_email' => $this->emailComprador,
-            'tienda_comprador_lispre' => $comprador->LISPRE,
-            'tienda_comprador_lispreesp' => $comprador->lispreesp ?? $comprador->LISPREESP ?? null,
-            'tienda_comprador_descuento' => $comprador->DESCUENTO ?? 0,
-            'tienda_comprador_vendedor' => $comprador->VENDEDOR ?? null,
-        ]);
-
         $this->compradorValidado = true;
-        $this->compradorNombre = $comprador->NOMBRE;
+        $this->compradorNombre = session('tienda_comprador_nombre');
 
         // Recalcular precios según la lista del comprador
-        $this->recalcularPrecios($comprador);
+        $this->recalcularPrecios();
     }
 
-    private function recalcularPrecios($comprador)
+    private function recalcularPrecios()
     {
         $this->setupClientDatabase();
 
-        $lispreesp = $comprador->lispreesp ?? $comprador->LISPREESP ?? null;
-        $lispre = $comprador->LISPRE;
-        $descuento = $comprador->DESCUENTO ?? 0;
+        $lispreesp = session('tienda_comprador_lispreesp');
+        $lispre = session('tienda_comprador_lispre');
 
         foreach ($this->carrito as $key => $item) {
             $nuevoPrecio = null;
@@ -210,8 +210,9 @@ class Carrito extends Component
             return;
         }
 
-        if (!$this->compradorValidado) {
-            $this->compradorError = 'Debes validar tu email antes de confirmar';
+        if (!$this->compradorValidado || !session('tienda_comprador_web_id')) {
+            $this->compradorValidado = false;
+            $this->compradorError = 'Ingresá con tu email y contraseña antes de confirmar.';
             return;
         }
 
@@ -240,7 +241,10 @@ class Carrito extends Component
             }
         }
 
-        // Insertar encabezado del pedido
+        // Encabezado, detalle y satelite en una sola transaccion: o entra todo o no entra nada.
+        // Lo que va a pedidos_encab / pedidos_det es exactamente lo de siempre (regla del proyecto).
+        $pedidoId = DB::connection('client_db')->transaction(function () use ($compradorId, $compradorNombre, $compradorVendedor, $vendedorNombre, $compradorDescuento) {
+
         $pedidoId = DB::connection('client_db')
             ->table("{$this->tablePrefix}pedidos_encab")
             ->insertGetId([
@@ -254,10 +258,6 @@ class Carrito extends Component
                 'observa' => $this->observaciones ? "Pedido Tienda Web: {$this->observaciones}" : 'Pedido desde Tienda Web',
                 'nuevo' => true,
             ]);
-
-        // Preparar datos para email antes de limpiar
-        $itemsParaEmail = $this->carrito;
-        $totalEmail = collect($this->carrito)->sum('subtotal');
 
         // Insertar detalle del pedido
         foreach ($this->carrito as $item) {
@@ -277,6 +277,16 @@ class Carrito extends Component
                     'descup' => $descup,
                 ]);
         }
+
+        // Fila satelite del ecommerce (comprador web, entrega, pago, comision, estado web)
+        (new \App\Services\TiendaPedidoService($this->tablePrefix))->registrarSatelite($pedidoId);
+
+        return $pedidoId;
+        });
+
+        // Preparar datos para email antes de limpiar
+        $itemsParaEmail = $this->carrito;
+        $totalEmail = collect($this->carrito)->sum('subtotal');
 
         // Enviar emails
         $this->enviarEmails($pedidoId, $compradorNombre, $itemsParaEmail, $totalEmail);
