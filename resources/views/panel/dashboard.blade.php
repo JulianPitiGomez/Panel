@@ -1,8 +1,8 @@
 <div class="h-screen bg-gray-50 flex">
     
-    <!-- ===== OVERLAY SOLO PARA MÓVIL 
-    <div class="sm:hidden {{ $sidebarOpen ? 'fixed inset-0 z-40 bg-black bg-opacity-50' : 'hidden' }}" 
-     wire:click="toggleSidebar"></div> -->
+    <!-- ===== OVERLAY SOLO PARA MÓVIL ===== -->
+    <div class="sm:hidden {{ $sidebarOpen ? 'fixed inset-0 z-40 bg-black/20 backdrop-blur-sm' : 'hidden' }}"
+     wire:click="toggleSidebar"></div>
 
     <!-- ===== SIDEBAR ===== -->
     <div class="
@@ -48,7 +48,7 @@
                     wire:click="navigateTo('ventas-fechas') ; if(window.innerWidth < 640) $wire.call('toggleSidebar')"
                     class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'ventas-fechas' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
                     <i class="fas fa-chart-line mr-3 text-lg {{ $currentPage === 'ventas-fechas' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
-                    <span class="font-secondary font-medium">Ventas por fechas</span>
+                    <span class="font-secondary font-medium">Ventas</span>
                 </button>
 
                 <!-- Compras por fechas -->
@@ -56,7 +56,7 @@
                     wire:click="navigateTo('compras-fechas') ; if(window.innerWidth < 640) $wire.call('toggleSidebar')"
                     class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'compras-fechas' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
                     <i class="fas fa-shopping-cart mr-3 text-lg {{ $currentPage === 'compras-fechas' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
-                    <span class="font-secondary font-medium">Compras por fechas</span>
+                    <span class="font-secondary font-medium">Compras</span>
                 </button>
 
                 <!-- Articulos Vendidos -->
@@ -64,7 +64,7 @@
                     wire:click="navigateTo('articulos-vendidos') ; if(window.innerWidth < 640) $wire.call('toggleSidebar')"
                     class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'articulos-vendidos' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
                     <i class="fas fa-box mr-3 text-lg {{ $currentPage === 'articulos-vendidos' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
-                    <span class="font-secondary font-medium">Articulos Vendidos</span>
+                    <span class="font-secondary font-medium">Artículos</span>
                 </button>
 
                 <!-- Cobranzas a clientes -->
@@ -72,7 +72,7 @@
                     wire:click="navigateTo('cobranzas-clientes'); if(window.innerWidth < 640) $wire.call('toggleSidebar')"
                     class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'cobranzas-clientes' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
                     <i class="fas fa-hand-holding-usd mr-3 text-lg {{ $currentPage === 'cobranzas-clientes' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
-                    <span class="font-secondary font-medium">Cobranzas a clientes</span>
+                    <span class="font-secondary font-medium">Cobranzas</span>
                 </button>
 
                 <!-- Pagos a proveedores -->
@@ -80,7 +80,7 @@
                     wire:click="navigateTo('pagos-proveedores') ; if(window.innerWidth < 640) $wire.call('toggleSidebar')"
                     class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'pagos-proveedores' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
                     <i class="fas fa-credit-card mr-3 text-lg {{ $currentPage === 'pagos-proveedores' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
-                    <span class="font-secondary font-medium">Pagos a proveedores</span>
+                    <span class="font-secondary font-medium">Pagos</span>
                 </button>
 
                 <!-- Stock -->
@@ -104,7 +104,7 @@
                     wire:click="navigateTo('buscador-precios'); if(window.innerWidth < 640) $wire.call('toggleSidebar')"
                     class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'buscador-precios' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
                     <i class="fas fa-search-dollar mr-3 text-lg {{ $currentPage === 'buscador-precios' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
-                    <span class="font-secondary font-medium">Buscador de precios</span>
+                    <span class="font-secondary font-medium">Buscador</span>
                 </button>
 
                 <!-- Auditoría -->
@@ -114,6 +114,24 @@
                     <i class="fas fa-clipboard-list mr-3 text-lg {{ $currentPage === 'auditoria' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
                     <span class="font-secondary font-medium">Auditoría</span>
                 </button>
+
+                <!-- Tu negocio hoy -->
+                <button
+                    wire:click="navigateTo('salud-negocio'); if(window.innerWidth < 640) $wire.call('toggleSidebar')"
+                    class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'salud-negocio' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
+                    <i class="fas fa-store mr-3 text-lg {{ $currentPage === 'salud-negocio' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
+                    <span class="font-secondary font-medium">Tu negocio hoy</span>
+                </button>
+
+                <!-- Catálogo (solo cliente 1) -->
+                @if(session('client_id') == 1)
+                <button
+                    wire:click="navigateTo('fotos-productos'); if(window.innerWidth < 640) $wire.call('toggleSidebar')"
+                    class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'fotos-productos' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
+                    <i class="fas fa-store mr-3 text-lg {{ $currentPage === 'fotos-productos' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
+                    <span class="font-secondary font-medium">Catalogo</span>
+                </button>
+                @endif
 
                 <!-- Separador -->
                 <div class="border-t border-gray-200 my-4"></div>
@@ -131,12 +149,12 @@
         <!-- Footer del Sidebar -->
         <div class="border-t border-gray-200 p-4 bg-[#222036] flex-shrink-0">
             <div class="flex items-center space-x-2">
-                <div class="w-8 h-8 bg-[#FFAF22] rounded-md flex items-center justify-center">
-                    <span class="text-white font-bold text-sm font-primary">{{ session('panel_user_id') }}</span>
+                <div class="h-8 px-2 min-w-[2rem] bg-[#FFAF22] rounded-md flex items-center justify-center flex-shrink-0">
+                    <span class="text-white font-bold text-xs font-primary whitespace-nowrap">{{ session('panel_user_id') }}</span>
                 </div>
                 <div class="flex-1 min-w-0">
                     <p class="text-sm font-secondary font-semibold text-white truncate">Usuario</p>
-                    <p class="text-xs font-secondary text-white">{{ session('cliente_nombre') }}</p>
+                    <p class="text-xs font-secondary text-white truncate">{{ session('cliente_nombre') }}</p>
                 </div>
             </div>
         </div>
@@ -190,6 +208,15 @@
                                     @case('auditoria')
                                         Auditoría
                                         @break
+                                    @case('fotos-productos')
+                                        Catalogo
+                                        @break
+                                    @case('estado-resultado')
+                                        Estado de Resultado
+                                        @break
+                                    @case('salud-negocio')
+                                        Tu negocio hoy
+                                        @break
                                     @default
                                         Panel de Gestión
                                 @endswitch
@@ -209,7 +236,7 @@
         </header>
 
         <!-- Contenido Principal -->
-        <main class="flex-1 overflow-y-auto p-4 lg:p-6">
+        <main id="main-content" class="flex-1 overflow-y-auto p-4 lg:p-6 bg-gray-200">
             <div class="max-w-7xl mx-auto h-full">
                 @switch($currentPage)
                     @case('inicio')
@@ -242,6 +269,15 @@
                     @case('auditoria')
                         @livewire('panel.auditoria')
                         @break
+                    @case('fotos-productos')
+                        @livewire('panel.fotos-productos')
+                        @break
+                    @case('estado-resultado')
+                        @livewire('panel.estado-resultado')
+                        @break
+                    @case('salud-negocio')
+                        @livewire('panel.salud-negocio')
+                        @break
                     @default
                         @livewire('panel.inicio')
                 @endswitch
@@ -262,6 +298,14 @@
     document.addEventListener('livewire:navigated', function() {
         if (window.innerWidth < 640) {
             Livewire.find('{{ $this->getId() }}').set('sidebarOpen', false);
+        }
+    });
+
+    // Escuchar evento para hacer scroll al top
+    window.addEventListener('scroll-to-top', function() {
+        const mainContent = document.getElementById('main-content');
+        if (mainContent) {
+            mainContent.scrollTo({ top: 0, behavior: 'smooth' });
         }
     });
 </script>

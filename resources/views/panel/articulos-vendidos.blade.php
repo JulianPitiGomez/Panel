@@ -149,8 +149,8 @@
                                         $posicion = ($paginationInfo->current_page - 1) * $paginationInfo->per_page + $index + 1;
                                         $badgeColor = '';
                                         if($posicion <= 3) {
-                                            $badgeColor = $posicion == 1 ? 'bg-yellow-100 text-yellow-800' :
-                                                         ($posicion == 2 ? 'bg-gray-100 text-gray-800' : 'bg-[#FFAF22] text-white');
+                                            $badgeColor = $posicion == 1 ? 'bg-[#FFAF22] text-white' :
+                                                         ($posicion == 2 ? 'bg-gray-100 text-gray-800' : 'bg-yellow-100 text-yellow-800');
                                         } else {
                                             $badgeColor = 'bg-blue-100 text-blue-800';
                                         }

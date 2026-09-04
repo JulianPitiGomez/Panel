@@ -4,6 +4,7 @@ namespace App\Livewire\Panelresto;
 
 use Livewire\Component;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
 
 class Dashboard extends Component
 {
@@ -20,7 +21,13 @@ class Dashboard extends Component
     public function navigateTo($page)
     {
         $this->currentPage = $page;
-                
+        $this->dispatch('scroll-to-top');
+    }
+
+    #[On('panel-navigate')]
+    public function panelNavigate($page)
+    {
+        $this->navigateTo($page);
     }
 
     public function logout()

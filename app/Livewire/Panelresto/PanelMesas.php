@@ -22,7 +22,11 @@ class PanelMesas extends Component
     public $mesaSeleccionada = null;
     public $detalleMesa = [];
     public $totalMesa = 0;
-    
+    public $nombreMozo = null;
+
+    // Estado de carga
+    public $actualizando = false;
+
     protected $tablePrefix;
 
     public function mount()
@@ -83,17 +87,78 @@ class PanelMesas extends Component
         }
 
         $this->setupClientDatabase();
-        
+
         try {
             $this->mesas = DB::connection('client_db')
-                ->table($this->tablePrefix . 'mesas')
-                ->select('NUMERO', 'RECURSO', 'COMENSALES', 'OCUPADA', 'fechaaper', 'horaaper', 'salon')
-                ->where('salon', $this->salonActivo)
-                ->orderBy('NUMERO')
+                ->table($this->tablePrefix . 'mesas as m')
+                ->leftJoin($this->tablePrefix . 'mozos as mz', 'm.mozo', '=', 'mz.codigo')
+                ->select('m.NUMERO', 'm.RECURSO', 'm.COMENSALES', 'm.OCUPADA', 'm.fechaaper', 'm.horaaper', 'm.salon', 'm.mozo', 'mz.nombre as nombre_mozo')
+                ->where('m.salon', $this->salonActivo)
+                ->orderBy('m.NUMERO')
                 ->get();
+
+            // Verificar reservas activas y actualizar el estado de las mesas
+            $this->verificarReservas();
+
         } catch (\Exception $e) {
             $this->mesas = [];
             \Log::error('Error cargando mesas: ' . $e->getMessage());
+        }
+    }
+
+    private function verificarReservas()
+    {
+        try {
+            $now = Carbon::now();
+            $fechaHoy = $now->format('Y-m-d');
+
+            // Consultar todas las reservas activas del día
+            $reservas = DB::connection('client_db')
+                ->table($this->tablePrefix . 'reservas')
+                ->select('mesa', 'hora')
+                ->where('estado', 1)
+                ->where('fecha', $fechaHoy)
+                ->get();
+
+            // Filtrar las reservas que están en el rango de -10 a +59 minutos
+            $reservasActivas = $reservas->filter(function($reserva) use ($now) {
+                try {
+                    // Parsear la hora de la reserva
+                    $horaReserva = Carbon::createFromFormat('H:i:s', $reserva->hora);
+
+                    // Calcular diferencia en minutos (positivo si la reserva es futura, negativo si es pasada)
+                    $diferenciaMinutos = $now->diffInMinutes($horaReserva, false);
+
+                    // La reserva está activa si:
+                    // - Desde 10 minutos ANTES de la hora de reserva (diferenciaMinutos <= 10)
+                    // - Hasta 59 minutos DESPUÉS de la hora de reserva (diferenciaMinutos >= -59)
+                    return $diferenciaMinutos >= -59 && $diferenciaMinutos <= 10;
+
+                } catch (\Exception $e) {
+                    \Log::error('Error parseando hora de reserva: ' . $e->getMessage());
+                    return false;
+                }
+            });
+
+            // Modificar el RECURSO de las mesas con reservas activas
+            foreach ($reservasActivas as $reserva) {
+                $mesa = $this->mesas->firstWhere('NUMERO', $reserva->mesa);
+                if ($mesa) {
+                    // Determinar el tipo de mesa y cambiar a naranja (código 22 = reservada)
+                    $recursoActual = strtoupper($mesa->RECURSO);
+
+                    if (str_contains($recursoActual, 'MESA2')) {
+                        $mesa->RECURSO = 'MESA22';
+                    } elseif (str_contains($recursoActual, 'MESA4')) {
+                        $mesa->RECURSO = 'MESA42';
+                    } elseif (str_contains($recursoActual, 'BANC')) {
+                        $mesa->RECURSO = 'BANC22';
+                    }
+                }
+            }
+
+        } catch (\Exception $e) {
+            \Log::error('Error verificando reservas: ' . $e->getMessage());
         }
     }
 
@@ -103,6 +168,7 @@ class PanelMesas extends Component
         
         if ($this->mesaSeleccionada) {
             $this->cargarDetalleMesa($numeroMesa);
+            $this->cargarNombreMozo($this->mesaSeleccionada->mozo ?? null);
             $this->mostrarDetalle = true;
         }
     }
@@ -127,44 +193,67 @@ class PanelMesas extends Component
         }
     }
 
+    private function cargarNombreMozo($codigoMozo)
+    {
+        $this->nombreMozo = null;
+
+        if (!$codigoMozo) {
+            return;
+        }
+
+        try {
+            $mozo = DB::connection('client_db')
+                ->table($this->tablePrefix . 'mozos')
+                ->where('codigo', $codigoMozo)
+                ->value('nombre');
+
+            $this->nombreMozo = $mozo;
+        } catch (\Exception $e) {
+            \Log::error('Error cargando nombre de mozo: ' . $e->getMessage());
+        }
+    }
+
     public function cerrarDetalle()
     {
         $this->mostrarDetalle = false;
         $this->mesaSeleccionada = null;
         $this->detalleMesa = [];
         $this->totalMesa = 0;
+        $this->nombreMozo = null;
     }
 
     public function actualizarMesas()
     {
+        $this->actualizando = true;
         $this->cargarMesasSalon();
+        $this->actualizando = false;
     }
 
     // Métodos auxiliares para la vista
     public function getColorMesa($recurso)
     {
         $tipo = strtoupper($recurso);
-        
+
         // Libre (Verde)
         if (in_array($tipo, ['MESA2', 'MESA4', 'BANC2'])) {
             return 'bg-green-500 border-green-600';
         }
-        
+
         // Ocupada (Rojo)
         if (in_array($tipo, ['MESA20', 'MESA40', 'BANC20'])) {
             return 'bg-red-500 border-red-600';
         }
-        
+
         // Pronto cierre (Celeste)
         if (in_array($tipo, ['MESA21', 'MESA41', 'BANC21'])) {
             return 'bg-blue-500 border-blue-600';
         }
-        
-        // Reservada (Amarillo)
+
+        // Reservada (Naranja)
         if (in_array($tipo, ['MESA22', 'MESA42', 'BANC22'])) {
-            return 'bg-yellow-500 border-yellow-600';
+            return 'bg-orange-500 border-orange-600';
         }
-        
+
         return 'bg-gray-500 border-gray-600';
     }
 
@@ -235,12 +324,12 @@ class PanelMesas extends Component
     public function getColorTextoMesa($recurso)
     {
         $tipo = strtoupper($recurso);
-        
-        // Para amarillo usar texto negro
+
+        // Para naranja (reservadas) usar texto negro
         if (in_array($tipo, ['MESA22', 'MESA42', 'BANC22'])) {
             return 'text-black';
         }
-        
+
         return 'text-white';
     }
 

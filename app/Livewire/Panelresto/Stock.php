@@ -18,11 +18,14 @@ class Stock extends Component
     // Filtros Artículos
     public $buscarArticulo = '';
     public $departamentoSeleccionado = '';
+    public $estadoArticulo = 'activos'; // 'activos', 'inactivos', 'todos'
     public $estadoStockArticulo = ''; // '', 'negativo', 'positivo', 'sin_stock'
+    public $stockMinimoArticulo = ''; // '', 'debajo', 'minimo_superior'
 
     // Filtros Materias Primas
     public $buscarMateria = '';
     public $estadoStockMateria = ''; // '', 'negativo', 'positivo', 'sin_stock'
+    public $stockMinimoMateria = ''; // '', 'debajo', 'minimo_superior'
 
     // Paginación
     public $porPaginaArticulos = 25;
@@ -41,9 +44,12 @@ class Stock extends Component
         'pestanaActiva' => ['except' => 'articulos'],
         'buscarArticulo' => ['except' => ''],
         'departamentoSeleccionado' => ['except' => ''],
+        'estadoArticulo' => ['except' => 'activos'],
         'estadoStockArticulo' => ['except' => ''],
+        'stockMinimoArticulo' => ['except' => ''],
         'buscarMateria' => ['except' => ''],
         'estadoStockMateria' => ['except' => ''],
+        'stockMinimoMateria' => ['except' => ''],
         'porPaginaArticulos' => ['except' => 25],
         'porPaginaMaterias' => ['except' => 25],
     ];
@@ -84,7 +90,17 @@ class Stock extends Component
         $this->resetPage();
     }
 
+    public function updatedEstadoArticulo()
+    {
+        $this->resetPage();
+    }
+
     public function updatedEstadoStockArticulo()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedStockMinimoArticulo()
     {
         $this->resetPage();
     }
@@ -95,6 +111,11 @@ class Stock extends Component
     }
 
     public function updatedEstadoStockMateria()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedStockMinimoMateria()
     {
         $this->resetPage();
     }
@@ -113,7 +134,9 @@ class Stock extends Component
     {
         $this->buscarArticulo = '';
         $this->departamentoSeleccionado = '';
+        $this->estadoArticulo = 'activos';
         $this->estadoStockArticulo = '';
+        $this->stockMinimoArticulo = '';
         $this->resetPage();
     }
 
@@ -121,6 +144,7 @@ class Stock extends Component
     {
         $this->buscarMateria = '';
         $this->estadoStockMateria = '';
+        $this->stockMinimoMateria = '';
         $this->resetPage();
     }
 
@@ -145,6 +169,16 @@ class Stock extends Component
             $query->where('a.DEPTO', $this->departamentoSeleccionado);
         }
 
+        // Activos / inactivos segun el campo INACTIVO (true = inactivo)
+        if ($this->estadoArticulo === 'activos') {
+            $query->where(function ($q) {
+                $q->where('a.INACTIVO', false)
+                  ->orWhereNull('a.INACTIVO');
+            });
+        } elseif ($this->estadoArticulo === 'inactivos') {
+            $query->where('a.INACTIVO', true);
+        }
+
         if ($this->estadoStockArticulo) {
             if ($this->estadoStockArticulo === 'negativo') {
                 $query->where('a.STOCK', '<', 0);
@@ -152,6 +186,14 @@ class Stock extends Component
                 $query->where('a.STOCK', '>', 0);
             } elseif ($this->estadoStockArticulo === 'sin_stock') {
                 $query->where('a.STOCK', '=', 0);
+            }
+        }
+
+        if ($this->stockMinimoArticulo) {
+            if ($this->stockMinimoArticulo === 'debajo') {
+                $query->whereRaw('a.STOCK < a.stockmin');
+            } elseif ($this->stockMinimoArticulo === 'minimo_superior') {
+                $query->whereRaw('a.STOCK >= a.stockmin');
             }
         }
 
@@ -170,6 +212,7 @@ class Stock extends Component
             'a.NOMBRE',
             'a.STOCK',
             'a.PRECIOCOS',
+            'a.INACTIVO',
             'd.NOMBRE as nombre_depto',
             DB::raw('(a.STOCK * a.PRECIOCOS) as valorizado')
         ])->orderBy('a.NOMBRE')
@@ -198,6 +241,14 @@ class Stock extends Component
                 $query->where('m.STOCK', '>', 0);
             } elseif ($this->estadoStockMateria === 'sin_stock') {
                 $query->where('m.STOCK', '=', 0);
+            }
+        }
+
+        if ($this->stockMinimoMateria) {
+            if ($this->stockMinimoMateria === 'debajo') {
+                $query->whereRaw('m.STOCK < m.stockmin');
+            } elseif ($this->stockMinimoMateria === 'minimo_superior') {
+                $query->whereRaw('m.STOCK >= m.stockmin');
             }
         }
 

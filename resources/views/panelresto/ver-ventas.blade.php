@@ -22,7 +22,7 @@
                         <i class="fas fa-calendar-alt mr-1"></i>Fecha Desde
                     </label>
                     <input type="date"
-                           wire:model="fechaDesde"
+                           wire:model.live.debounce.500ms="fechaDesde"
                            id="fechaDesde"
                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                 </div>
@@ -33,7 +33,7 @@
                         <i class="fas fa-calendar-alt mr-1"></i>Fecha Hasta
                     </label>
                     <input type="date"
-                           wire:model="fechaHasta"
+                           wire:model.live.debounce.500ms="fechaHasta"
                            id="fechaHasta"
                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                 </div>
@@ -43,7 +43,7 @@
                     <label for="origenFiltro" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                         <i class="fas fa-store mr-1"></i>Origen de Venta
                     </label>
-                    <select wire:model="origenFiltro"
+                    <select wire:model.live="origenFiltro"
                             id="origenFiltro"
                             class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                         <option value="">Todos</option>
@@ -62,15 +62,38 @@
                         <i class="fas fa-filter mr-1"></i><span class="hidden sm:inline">Aplicar</span>
                     </button>
                     <button wire:click="limpiarFiltros"
-                            class="px-3 sm:px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition duration-200 flex-1 sm:flex-none text-sm">
+                            class="px-3 sm:px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors duration-200 flex-1 sm:flex-none text-sm cursor-pointer font-secondary">
                         <i class="fas fa-eraser mr-1"></i><span class="hidden sm:inline">Limpiar</span>
                     </button>
                 </div>
             </div>
         </div>
 
+        <!-- Total General -->
+        <div class="mt-4 pt-4 border-t border-gray-200">
+            <div class="bg-gradient-to-r from-[#FFAF22] to-[#FFAF22]/90 rounded-lg p-4 sm:p-6 shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-white/20 rounded-lg mr-4">
+                            <i class="fas fa-dollar-sign text-white text-2xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-white/90 text-sm sm:text-base font-medium">Total Ventas</p>
+                            <p class="text-white text-2xl sm:text-3xl font-bold">${{ number_format($totalGeneral, 2) }}</p>
+                        </div>
+                    </div>
+                    <div class="hidden sm:block">
+                        <div class="text-right">
+                            <p class="text-white/90 text-xs">Período</p>
+                            <p class="text-white text-sm font-medium">{{ date('d/m/Y', strtotime($fechaDesde)) }} - {{ date('d/m/Y', strtotime($fechaHasta)) }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Tarjetas de Totales por Origen -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mt-4 pt-4 border-t border-gray-200">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mt-4">
             <!-- Salón -->
             <div class="bg-blue-50 p-4 rounded-lg">
                 <div class="flex items-center">
@@ -136,6 +159,49 @@
                 </div>
             </div>
         </div>
+
+        <!-- Tarjetas de Formas de Facturación -->
+        <div class="mt-4 pt-4 border-t border-gray-200">
+            <h4 class="text-sm font-semibold text-gray-700 mb-3">
+                <i class="fas fa-money-bill-wave text-green-600 mr-2"></i>Formas de Facturación
+            </h4>
+            @php
+                // Clases literales para que Tailwind las compile
+                $fpStyles = [
+                    ['card' => 'bg-emerald-50', 'icon' => 'bg-emerald-100', 'text' => 'text-emerald-600'],
+                    ['card' => 'bg-sky-50',     'icon' => 'bg-sky-100',     'text' => 'text-sky-600'],
+                    ['card' => 'bg-violet-50',  'icon' => 'bg-violet-100',  'text' => 'text-violet-600'],
+                    ['card' => 'bg-amber-50',   'icon' => 'bg-amber-100',   'text' => 'text-amber-600'],
+                    ['card' => 'bg-rose-50',    'icon' => 'bg-rose-100',    'text' => 'text-rose-600'],
+                    ['card' => 'bg-cyan-50',    'icon' => 'bg-cyan-100',    'text' => 'text-cyan-600'],
+                    ['card' => 'bg-indigo-50',  'icon' => 'bg-indigo-100',  'text' => 'text-indigo-600'],
+                    ['card' => 'bg-teal-50',    'icon' => 'bg-teal-100',    'text' => 'text-teal-600'],
+                    ['card' => 'bg-fuchsia-50', 'icon' => 'bg-fuchsia-100', 'text' => 'text-fuchsia-600'],
+                    ['card' => 'bg-lime-50',    'icon' => 'bg-lime-100',    'text' => 'text-lime-600'],
+                ];
+            @endphp
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                @forelse($formasPago as $i => $fp)
+                    @php $s = $fpStyles[$i % count($fpStyles)]; @endphp
+                    <div class="{{ $s['card'] }} p-4 rounded-lg">
+                        <div class="flex items-center">
+                            <div class="p-2 {{ $s['icon'] }} rounded-lg mr-3 shrink-0">
+                                <i class="fas fa-receipt {{ $s['text'] }}"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-sm text-gray-600 truncate" title="{{ $fp['forma'] }}">{{ $fp['forma'] }}</p>
+                                <p class="text-lg font-semibold {{ $s['text'] }}">${{ number_format($fp['total'], 2) }}</p>
+                                <p class="text-xs text-gray-400">{{ $fp['cantidad'] }} mov.</p>
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <div class="col-span-full text-center text-gray-400 text-sm py-4">
+                        <i class="fas fa-info-circle mr-1"></i>Sin datos en el período
+                    </div>
+                @endforelse
+            </div>
+        </div>
     </div>
 
     <!-- Tabla de Ventas -->
@@ -190,6 +256,11 @@
                                        {{ $venta->TICOMP == 'NC' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800' }}">
                                     {{ $venta->comprobante }}
                                 </span>
+                                @if($venta->factura_aplicada)
+                                    <div class="text-xs text-red-500 mt-1">
+                                        <i class="fas fa-reply mr-1"></i>Aplica a: {{ $venta->factura_aplicada }}
+                                    </div>
+                                @endif
                             </td>
                             <td class="px-6 py-4">
                                 <div class="text-sm text-gray-900 max-w-xs truncate" title="{{ $venta->NOMBRE ?? 'Sin nombre' }}">
@@ -222,8 +293,8 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-center">
                                 <button wire:click="toggleDetalle('{{ $venta->nrofac }}')"
-                                        class="text-blue-600 hover:text-blue-900">
-                                    <i class="fas {{ $ventaExpandida === $venta->nrofac ? 'fa-chevron-up' : 'fa-chevron-down' }}"></i>
+                                        class="text-[#FFAF22] hover:text-[#FFAF22]/80 transition-colors duration-200">
+                                    <i class="fas fa-eye text-lg"></i>
                                 </button>
                             </td>
                         </tr>
@@ -256,10 +327,55 @@
                                             </tbody>
                                         </table>
                                     </div>
+                                    {{-- Formas de Pago --}}
+                                    @php
+                                        $formasPago = $this->getFormasPago($venta->TICOMP, $venta->LETRA, $venta->NUMCOMP);
+                                    @endphp
+                                    @if($formasPago->isNotEmpty())
+                                        <div class="mt-3 p-3 bg-green-50 rounded-md">
+                                            <p class="text-xs font-medium text-gray-700 mb-2"><i class="fas fa-money-bill-wave mr-1 text-green-600"></i>Formas de Pago:</p>
+                                            <div class="space-y-1">
+                                                @foreach($formasPago as $fp)
+                                                    <div class="flex justify-between items-center text-sm">
+                                                        <span class="text-gray-900">{{ $fp->observa }}</span>
+                                                        <span class="font-medium text-green-700">${{ number_format($fp->importe, 2) }}</span>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @endif
                                     @if($venta->OBSERVA)
                                         <div class="mt-3 p-3 bg-blue-50 rounded-md">
                                             <p class="text-xs font-medium text-gray-700">Observaciones:</p>
                                             <p class="text-sm text-gray-900">{{ $venta->OBSERVA }}</p>
+                                        </div>
+                                    @endif
+                                    @if($venta->origen === 'SALON')
+                                        <div class="mt-3 p-3 bg-purple-50 rounded-md">
+                                            <p class="text-xs font-medium text-gray-700 mb-2"><i class="fas fa-user-tie mr-1 text-purple-600"></i>Info de Salón:</p>
+                                            <div class="space-y-1">
+                                                @if($venta->VENDEDOR)
+                                                    <div class="flex justify-between items-center text-sm">
+                                                        <span class="text-gray-600">Mozo:</span>
+                                                        <span class="font-medium text-gray-900">
+                                                            {{ $venta->nombre_mozo ?? $venta->VENDEDOR }}
+                                                            <span class="text-xs text-gray-400 ml-1">({{ $venta->VENDEDOR }})</span>
+                                                        </span>
+                                                    </div>
+                                                @endif
+                                                @if(($venta->COMENSALES ?? 0) > 0)
+                                                    <div class="flex justify-between items-center text-sm">
+                                                        <span class="text-gray-600">Comensales:</span>
+                                                        <span class="font-medium text-gray-900">{{ $venta->COMENSALES }}</span>
+                                                    </div>
+                                                    @if($venta->COMENSALES > 1)
+                                                        <div class="flex justify-between items-center text-sm">
+                                                            <span class="text-gray-600">Promedio por persona:</span>
+                                                            <span class="font-medium text-purple-700">${{ number_format($venta->IMPORTE / $venta->COMENSALES, 2) }}</span>
+                                                        </div>
+                                                    @endif
+                                                @endif
+                                            </div>
                                         </div>
                                     @endif
                                 </td>
@@ -306,6 +422,11 @@
                                     {{ $config['label'] }}
                                 </span>
                             </div>
+                            @if($venta->factura_aplicada)
+                                <div class="text-xs text-red-500 mt-1">
+                                    <i class="fas fa-reply mr-1"></i>Aplica a: {{ $venta->factura_aplicada }}
+                                </div>
+                            @endif
                             <div class="text-sm text-gray-900 font-medium truncate">{{ $venta->NOMBRE ?? 'Sin nombre' }}</div>
                             <div class="text-xs text-gray-500 mt-1">{{ $venta->fecha_formateada }} - {{ $venta->hora_formateada }}</div>
                             <div class="text-xs text-gray-500">Usuario: {{ $venta->USUARIO }}</div>
@@ -319,8 +440,8 @@
 
                     <!-- Botón para expandir detalle -->
                     <button wire:click="toggleDetalle('{{ $venta->nrofac }}')"
-                            class="w-full mt-2 px-3 py-2 text-sm bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100 transition-colors">
-                        <i class="fas {{ $ventaExpandida === $venta->nrofac ? 'fa-chevron-up' : 'fa-chevron-down' }} mr-1"></i>
+                            class="w-full mt-2 px-3 py-2 text-sm bg-[#FFAF22]/10 text-[#FFAF22] rounded-md hover:bg-[#FFAF22]/20 transition-colors">
+                        <i class="fas fa-eye mr-1"></i>
                         {{ $ventaExpandida === $venta->nrofac ? 'Ocultar detalle' : 'Ver detalle' }}
                     </button>
 
@@ -339,10 +460,55 @@
                                     </div>
                                 @endforeach
                             </div>
+                            {{-- Formas de Pago --}}
+                            @php
+                                $formasPagoMobile = $this->getFormasPago($venta->TICOMP, $venta->LETRA, $venta->NUMCOMP);
+                            @endphp
+                            @if($formasPagoMobile->isNotEmpty())
+                                <div class="mt-3 p-2 bg-green-50 rounded-md">
+                                    <p class="text-xs font-medium text-gray-700 mb-1"><i class="fas fa-money-bill-wave mr-1 text-green-600"></i>Formas de Pago:</p>
+                                    <div class="space-y-1">
+                                        @foreach($formasPagoMobile as $fp)
+                                            <div class="flex justify-between items-center text-xs">
+                                                <span class="text-gray-900">{{ $fp->observa }}</span>
+                                                <span class="font-medium text-green-700">${{ number_format($fp->importe, 2) }}</span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
                             @if($venta->OBSERVA)
                                 <div class="mt-3 p-2 bg-blue-50 rounded-md">
                                     <p class="text-xs font-medium text-gray-700">Observaciones:</p>
                                     <p class="text-xs text-gray-900">{{ $venta->OBSERVA }}</p>
+                                </div>
+                            @endif
+                            @if($venta->origen === 'SALON')
+                                <div class="mt-3 p-2 bg-purple-50 rounded-md">
+                                    <p class="text-xs font-medium text-gray-700 mb-1"><i class="fas fa-user-tie mr-1 text-purple-600"></i>Info de Salón:</p>
+                                    <div class="space-y-1">
+                                        @if($venta->VENDEDOR)
+                                            <div class="flex justify-between items-center text-xs">
+                                                <span class="text-gray-600">Mozo:</span>
+                                                <span class="font-medium text-gray-900">
+                                                    {{ $venta->nombre_mozo ?? $venta->VENDEDOR }}
+                                                    <span class="text-gray-400 ml-1">({{ $venta->VENDEDOR }})</span>
+                                                </span>
+                                            </div>
+                                        @endif
+                                        @if(($venta->COMENSALES ?? 0) > 0)
+                                            <div class="flex justify-between items-center text-xs">
+                                                <span class="text-gray-600">Comensales:</span>
+                                                <span class="font-medium text-gray-900">{{ $venta->COMENSALES }}</span>
+                                            </div>
+                                            @if($venta->COMENSALES > 1)
+                                                <div class="flex justify-between items-center text-xs">
+                                                    <span class="text-gray-600">Promedio x persona:</span>
+                                                    <span class="font-medium text-purple-700">${{ number_format($venta->IMPORTE / $venta->COMENSALES, 2) }}</span>
+                                                </div>
+                                            @endif
+                                        @endif
+                                    </div>
                                 </div>
                             @endif
                         </div>

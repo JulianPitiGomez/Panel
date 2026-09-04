@@ -44,8 +44,8 @@
                     <span class="sm:hidden">Filtros</span>
                 </h2>
                 <button wire:click="limpiarFiltrosArticulos"
-                        class="px-2 md:px-4 py-1.5 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors duration-200 text-xs md:text-sm font-secondary">
-                    <i class="fas fa-broom mr-1"></i>
+                        class="px-2 md:px-4 py-1.5 md:py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors duration-200 text-xs md:text-sm font-secondary cursor-pointer">
+                    <i class="fas fa-eraser mr-1"></i>
                     <span class="hidden sm:inline">Limpiar</span>
                 </button>
             </div>
@@ -72,6 +72,17 @@
                     </select>
                 </div>
 
+                <!-- Artículos -->
+                <div class="col-span-2 lg:col-span-1">
+                    <label class="block text-xs md:text-sm font-secondary font-medium text-gray-700 mb-1 md:mb-2">Artículos</label>
+                    <select wire:model.live="estadoArticulo"
+                            class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent font-secondary">
+                        <option value="activos">Activos</option>
+                        <option value="inactivos">Inactivos</option>
+                        <option value="todos">Todos</option>
+                    </select>
+                </div>
+
                 <!-- Estado Stock -->
                 <div class="col-span-2 lg:col-span-1">
                     <label class="block text-xs md:text-sm font-secondary font-medium text-gray-700 mb-1 md:mb-2">Estado Stock</label>
@@ -81,6 +92,17 @@
                         <option value="negativo">Stock Negativo</option>
                         <option value="positivo">Stock Positivo</option>
                         <option value="sin_stock">Sin Stock</option>
+                    </select>
+                </div>
+
+                <!-- Stock Mínimo -->
+                <div class="col-span-2 lg:col-span-1">
+                    <label class="block text-xs md:text-sm font-secondary font-medium text-gray-700 mb-1 md:mb-2">Stock Mínimo</label>
+                    <select wire:model.live="stockMinimoArticulo"
+                            class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent font-secondary">
+                        <option value="">Todos</option>
+                        <option value="debajo">Debajo del Mínimo</option>
+                        <option value="minimo_superior">En Mínimo o Superior</option>
                     </select>
                 </div>
 
@@ -116,12 +138,19 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             @foreach($articulos as $articulo)
-                            <tr class="hover:bg-gray-50 transition-colors duration-200">
+                            <tr class="hover:bg-gray-50 transition-colors duration-200 {{ $articulo->INACTIVO ? 'bg-gray-50' : '' }}">
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm font-secondary font-medium text-gray-900">{{ $articulo->CODIGO }}</div>
+                                    <div class="text-sm font-secondary font-medium {{ $articulo->INACTIVO ? 'text-gray-400' : 'text-gray-900' }}">{{ $articulo->CODIGO }}</div>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <div class="text-sm font-secondary text-gray-900">{{ $articulo->NOMBRE }}</div>
+                                    <div class="text-sm font-secondary {{ $articulo->INACTIVO ? 'text-gray-400' : 'text-gray-900' }}">
+                                        {{ $articulo->NOMBRE }}
+                                        @if($articulo->INACTIVO)
+                                            <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-600 align-middle">
+                                                <i class="fas fa-ban mr-1 text-[10px]"></i>Inactivo
+                                            </span>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm font-secondary text-gray-600">{{ $articulo->nombre_depto ?? '-' }}</div>
@@ -147,11 +176,18 @@
                 <!-- Vista Mobile: Cards -->
                 <div class="lg:hidden divide-y divide-gray-200">
                     @foreach($articulos as $articulo)
-                    <div class="p-3 hover:bg-gray-50 transition-colors duration-200">
+                    <div class="p-3 hover:bg-gray-50 transition-colors duration-200 {{ $articulo->INACTIVO ? 'bg-gray-50' : '' }}">
                         <div class="flex justify-between items-start mb-2">
                             <div class="flex-1">
-                                <div class="text-xs font-secondary font-bold text-gray-900 mb-1">{{ $articulo->CODIGO }}</div>
-                                <div class="text-sm font-secondary font-medium text-gray-900 mb-1">{{ $articulo->NOMBRE }}</div>
+                                <div class="text-xs font-secondary font-bold {{ $articulo->INACTIVO ? 'text-gray-400' : 'text-gray-900' }} mb-1">{{ $articulo->CODIGO }}</div>
+                                <div class="text-sm font-secondary font-medium {{ $articulo->INACTIVO ? 'text-gray-400' : 'text-gray-900' }} mb-1">
+                                    {{ $articulo->NOMBRE }}
+                                    @if($articulo->INACTIVO)
+                                        <span class="ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-200 text-gray-600 align-middle">
+                                            <i class="fas fa-ban mr-1 text-[9px]"></i>Inactivo
+                                        </span>
+                                    @endif
+                                </div>
                                 <div class="text-xs font-secondary text-gray-500">{{ $articulo->nombre_depto ?? 'Sin departamento' }}</div>
                             </div>
                         </div>
@@ -285,13 +321,13 @@
                     <span class="sm:hidden">Filtros</span>
                 </h2>
                 <button wire:click="limpiarFiltrosMaterias"
-                        class="px-2 md:px-4 py-1.5 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors duration-200 text-xs md:text-sm font-secondary">
-                    <i class="fas fa-broom mr-1"></i>
+                        class="px-2 md:px-4 py-1.5 md:py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors duration-200 text-xs md:text-sm font-secondary cursor-pointer">
+                    <i class="fas fa-eraser mr-1"></i>
                     <span class="hidden sm:inline">Limpiar</span>
                 </button>
             </div>
 
-            <div class="grid grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
                 <!-- Buscar -->
                 <div class="col-span-2 lg:col-span-1">
                     <label class="block text-xs md:text-sm font-secondary font-medium text-gray-700 mb-1 md:mb-2">Buscar</label>
@@ -310,6 +346,17 @@
                         <option value="negativo">Stock Negativo</option>
                         <option value="positivo">Stock Positivo</option>
                         <option value="sin_stock">Sin Stock</option>
+                    </select>
+                </div>
+
+                <!-- Stock Mínimo -->
+                <div class="col-span-2 lg:col-span-1">
+                    <label class="block text-xs md:text-sm font-secondary font-medium text-gray-700 mb-1 md:mb-2">Stock Mínimo</label>
+                    <select wire:model.live="stockMinimoMateria"
+                            class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent font-secondary">
+                        <option value="">Todos</option>
+                        <option value="debajo">Debajo del Mínimo</option>
+                        <option value="minimo_superior">En Mínimo o Superior</option>
                     </select>
                 </div>
 

@@ -18,6 +18,8 @@ class Cajas extends Component
     public $fechaHasta = '';
     public $cajaSelecionada = '';
     public $tipoSaldo = '';
+    public $tipoCaja = 'cerradas'; // 'cerradas' o 'abiertas'
+    public $cajaAbiertaSelecionada = ''; // Para filtro de cajas abiertas
 
     // Paginación
     public $porPagina = 25;
@@ -34,6 +36,10 @@ class Cajas extends Component
     public $mostrarPanel = false;
     public $cajaSeleccionada = null;
     public $detallesCaja = [];
+
+    // Para cajas abiertas
+    public $cajasAbiertas = [];
+    public $ventasTotalesTurno = 0;
 
     protected $tablePrefix;
     protected $paginationTheme = 'bootstrap';
@@ -72,31 +78,37 @@ class Cajas extends Component
     public function updatedBuscar()
     {
         $this->resetPage();
+        $this->cerrarPanel();
     }
 
     public function updatedFechaDesde()
     {
         $this->resetPage();
+        $this->cerrarPanel();
     }
 
     public function updatedFechaHasta()
     {
         $this->resetPage();
+        $this->cerrarPanel();
     }
 
     public function updatedCajaSelecionada()
     {
         $this->resetPage();
+        $this->cerrarPanel();
     }
 
     public function updatedTipoSaldo()
     {
         $this->resetPage();
+        $this->cerrarPanel();
     }
 
     public function updatedPorPagina()
     {
         $this->resetPage();
+        $this->cerrarPanel();
     }
 
     public function ordenar($campo)
@@ -118,6 +130,7 @@ class Cajas extends Component
         $this->cajaSelecionada = '';
         $this->tipoSaldo = '';
         $this->resetPage();
+        $this->cerrarPanel();
     }
 
     public function verDetalleCaja($idCaja)
@@ -241,6 +254,139 @@ class Cajas extends Component
         ])->paginate($this->porPagina);
     }
 
+    public function getMovimientosCajasAbiertas()
+    {
+        $this->setupClientDatabase();
+
+        // Si no hay caja seleccionada, retornar vacío
+        if (empty($this->cajaAbiertaSelecionada)) {
+            $this->cajasAbiertas = collect();
+            $this->ventasTotalesTurno = 0;
+            $this->totalEfectivo = 0;
+            return;
+        }
+
+        $nCaja = (int)$this->cajaAbiertaSelecionada;
+        $condicionCaja = " AND caja = " . $nCaja;
+
+        $query = "
+            SELECT 'FONDO DE CAJA' AS concepto, SUM(importe) AS debe, 0 AS haber, SUM(importe) AS efec
+            FROM {$this->tablePrefix}fondo
+            WHERE checkeado = FALSE {$condicionCaja}
+
+            UNION
+
+            SELECT 'INGRESOS/RETIROS MANUAL' AS concepto, SUM(IF(tipo='I',importe,0)) as debe, SUM(IF(tipo='R',importe,0)) AS haber, SUM(-importe*IF(tipo='I',-1,1)) AS efec
+            FROM {$this->tablePrefix}retiros
+            WHERE checkeado = FALSE {$condicionCaja}
+
+            UNION
+
+            SELECT 'INGRESOS EN EFECTIVO' AS concepto, SUM(pc.importe) AS debe, 0 AS haber, SUM(pc.importe) AS efec
+            FROM {$this->tablePrefix}pagos p LEFT JOIN {$this->tablePrefix}pagcon pc ON p.numero = pc.numero
+            WHERE p.checkeado = FALSE {$condicionCaja}
+            AND pc.tipocon = 1 AND pc.valorcambio = 1
+
+            UNION
+
+            SELECT CONCAT(pc.observa,' x ',ROUND(SUM(pc.importe/pc.valorcambio),2)) AS concepto, SUM(pc.importe) AS debe, 0 AS haber, 0 AS efec
+            FROM {$this->tablePrefix}pagos p LEFT JOIN {$this->tablePrefix}pagcon pc ON p.numero = pc.numero
+            WHERE p.checkeado = FALSE {$condicionCaja}
+            AND pc.tipocon = 1 AND pc.valorcambio <> 1
+            GROUP BY pc.observa
+
+            UNION
+
+            SELECT 'EGRESOS EN EFECTIVO' AS concepto, 0 AS debe, SUM(oc.importe) AS haber, SUM(-oc.importe) AS efec
+            FROM {$this->tablePrefix}ordpag o LEFT JOIN {$this->tablePrefix}ordcon oc ON o.numero = oc.numero
+            WHERE o.checkeado = FALSE {$condicionCaja}
+            AND oc.codcon = 1
+
+            UNION
+
+            SELECT 'INGRESOS POR TARJETAS DEB/CRED' AS concepto, SUM(pc.importe) AS debe, 0 AS haber, 0 AS efec
+            FROM {$this->tablePrefix}pagos p LEFT JOIN {$this->tablePrefix}pagcon pc ON p.numero = pc.numero
+            WHERE p.checkeado = FALSE {$condicionCaja}
+            AND pc.tipocon = 4
+
+            UNION
+
+            SELECT 'INGRESOS POR MERCADO PAGO' AS concepto, SUM(pc.importe) AS debe, 0 AS haber, 0 AS efec
+            FROM {$this->tablePrefix}pagos p LEFT JOIN {$this->tablePrefix}pagcon pc ON p.numero = pc.numero
+            WHERE p.checkeado = FALSE {$condicionCaja}
+            AND pc.tipocon = 7
+
+            UNION
+
+            SELECT 'EGRESOS POR MERCADO PAGO' AS concepto, 0 AS debe, SUM(pc.importe) AS haber, 0 AS efec
+            FROM {$this->tablePrefix}ordpag p LEFT JOIN {$this->tablePrefix}ordcon pc ON p.numero = pc.numero
+            WHERE p.checkeado = FALSE {$condicionCaja}
+            AND pc.codcon = 7
+
+            UNION
+
+            SELECT 'INGRESOS POR QR BILLETERA VIRTUAL' AS concepto, SUM(pc.importe) AS debe, 0 AS haber, 0 AS efec
+            FROM {$this->tablePrefix}pagos p LEFT JOIN {$this->tablePrefix}pagcon pc ON p.numero = pc.numero
+            WHERE p.checkeado = FALSE {$condicionCaja}
+            AND pc.tipocon = 8
+
+            UNION
+
+            SELECT 'EGRESOS POR QR BILLETERA VIRTUAL' AS concepto, 0 AS debe, SUM(pc.importe) AS haber, 0 AS efec
+            FROM {$this->tablePrefix}ordpag p LEFT JOIN {$this->tablePrefix}ordcon pc ON p.numero = pc.numero
+            WHERE p.checkeado = FALSE {$condicionCaja}
+            AND pc.codcon = 8
+
+            UNION
+
+            SELECT 'INGRESOS POR TRANSFERENCIAS' AS concepto, SUM(pc.importe) AS debe, 0 AS haber, 0 AS efec
+            FROM {$this->tablePrefix}pagos p LEFT JOIN {$this->tablePrefix}pagcon pc ON p.numero = pc.numero
+            WHERE p.checkeado = FALSE {$condicionCaja}
+            AND pc.tipocon = 2
+
+            UNION
+
+            SELECT 'EGRESOS POR TRANSFERENCIAS' AS concepto, 0 AS debe, SUM(oc.importe) AS haber, 0 AS efec
+            FROM {$this->tablePrefix}ordpag o LEFT JOIN {$this->tablePrefix}ordcon oc ON o.numero = oc.numero
+            WHERE o.checkeado = FALSE {$condicionCaja}
+            AND oc.codcon = 2
+
+            UNION
+
+            SELECT 'INGRESOS DE CHEQUES ' AS concepto, SUM(importe) AS debe, 0 AS haber, 0 AS efec
+            FROM {$this->tablePrefix}pagos p LEFT JOIN {$this->tablePrefix}pagcon pc ON p.numero = pc.numero
+            WHERE p.checkeado = FALSE {$condicionCaja}
+            AND pc.tipocon = 3
+
+            UNION
+
+            SELECT 'EGRESOS DE CHEQUES' AS concepto, 0 AS debe, SUM(oc.importe) AS haber, 0 AS efec
+            FROM {$this->tablePrefix}ordpag o LEFT JOIN {$this->tablePrefix}ordcon oc ON o.numero = oc.numero
+            WHERE o.checkeado = FALSE {$condicionCaja}
+            AND (oc.codcon = 3 OR oc.codcon = 4)
+        ";
+
+        $resultados = DB::connection('client_db')->select($query);
+
+        // Filtrar resultados vacíos (excluyendo VENTAS TOTALES)
+        $this->cajasAbiertas = collect($resultados)->filter(function($item) {
+            return $item->debe > 0 || $item->haber > 0 || $item->efec != 0;
+        });
+
+        // Calcular totales para cajas abiertas
+        $this->totalEfectivo = $this->cajasAbiertas->sum('efec');
+
+        // Obtener ventas totales del turno por separado
+        $queryVentas = "
+            SELECT SUM(v.importe) AS total
+            FROM {$this->tablePrefix}concfact v
+            WHERE v.id_cierre IS NULL {$condicionCaja}
+        ";
+
+        $resultadoVentas = DB::connection('client_db')->select($queryVentas);
+        $this->ventasTotalesTurno = $resultadoVentas[0]->total ?? 0;
+    }
+
     public function getClaseSaldo($saldo)
     {
         if ($saldo > 0) {
@@ -268,7 +414,20 @@ class Cajas extends Component
         $this->setupClientDatabase();
 
         return DB::connection('client_db')
-            ->table($this->tablePrefix . 'cajadiaria')
+            ->table($this->tablePrefix . 'punto')
+            ->select('caja')
+            ->orderBy('caja')
+            ->pluck('caja');
+    }
+
+    public function getCajasAbiertas()
+    {
+        $this->setupClientDatabase();
+
+        // Obtener cajas que tienen fondo con checkeado = FALSE
+        return DB::connection('client_db')
+            ->table($this->tablePrefix . 'fondo')
+            ->where('checkeado', false)
             ->select('caja')
             ->distinct()
             ->orderBy('caja')
@@ -280,12 +439,41 @@ class Cajas extends Component
         return $detalles->sum($campo);
     }
 
+    public function updatedTipoCaja()
+    {
+        $this->resetPage();
+        $this->cerrarPanel();
+        $this->cajaAbiertaSelecionada = '';
+    }
+
+    public function updatedCajaAbiertaSelecionada()
+    {
+        // Cuando se selecciona una caja abierta, cargar sus movimientos
+        if (!empty($this->cajaAbiertaSelecionada)) {
+            $this->getMovimientosCajasAbiertas();
+        }
+    }
+
     #[Layout('layouts.app')]
     public function render()
     {
-        $cajas = $this->getCajas();
         $numerosCaja = $this->getNumerosCaja();
 
-        return view('panelresto.cajas', compact('cajas', 'numerosCaja'));
+        if ($this->tipoCaja === 'abiertas') {
+            $listaCajasAbiertas = $this->getCajasAbiertas();
+            $this->getMovimientosCajasAbiertas();
+            $cajas = null;
+        } else {
+            $listaCajasAbiertas = collect();
+            $cajas = $this->getCajas();
+        }
+
+        return view('panelresto.cajas', [
+            'cajas' => $cajas,
+            'numerosCaja' => $numerosCaja,
+            'listaCajasAbiertas' => $listaCajasAbiertas,
+            'cajasAbiertas' => $this->cajasAbiertas,
+            'ventasTotalesTurno' => $this->ventasTotalesTurno
+        ]);
     }
 }

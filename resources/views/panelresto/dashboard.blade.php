@@ -1,8 +1,8 @@
 <div class="h-screen bg-gray-50 flex">
     
-    <!-- ===== OVERLAY SOLO PARA MÓVIL 
-    <div class="sm:hidden {{ $sidebarOpen ? 'fixed inset-0 z-40 bg-black bg-opacity-50' : 'hidden' }}" 
-     wire:click="toggleSidebar"></div> -->
+    <!-- ===== OVERLAY SOLO PARA MÓVIL ===== -->
+    <div class="sm:hidden {{ $sidebarOpen ? 'fixed inset-0 z-40 bg-black/20 backdrop-blur-sm' : 'hidden' }}"
+     wire:click="toggleSidebar"></div>
 
     <!-- ===== SIDEBAR ===== -->
     <div class="
@@ -48,7 +48,7 @@
                     wire:click="navigateTo('panel-mesas') ; if(window.innerWidth < 640) $wire.call('toggleSidebar')"
                     class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'panel-mesas' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
                     <i class="fas fa-chair mr-3 text-lg {{ $currentPage === 'panel-mesas' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
-                    <span class="font-secondary font-medium">Panel de Mesas</span>
+                    <span class="font-secondary font-medium">Salón</span>
                 </button>
 
                 <!-- Estado Delivery -->
@@ -56,7 +56,7 @@
                     wire:click="navigateTo('estado-delivery') ; if(window.innerWidth < 640) $wire.call('toggleSidebar')"
                     class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'estado-delivery' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
                     <i class="fas fa-motorcycle mr-3 text-lg {{ $currentPage === 'estado-delivery' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
-                    <span class="font-secondary font-medium">Estado Delivery</span>
+                    <span class="font-secondary font-medium">Delivery</span>
                 </button>
 
                 <!-- Estado Mostrador -->
@@ -64,7 +64,7 @@
                     wire:click="navigateTo('estado-mostrador') ; if(window.innerWidth < 640) $wire.call('toggleSidebar')"
                     class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'estado-mostrador' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
                     <i class="fas fa-cash-register mr-3 text-lg {{ $currentPage === 'estado-mostrador' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
-                    <span class="font-secondary font-medium">Estado Mostrador</span>
+                    <span class="font-secondary font-medium">Mostrador</span>
                 </button>
 
                 <!-- Cobranzas a clientes -->
@@ -72,7 +72,7 @@
                     wire:click="navigateTo('cobranzas-clientes'); if(window.innerWidth < 640) $wire.call('toggleSidebar')"
                     class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'cobranzas-clientes' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
                     <i class="fas fa-hand-holding-usd mr-3 text-lg {{ $currentPage === 'cobranzas-clientes' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
-                    <span class="font-secondary font-medium">Cobranzas a clientes</span>
+                    <span class="font-secondary font-medium">Cobranzas</span>
                 </button>
 
                 <!-- Pagos a proveedores -->
@@ -80,7 +80,7 @@
                     wire:click="navigateTo('pagos-proveedores') ; if(window.innerWidth < 640) $wire.call('toggleSidebar')"
                     class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'pagos-proveedores' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
                     <i class="fas fa-credit-card mr-3 text-lg {{ $currentPage === 'pagos-proveedores' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
-                    <span class="font-secondary font-medium">Pagos a proveedores</span>
+                    <span class="font-secondary font-medium">Pagos</span>
                 </button>
 
                 <!-- Stock -->
@@ -104,7 +104,7 @@
                     wire:click="navigateTo('monitor'); if(window.innerWidth < 640) $wire.call('toggleSidebar')"
                     class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'monitor' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
                     <i class="fas fa-search-dollar mr-3 text-lg {{ $currentPage === 'monitor' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
-                    <span class="font-secondary font-medium">Pedidos Mostrador</span>
+                    <span class="font-secondary font-medium">Pedidos</span>
                 </button>
 
                 <!-- Ver Ventas -->
@@ -112,7 +112,7 @@
                     wire:click="navigateTo('ver-ventas'); if(window.innerWidth < 640) $wire.call('toggleSidebar')"
                     class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'ver-ventas' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
                     <i class="fas fa-receipt mr-3 text-lg {{ $currentPage === 'ver-ventas' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
-                    <span class="font-secondary font-medium">Ver Ventas</span>
+                    <span class="font-secondary font-medium">Ventas</span>
                 </button>
 
                 <!-- Configurar Delivery -->
@@ -120,7 +120,15 @@
                     wire:click="navigateTo('configurar-delivery'); if(window.innerWidth < 640) $wire.call('toggleSidebar')"
                     class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'configurar-delivery' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
                     <i class="fas fa-motorcycle mr-3 text-lg {{ $currentPage === 'configurar-delivery' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
-                    <span class="font-secondary font-medium">Configurar Delivery</span>
+                    <span class="font-secondary font-medium">Config. Delivery</span>
+                </button>
+
+                <!-- Configurar Kiosco -->
+                <button
+                    wire:click="navigateTo('configurar-kiosco'); if(window.innerWidth < 640) $wire.call('toggleSidebar')"
+                    class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'configurar-kiosco' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
+                    <i class="fas fa-tablet-alt mr-3 text-lg {{ $currentPage === 'configurar-kiosco' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
+                    <span class="font-secondary font-medium">Kiosco</span>
                 </button>
 
                 <!-- Auditoría -->
@@ -129,6 +137,14 @@
                     class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'auditoria' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
                     <i class="fas fa-clipboard-list mr-3 text-lg {{ $currentPage === 'auditoria' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
                     <span class="font-secondary font-medium">Auditoría</span>
+                </button>
+
+                <!-- Tu negocio hoy -->
+                <button
+                    wire:click="navigateTo('salud-negocio'); if(window.innerWidth < 640) $wire.call('toggleSidebar')"
+                    class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'salud-negocio' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
+                    <i class="fas fa-store mr-3 text-lg {{ $currentPage === 'salud-negocio' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
+                    <span class="font-secondary font-medium">Tu negocio hoy</span>
                 </button>
 
                 <!-- Separador -->
@@ -147,12 +163,12 @@
         <!-- Footer del Sidebar -->
         <div class="border-t border-gray-200 p-4 bg-[#222036] flex-shrink-0">
             <div class="flex items-center space-x-2">
-                <div class="w-8 h-8 bg-[#FFAF22] rounded-md flex items-center justify-center">
-                    <span class="text-white font-bold text-sm font-primary">{{ session('panel_user_id') }}</span>
+                <div class="h-8 px-2 min-w-[2rem] bg-[#FFAF22] rounded-md flex items-center justify-center flex-shrink-0">
+                    <span class="text-white font-bold text-xs font-primary whitespace-nowrap">{{ session('panel_user_id') }}</span>
                 </div>
                 <div class="flex-1 min-w-0">
                     <p class="text-sm font-secondary font-semibold text-white truncate">Usuario</p>
-                    <p class="text-xs font-secondary text-white">{{ session('cliente_nombre') }}</p>
+                    <p class="text-xs font-secondary text-white truncate">{{ session('cliente_nombre') }}</p>
                 </div>
             </div>
         </div>
@@ -177,7 +193,7 @@
                             <h1 class="text-xl lg:text-2xl font-primary  text-white">
                                 @switch($currentPage)
                                     @case('inicio')
-                                        Dashboard Principal
+                                        Inicio
                                         @break
                                     @case('panel-mesas')
                                         Panel de Mesas
@@ -209,8 +225,17 @@
                                     @case('configurar-delivery')
                                         Configurar Delivery
                                         @break
+                                    @case('configurar-kiosco')
+                                        Configurar Kiosco
+                                        @break
                                     @case('auditoria')
                                         Auditoría
+                                        @break
+                                    @case('estado-resultado')
+                                        Estado de Resultado
+                                        @break
+                                    @case('salud-negocio')
+                                        Tu negocio hoy
                                         @break
                                     @default
                                         Panel de Gestión
@@ -231,7 +256,7 @@
         </header>
 
         <!-- Contenido Principal -->
-        <main class="flex-1 overflow-y-auto p-4 lg:p-6 bg-gray-200">
+        <main id="main-content" class="flex-1 overflow-y-auto p-4 lg:p-6 bg-gray-200">
             <div class="max-w-7xl mx-auto h-full">
                 @switch($currentPage)
                     @case('inicio')
@@ -267,8 +292,17 @@
                     @case('configurar-delivery')
                         @livewire('panelresto.configurar-delivery')
                         @break
+                    @case('configurar-kiosco')
+                        @livewire('panelresto.configurar-kiosco')
+                        @break
                     @case('auditoria')
                         @livewire('panelresto.auditoria')
+                        @break
+                    @case('estado-resultado')
+                        @livewire('panelresto.estado-resultado')
+                        @break
+                    @case('salud-negocio')
+                        @livewire('panelresto.salud-negocio')
                         @break
                     @default
                         @livewire('panelresto.inicio')
@@ -290,6 +324,14 @@
     document.addEventListener('livewire:navigated', function() {
         if (window.innerWidth < 640) {
             Livewire.find('{{ $this->getId() }}').set('sidebarOpen', false);
+        }
+    });
+
+    // Escuchar evento para hacer scroll al top
+    window.addEventListener('scroll-to-top', function() {
+        const mainContent = document.getElementById('main-content');
+        if (mainContent) {
+            mainContent.scrollTo({ top: 0, behavior: 'smooth' });
         }
     });
 </script>

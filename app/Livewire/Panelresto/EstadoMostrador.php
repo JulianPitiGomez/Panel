@@ -25,6 +25,7 @@ class EstadoMostrador extends Component
     public $mostrarDetallePedido = false;
     public $pedidoSeleccionado = null;
     public $detallePedido = [];
+    public $formaPagoMostrador = [];
     
     // Configuración
     public $mostrarDetalle = true;
@@ -105,12 +106,15 @@ class EstadoMostrador extends Component
     public function calcularEstadisticas()
     {
         $this->setupClientDatabase();
-        
+
         $query = DB::connection('client_db')
             ->table($this->tablePrefix . 'mostrador')
             ->whereBetween('fecha', [$this->fechaDesde, $this->fechaHasta]);
 
         // Aplicar filtros
+        if ($this->estadoSeleccionado) {
+            $query->where('estado', $this->estadoSeleccionado);
+        }
 
         if ($this->soloNoEntregados) {
             $query->where('estado', '!=', 4);
@@ -120,7 +124,10 @@ class EstadoMostrador extends Component
         $this->estadosCount = DB::connection('client_db')
             ->table($this->tablePrefix . 'mostrador')
             ->select('estado', DB::raw('COUNT(*) as total'), DB::raw('SUM(importe) as importe_total'))
-            ->whereBetween('fecha', [$this->fechaDesde, $this->fechaHasta])            
+            ->whereBetween('fecha', [$this->fechaDesde, $this->fechaHasta])
+            ->when($this->estadoSeleccionado, function($q) {
+                return $q->where('estado', $this->estadoSeleccionado);
+            })
             ->when($this->soloNoEntregados, function($q) {
                 return $q->where('estado', '!=', 4);
             })
@@ -148,6 +155,11 @@ class EstadoMostrador extends Component
     public function toggleDetalle()
     {
         $this->mostrarDetalle = !$this->mostrarDetalle;
+
+        // Si se oculta el detalle, cerrar también el panel de detalle del pedido
+        if (!$this->mostrarDetalle) {
+            $this->cerrarDetallePedido();
+        }
     }
 
     public function toggleResumen()
@@ -158,12 +170,22 @@ class EstadoMostrador extends Component
     public function verDetallePedido($idPedido)
     {
         $this->setupClientDatabase();
-        
+
         // Obtener información del pedido
         $this->pedidoSeleccionado = DB::connection('client_db')
             ->table($this->tablePrefix . 'mostrador')
             ->where('id', $idPedido)
             ->first();
+
+        // Obtener formas de pago si id_pago > 0
+        $this->formaPagoMostrador = [];
+        if (isset($this->pedidoSeleccionado->id_pago) && $this->pedidoSeleccionado->id_pago > 0) {
+            $this->formaPagoMostrador = DB::connection('client_db')
+                ->table($this->tablePrefix . 'pagcon')
+                ->where('numero', $this->pedidoSeleccionado->id_pago)
+                ->where('importe', '>', 0)
+                ->get();
+        }
 
         // Obtener detalle del pedido
         $this->detallePedido = DB::connection('client_db')
@@ -188,6 +210,7 @@ class EstadoMostrador extends Component
         $this->mostrarDetallePedido = false;
         $this->pedidoSeleccionado = null;
         $this->detallePedido = [];
+        $this->formaPagoMostrador = [];
     }
 
     

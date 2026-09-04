@@ -25,6 +25,21 @@ class VerVentas extends Component
         $this->fechaDesde = date('Y-m-d', strtotime('-1 month'));
     }
 
+    public function updatedFechaDesde()
+    {
+        $this->currentPage = 1;
+    }
+
+    public function updatedFechaHasta()
+    {
+        $this->currentPage = 1;
+    }
+
+    public function updatedOrigenFiltro()
+    {
+        $this->currentPage = 1;
+    }
+
     public function aplicarFiltros()
     {
         $this->currentPage = 1;
@@ -147,10 +162,13 @@ class VerVentas extends Component
             ];
         }
 
-        $ventas = DB::connection('client_db')->table($this->tablePrefix . 'ventas_encab')
-            ->whereBetween('FECHA', [$this->fechaDesde, $this->fechaHasta])
-            ->select('OBSERVA', 'IMPORTE', 'TICOMP')
-            ->get();
+        $query = DB::connection('client_db')->table($this->tablePrefix . 'ventas_encab')
+            ->whereBetween('FECHA', [$this->fechaDesde, $this->fechaHasta]);
+
+        // Aplicar filtro de origen si está seleccionado
+        $query = $this->aplicarFiltroOrigen($query);
+
+        $ventas = $query->select('OBSERVA', 'IMPORTE', 'TICOMP')->get();
 
         $totales = [
             'SALON' => 0,
@@ -167,6 +185,42 @@ class VerVentas extends Component
         }
 
         return $totales;
+    }
+
+    private function getTotalGeneral()
+    {
+        $totalesPorOrigen = $this->getTotalesPorOrigen();
+        return array_sum($totalesPorOrigen);
+    }
+
+    private function getFormasPagoTotales()
+    {
+        $this->setupClientDatabase();
+
+        if (!$this->tablePrefix) {
+            return [];
+        }
+
+        // Formas de facturación (con qué forma de pago se cerraron las ventas)
+        // Agrupado por el rango de fechas seleccionado
+        $formas = DB::connection('client_db')->select("
+            SELECT
+                COALESCE(NULLIF(TRIM(observa), ''), 'Sin especificar') as forma,
+                SUM(importe * IF(ticomp='NC',-1,1)) as total,
+                COUNT(*) as cantidad
+            FROM {$this->tablePrefix}concfact
+            WHERE fecha BETWEEN ? AND ?
+            GROUP BY forma
+            ORDER BY total DESC
+        ", [$this->fechaDesde, $this->fechaHasta]);
+
+        return collect($formas)->map(function ($item) {
+            return [
+                'forma' => $item->forma,
+                'total' => round($item->total, 2),
+                'cantidad' => $item->cantidad,
+            ];
+        })->toArray();
     }
 
     private function getPaginationInfo()
@@ -218,6 +272,22 @@ class VerVentas extends Component
             ->get();
     }
 
+    public function getFormasPago($ticomp, $letra, $numcomp)
+    {
+        $this->setupClientDatabase();
+
+        if (!$this->tablePrefix) {
+            return collect();
+        }
+
+        return DB::connection('client_db')->table($this->tablePrefix . 'concfact')
+            ->where('ticomp', $ticomp)
+            ->where('letra', $letra)
+            ->where('numcomp', $numcomp)
+            ->select('observa', 'importe')
+            ->get();
+    }
+
     public function render()
     {
         $this->setupClientDatabase();
@@ -239,10 +309,28 @@ class VerVentas extends Component
                 ->map(function ($venta) {
                     $venta->fecha_formateada = date('d/m/Y', strtotime($venta->FECHA));
                     $venta->hora_formateada = date('H:i:s', strtotime($venta->HORA));
-                    $venta->comprobante = $venta->LETRA . $venta->NUMCOMP;
+                    $ticompLabels = [
+                        'FC' => 'Factura',
+                        'FR' => 'Fact. Remito',
+                        'ND' => 'Nota Débito',
+                        'NC' => 'Nota Crédito',
+                    ];
+                    $ticompLabel = $ticompLabels[$venta->TICOMP] ?? $venta->TICOMP;
+                    $venta->comprobante = $ticompLabel . ' ' . $venta->LETRA . $venta->NUMCOMP;
                     $venta->nrofac = $venta->TICOMP . $venta->LETRA . $venta->NUMCOMP;
                     $venta->importe_calculado = $venta->TICOMP === 'NC' ? -$venta->IMPORTE : $venta->IMPORTE;
+                    $venta->factura_aplicada = $venta->TICOMP === 'NC' && !empty($venta->OBSERVA) ? $venta->OBSERVA : null;
                     $venta->origen = $this->getOrigenVenta($venta->OBSERVA);
+
+                    // Resolver nombre del mozo para ventas de Salón
+                    $venta->nombre_mozo = null;
+                    if ($venta->origen === 'SALON' && !empty($venta->VENDEDOR)) {
+                        $venta->nombre_mozo = DB::connection('client_db')
+                            ->table($this->tablePrefix . 'mozos')
+                            ->where('codigo', $venta->VENDEDOR)
+                            ->value('nombre');
+                    }
+
                     return $venta;
                 });
         }
@@ -250,6 +338,8 @@ class VerVentas extends Component
         return view('panelresto.ver-ventas', [
             'ventas' => $ventas,
             'totalesPorOrigen' => $totalesPorOrigen,
+            'totalGeneral' => $this->getTotalGeneral(),
+            'formasPago' => $this->getFormasPagoTotales(),
             'paginationInfo' => $this->getPaginationInfo(),
         ]);
     }

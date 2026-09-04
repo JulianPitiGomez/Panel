@@ -8,8 +8,8 @@
                 Filtros
             </h2>
             <button wire:click="limpiarFiltros"
-                    class="px-3 md:px-4 py-1.5 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors duration-200 text-xs md:text-sm font-secondary">
-                <i class="fas fa-broom mr-1"></i>
+                    class="px-3 md:px-4 py-1.5 md:py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors duration-200 text-xs md:text-sm font-secondary cursor-pointer">
+                <i class="fas fa-eraser mr-1"></i>
                 <span class="hidden sm:inline">Limpiar</span>
             </button>
         </div>
@@ -19,7 +19,7 @@
             <div>
                 <label class="block text-xs md:text-sm font-secondary font-medium text-gray-700 mb-1">Desde</label>
                 <input type="date"
-                       wire:model.live="fechaDesde"
+                       wire:model.live.debounce.500ms="fechaDesde"
                        class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent font-secondary">
             </div>
 
@@ -27,7 +27,7 @@
             <div>
                 <label class="block text-xs md:text-sm font-secondary font-medium text-gray-700 mb-1">Hasta</label>
                 <input type="date"
-                       wire:model.live="fechaHasta"
+                       wire:model.live.debounce.500ms="fechaHasta"
                        class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent font-secondary">
             </div>
 
@@ -130,6 +130,11 @@
     </div>
     @endif
 
+    <!-- Layout Principal con Panel Lateral -->
+    <div class="flex flex-col lg:flex-row gap-4 md:gap-6">
+        <!-- Contenido Principal -->
+        <div class="w-full transition-all duration-300">
+
     <!-- Sección: Pagos por Fecha -->
     @if($mostrarDetalle)
     <div class="bg-white rounded-xl shadow-sm border border-gray-200">
@@ -227,7 +232,7 @@
                             <button wire:click="verDetallePago({{ $pago->NUMERO }})"
                                     class="text-[#FFAF22] hover:text-[#222036] font-secondary text-sm">
                                 <i class="fas fa-eye mr-1"></i>
-                                Ver Detalle
+                                Ver
                             </button>
                         </td>
                     </tr>
@@ -403,136 +408,167 @@
     </div>
     @endif
 
-</div>
-
-<!-- Panel Lateral de Detalle (Desktop) / Modal Bottom Sheet (Mobile) -->
-@if($mostrarDetallePago && $pagoSeleccionado)
-<div class="fixed inset-x-0 bottom-0 lg:absolute lg:top-0 lg:right-0 lg:w-96 bg-white border-t lg:border-l lg:border-t-0 border-gray-200 rounded-t-2xl lg:rounded-xl shadow-lg overflow-hidden z-50">
-
-    <div class="h-[80vh] lg:h-auto lg:max-h-[calc(100vh-200px)] flex flex-col">
-        <!-- Header del Panel -->
-        <div class="flex items-center justify-between p-3 md:p-4 border-b border-gray-200 bg-gray-50">
-            <!-- Drag handle (solo mobile) -->
-            <div class="lg:hidden w-full flex justify-center absolute top-2 left-0">
-                <div class="w-12 h-1 bg-gray-300 rounded-full"></div>
-            </div>
-
-            <h3 class="text-base md:text-lg font-primary font-semibold text-gray-900 flex items-center mt-3 lg:mt-0">
-                <i class="fas fa-file-invoice-dollar text-[#FFAF22] mr-2"></i>
-                Orden #{{ $pagoSeleccionado->NUMERO }}
-            </h3>
-            <button wire:click="cerrarDetallePago" class="text-gray-400 hover:text-gray-600 p-1">
-                <i class="fas fa-times text-lg md:text-xl"></i>
-            </button>
         </div>
+        <!-- Fin Contenido Principal -->
 
-        <!-- Información General del Pago -->
-        <div class="p-3 md:p-4 border-b border-gray-200 bg-gray-50">
-            <div class="grid grid-cols-1 gap-2 md:gap-3 text-xs md:text-sm">
-                <div class="flex justify-between">
-                    <span class="font-secondary font-medium text-gray-600">Proveedor:</span>
-                    <span class="font-secondary text-gray-900 text-right">{{ $pagoSeleccionado->cliente_nombre ?? 'Proveedor #' . $pagoSeleccionado->CLIENTE }}</span>
+        <!-- Panel Lateral Modal - Fijo a la derecha -->
+        @if($mostrarDetallePago && $pagoSeleccionado)
+        <!-- Overlay oscuro en mobile -->
+        <div class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+             wire:click="cerrarDetallePago"></div>
+
+        <!-- Panel lateral fijo -->
+        <div class="fixed right-0 top-0 h-full w-full sm:w-[90%] lg:w-[450px] xl:w-[500px] bg-white shadow-2xl z-50 overflow-hidden">
+            <div class="h-full flex flex-col">
+                <!-- Header del Panel -->
+                <div class="flex items-center justify-between p-3 md:p-4 border-b border-gray-200 bg-gray-50">
+                    <h3 class="text-base md:text-lg font-primary font-semibold text-gray-900 flex items-center">
+                        <i class="fas fa-file-invoice-dollar text-[#FFAF22] mr-2"></i>
+                        Orden #{{ $pagoSeleccionado->NUMERO }}
+                    </h3>
+                    <button wire:click="cerrarDetallePago" class="text-gray-400 hover:text-gray-600 p-1">
+                        <i class="fas fa-times text-lg md:text-xl"></i>
+                    </button>
                 </div>
-                <div class="flex justify-between">
-                    <span class="font-secondary font-medium text-gray-600">Fecha:</span>
-                    <span class="font-secondary text-gray-900">{{ date('d/m/Y', strtotime($pagoSeleccionado->FECHA)) }}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="font-secondary font-medium text-gray-600">Total:</span>
-                    <span class="font-secondary font-bold text-[#FFAF22]">${{ number_format($pagoSeleccionado->TOTAL, 2) }}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="font-secondary font-medium text-gray-600">Caja:</span>
-                    <span class="font-secondary text-gray-900">{{ $pagoSeleccionado->caja }}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="font-secondary font-medium text-gray-600">Usuario:</span>
-                    <span class="font-secondary text-gray-900">{{ $pagoSeleccionado->USUARIO }}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="font-secondary font-medium text-gray-600">Estado:</span>
-                    @if($pagoSeleccionado->checkeado)
-                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-secondary font-medium bg-red-100 text-red-800">
-                            <i class="fas fa-times mr-1"></i>
-                            Abierto
-                        </span>
-                    @else
-                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-secondary font-medium bg-green-100 text-green-800">
-                            <i class="fas fa-check mr-1"></i>
-                            Cerrado
-                        </span>
+
+                <!-- Información General del Pago -->
+                <div class="p-3 md:p-4 border-b border-gray-200 bg-gray-50">
+                    <div class="grid grid-cols-1 gap-2 md:gap-3 text-xs md:text-sm">
+                        <div class="flex justify-between">
+                            <span class="font-secondary font-medium text-gray-600">Proveedor:</span>
+                            <span class="font-secondary text-gray-900 text-right">{{ $pagoSeleccionado->cliente_nombre ?? 'Proveedor #' . $pagoSeleccionado->CLIENTE }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="font-secondary font-medium text-gray-600">Fecha:</span>
+                            <span class="font-secondary text-gray-900">{{ date('d/m/Y', strtotime($pagoSeleccionado->FECHA)) }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="font-secondary font-medium text-gray-600">Total:</span>
+                            <span class="font-secondary font-bold text-[#FFAF22]">${{ number_format($pagoSeleccionado->TOTAL, 2) }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="font-secondary font-medium text-gray-600">Caja:</span>
+                            <span class="font-secondary text-gray-900">{{ $pagoSeleccionado->caja }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="font-secondary font-medium text-gray-600">Usuario:</span>
+                            <span class="font-secondary text-gray-900">{{ $pagoSeleccionado->USUARIO }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="font-secondary font-medium text-gray-600">Estado:</span>
+                            @if($pagoSeleccionado->checkeado)
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-secondary font-medium bg-red-100 text-red-800">
+                                    <i class="fas fa-times mr-1"></i>
+                                    Abierto
+                                </span>
+                            @else
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-secondary font-medium bg-green-100 text-green-800">
+                                    <i class="fas fa-check mr-1"></i>
+                                    Cerrado
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+
+                    @if($pagoSeleccionado->OBSERVA)
+                    <div class="mt-2 md:mt-3 pt-2 md:pt-3 border-t border-gray-200">
+                        <div class="text-xs md:text-sm">
+                            <span class="font-secondary font-medium text-gray-600">Observaciones:</span>
+                            <p class="font-secondary text-gray-900 mt-1">{{ $pagoSeleccionado->OBSERVA }}</p>
+                        </div>
+                    </div>
                     @endif
                 </div>
-            </div>
 
-            @if($pagoSeleccionado->OBSERVA)
-            <div class="mt-2 md:mt-3 pt-2 md:pt-3 border-t border-gray-200">
-                <div class="text-xs md:text-sm">
-                    <span class="font-secondary font-medium text-gray-600">Observaciones:</span>
-                    <p class="font-secondary text-gray-900 mt-1">{{ $pagoSeleccionado->OBSERVA }}</p>
-                </div>
-            </div>
-            @endif
-        </div>
+                <!-- Detalle de Facturas Pagadas y Formas de Pago -->
+                <div class="flex-1 overflow-y-auto">
+                    <div class="p-3 md:p-4">
+                        <!-- Facturas Pagadas -->
+                        <h4 class="font-secondary font-semibold text-gray-800 mb-2 md:mb-3 flex items-center text-sm md:text-base">
+                            <i class="fas fa-file-invoice text-[#FFAF22] mr-2"></i>
+                            Facturas Pagadas
+                        </h4>
 
-        <!-- Detalle de Formas de Pago -->
-        <div class="flex-1 overflow-y-auto">
-            <div class="p-3 md:p-4">
-                <h4 class="font-secondary font-semibold text-gray-800 mb-2 md:mb-3 flex items-center text-sm md:text-base">
-                    <i class="fas fa-credit-card text-[#FFAF22] mr-2"></i>
-                    Formas de Pago
-                </h4>
-
-                @if(count($detallePagoCon) > 0)
-                <div class="space-y-2 md:space-y-3">
-                    @foreach($detallePagoCon as $detalle)
-                    <div class="bg-gray-50 rounded-lg p-2 md:p-3 border border-gray-200">
-                        <div class="flex justify-between items-start mb-2">
-                            <h5 class="font-secondary font-medium text-gray-900 text-xs md:text-sm">
-                                {{ $detalle->forma_pago ?? 'Forma de pago #' . $detalle->CODCON }}
-                            </h5>
-                            <span class="font-secondary font-bold text-gray-900 text-sm md:text-base">
-                                ${{ number_format($detalle->IMPORTE, 2) }}
-                            </span>
+                        @if(count($detalleFacturas) > 0)
+                        <div class="space-y-2 mb-4">
+                            @foreach($detalleFacturas as $factura)
+                            <div class="bg-blue-50 rounded-lg p-2 md:p-3 border border-blue-200">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h5 class="font-secondary font-medium text-gray-900 text-xs md:text-sm">
+                                            {{ $factura->TIPOCOMP }}-{{ $factura->LETRA }} {{ $factura->NUMFAC }}
+                                        </h5>
+                                        <p class="text-xs text-gray-600">
+                                            {{ \Carbon\Carbon::parse($factura->FECHA)->format('d/m/Y') }}
+                                        </p>
+                                    </div>
+                                    <span class="font-secondary font-bold text-gray-900 text-sm md:text-base">
+                                        ${{ number_format($factura->IMPORTE, 2) }}
+                                    </span>
+                                </div>
+                            </div>
+                            @endforeach
                         </div>
+                        @else
+                        <div class="text-center py-4 mb-4">
+                            <i class="fas fa-file-invoice text-gray-400 text-xl mb-2"></i>
+                            <p class="text-gray-600 font-secondary text-xs">Sin facturas asociadas</p>
+                        </div>
+                        @endif
 
-                        @if($detalle->OBSERVA)
-                        <div class="text-xs text-[#FFAF22] mt-2">
-                            <i class="fas fa-comment mr-1"></i>
-                            {{ $detalle->OBSERVA }}
+                        <!-- Formas de Pago -->
+                        <h4 class="font-secondary font-semibold text-gray-800 mb-2 md:mb-3 flex items-center text-sm md:text-base mt-4">
+                            <i class="fas fa-credit-card text-[#FFAF22] mr-2"></i>
+                            Formas de Pago
+                        </h4>
+
+                        @if(count($detallePagoCon) > 0)
+                        <div class="space-y-2">
+                            @foreach($detallePagoCon as $detalle)
+                            <div class="bg-green-50 rounded-lg p-2 md:p-3 border border-green-200">
+                                <div class="flex justify-between items-center">
+                                    <h5 class="font-secondary font-medium text-gray-900 text-xs md:text-sm">
+                                        {{ $detalle->OBSERVA ?? 'Forma de pago' }}
+                                    </h5>
+                                    <span class="font-secondary font-bold text-gray-900 text-sm md:text-base">
+                                        ${{ number_format($detalle->IMPORTE, 2) }}
+                                    </span>
+                                </div>
+                            </div>
+                            @endforeach
+                        </div>
+                        @else
+                        <div class="text-center py-4 md:py-6">
+                            <i class="fas fa-credit-card text-gray-400 text-xl md:text-2xl mb-2"></i>
+                            <p class="text-gray-600 font-secondary text-xs md:text-sm">Sin formas de pago registradas</p>
                         </div>
                         @endif
                     </div>
-                    @endforeach
                 </div>
-                @else
-                <div class="text-center py-4 md:py-6">
-                    <i class="fas fa-credit-card text-gray-400 text-xl md:text-2xl mb-2"></i>
-                    <p class="text-gray-600 font-secondary text-xs md:text-sm">Sin formas de pago registradas</p>
+
+                <!-- Footer del Panel - Resumen -->
+                @if(count($detallePagoCon) > 0 || count($detalleFacturas) > 0)
+                <div class="border-t border-gray-200 p-3 md:p-4 bg-gray-50">
+                    <div class="flex justify-between items-center">
+                        <span class="font-secondary font-bold text-gray-900 text-sm md:text-base">TOTAL ORDEN:</span>
+                        <span class="font-primary font-black text-lg md:text-xl text-[#FFAF22]">
+                            ${{ number_format($pagoSeleccionado->TOTAL, 2) }}
+                        </span>
+                    </div>
+                    <div class="text-xs md:text-sm text-gray-600 font-secondary mt-1">
+                        @if(count($detalleFacturas) > 0)
+                            {{ count($detalleFacturas) }} {{ count($detalleFacturas) == 1 ? 'factura' : 'facturas' }} •
+                        @endif
+                        {{ count($detallePagoCon) }} {{ count($detallePagoCon) == 1 ? 'forma de pago' : 'formas de pago' }}
+                    </div>
                 </div>
                 @endif
             </div>
         </div>
-
-        <!-- Footer del Panel - Resumen -->
-        @if(count($detallePagoCon) > 0)
-        <div class="border-t border-gray-200 p-3 md:p-4 bg-gray-50">
-            <div class="flex justify-between items-center">
-                <span class="font-secondary font-bold text-gray-900 text-sm md:text-base">TOTAL ORDEN:</span>
-                <span class="font-primary font-black text-lg md:text-xl text-[#FFAF22]">
-                    ${{ number_format($pagoSeleccionado->TOTAL, 2) }}
-                </span>
-            </div>
-            <div class="text-xs md:text-sm text-gray-600 font-secondary mt-1">
-                {{ count($detallePagoCon) }} {{ count($detallePagoCon) == 1 ? 'forma de pago' : 'formas de pago' }}
-            </div>
-        </div>
         @endif
-    </div>
-</div>
 
-<!-- Overlay para cerrar el modal en mobile -->
-<div class="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
-     wire:click="cerrarDetallePago">
+    </div>
+    <!-- Fin Layout Principal con Panel Lateral -->
+
 </div>
-@endif
+<!-- Fin container principal -->

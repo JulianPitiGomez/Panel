@@ -17,6 +17,9 @@ class VentasFechas extends Component
     public $buscar = '';
     public $perPage = 15;
     public $datosGrafico = [];
+    public $datosGraficoClientes = [];
+    public $datosGraficoDiaSemana = [];
+    public $formasPago = [];
     public $totalVentas = 0;
     public $cantidadFacturas = 0;
     
@@ -80,14 +83,14 @@ class VentasFechas extends Component
                 nombre as cliente,
                 importe,
                 DATE_FORMAT(fecha, '%d/%m/%Y') as fecha_formateada,
-                TIME_FORMAT(fecha, '%H:%i') as hora
+                hora as hora
             FROM {$this->tablePrefix}ventas_encab 
-            WHERE DATE(fecha) >= ? 
-            AND DATE(fecha) <= ?
+            WHERE fecha >= ?
+            AND fecha < ? + INTERVAL 1 DAY
         ";
-        
+
         $params = [$this->fechaDesde, $this->fechaHasta];
-        
+
         // Agregar filtro de búsqueda si existe
         if (!empty($this->buscar)) {
             $query .= " AND (numcomp LIKE ? OR nombre LIKE ?)";
@@ -130,8 +133,8 @@ class VentasFechas extends Component
                 SUM(importe * IF(ticomp='NC',-1,1)) as total_dia,
                 COUNT(*) as cantidad_facturas
             FROM {$this->tablePrefix}ventas_encab 
-            WHERE DATE(fecha) >= ? 
-            AND DATE(fecha) <= ?
+            WHERE fecha >= ?
+            AND fecha < ? + INTERVAL 1 DAY
             GROUP BY DATE(fecha)
             ORDER BY fecha ASC
         ", [$this->fechaDesde, $this->fechaHasta]);
@@ -152,12 +155,78 @@ class VentasFechas extends Component
                 SUM(importe * IF(ticomp='NC',-1,1)) as total,
                 COUNT(*) as cantidad
             FROM {$this->tablePrefix}ventas_encab 
-            WHERE DATE(fecha) >= ? 
-            AND DATE(fecha) <= ?
+            WHERE fecha >= ?
+            AND fecha < ? + INTERVAL 1 DAY
         ", [$this->fechaDesde, $this->fechaHasta]);
 
         $this->totalVentas = $totales[0]->total ?? 0;
         $this->cantidadFacturas = $totales[0]->cantidad ?? 0;
+
+        // Datos agrupados por cliente (top 10)
+        $datosClientes = DB::connection('client_db')->select("
+            SELECT
+                COALESCE(NULLIF(TRIM(nombre), ''), 'Sin nombre') as cliente,
+                SUM(importe * IF(ticomp='NC',-1,1)) as total_cliente,
+                COUNT(*) as cantidad_facturas
+            FROM {$this->tablePrefix}ventas_encab
+            WHERE fecha >= ?
+            AND fecha < ? + INTERVAL 1 DAY
+            GROUP BY cliente
+            ORDER BY total_cliente DESC
+            LIMIT 10
+        ", [$this->fechaDesde, $this->fechaHasta]);
+
+        $this->datosGraficoClientes = collect($datosClientes)->map(function ($item) {
+            return [
+                'cliente' => mb_substr($item->cliente, 0, 25),
+                'total' => round($item->total_cliente, 2),
+                'cantidad' => $item->cantidad_facturas,
+            ];
+        })->toArray();
+
+        // Datos agrupados por día de la semana
+        $datosDiaSemana = DB::connection('client_db')->select("
+            SELECT
+                DAYOFWEEK(fecha) as dia_num,
+                SUM(importe * IF(ticomp='NC',-1,1)) as total_dia,
+                COUNT(*) as cantidad_facturas
+            FROM {$this->tablePrefix}ventas_encab
+            WHERE fecha >= ?
+            AND fecha < ? + INTERVAL 1 DAY
+            GROUP BY dia_num
+            ORDER BY dia_num ASC
+        ", [$this->fechaDesde, $this->fechaHasta]);
+
+        $diasNombres = [1 => 'Domingo', 2 => 'Lunes', 3 => 'Martes', 4 => 'Miércoles', 5 => 'Jueves', 6 => 'Viernes', 7 => 'Sábado'];
+
+        $this->datosGraficoDiaSemana = collect($datosDiaSemana)->map(function ($item) use ($diasNombres) {
+            return [
+                'dia' => $diasNombres[$item->dia_num] ?? 'N/A',
+                'total' => round($item->total_dia, 2),
+                'cantidad' => $item->cantidad_facturas,
+            ];
+        })->toArray();
+
+        // Formas de facturación (con qué forma de pago se cerraron las ventas)
+        $datosFormasPago = DB::connection('client_db')->select("
+            SELECT
+                COALESCE(NULLIF(TRIM(observa), ''), 'Sin especificar') as forma,
+                SUM(importe * IF(ticomp='NC',-1,1)) as total,
+                COUNT(*) as cantidad
+            FROM {$this->tablePrefix}concfact
+            WHERE fecha >= ?
+            AND fecha < ? + INTERVAL 1 DAY
+            GROUP BY forma
+            ORDER BY total DESC
+        ", [$this->fechaDesde, $this->fechaHasta]);
+
+        $this->formasPago = collect($datosFormasPago)->map(function ($item) {
+            return [
+                'forma' => $item->forma,
+                'total' => round($item->total, 2),
+                'cantidad' => $item->cantidad,
+            ];
+        })->toArray();
     }
 
     #[Layout('layouts.app')]

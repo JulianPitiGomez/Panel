@@ -22,7 +22,7 @@
                         <i class="fas fa-calendar-alt mr-1"></i>Fecha Desde
                     </label>
                     <input type="date"
-                           wire:model="fechaDesde"
+                           wire:model.live="fechaDesde"
                            id="fechaDesde"
                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                 </div>
@@ -33,7 +33,7 @@
                         <i class="fas fa-calendar-alt mr-1"></i>Fecha Hasta
                     </label>
                     <input type="date"
-                           wire:model="fechaHasta"
+                           wire:model.live="fechaHasta"
                            id="fechaHasta"
                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                 </div>
@@ -43,7 +43,7 @@
                     <label for="tipoFiltro" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                         <i class="fas fa-tag mr-1"></i>Tipo
                     </label>
-                    <select wire:model="tipoFiltro"
+                    <select wire:model.live="tipoFiltro"
                             id="tipoFiltro"
                             class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                         <option value="">Todos</option>
@@ -59,7 +59,7 @@
                         <i class="fas fa-user mr-1"></i>Usuario
                     </label>
                     <input type="text"
-                           wire:model="usuarioFiltro"
+                           wire:model.live="usuarioFiltro"
                            id="usuarioFiltro"
                            placeholder="Nombre de usuario..."
                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">

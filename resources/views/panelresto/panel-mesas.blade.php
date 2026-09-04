@@ -1,6 +1,6 @@
-<div class="min-h-screen bg-gray-50">
-    <!-- Header Móvil Optimizado -->
-    <div class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
+<div class="h-screen flex flex-col bg-gray-50" wire:poll.10s="actualizarMesas">
+    <!-- Header Fijo -->
+    <div class="bg-white shadow-sm border-b border-gray-200 flex-shrink-0">
         <div class="container mx-auto px-3 py-3">
             <div class="flex items-center justify-between">
                 <h1 class="text-lg md:text-2xl font-primary font-bold text-gray-900 flex items-center">
@@ -10,8 +10,8 @@
                 </h1>
                 <div class="flex items-center gap-2">
                     <button wire:click="actualizarMesas"
-                            class="flex items-center px-2 md:px-4 py-2 bg-[#FFAF22]/90 text-white rounded-lg hover:bg-[#FFAF22]/90 transition-colors duration-200 font-secondary text-xs md:text-sm">
-                        <i class="fas fa-sync-alt md:mr-2"></i>
+                            class="flex items-center px-2 md:px-4 py-2 bg-[#FFAF22]/90 text-white rounded-lg hover:bg-[#FFAF22] transition-colors duration-200 font-secondary text-xs md:text-sm cursor-pointer">
+                        <i class="fas fa-sync-alt md:mr-2" wire:loading.class="animate-spin" wire:target="actualizarMesas"></i>
                         <span class="hidden md:inline">Actualizar</span>
                     </button>
                     <div class="hidden md:block text-xs md:text-sm text-gray-500 font-secondary">
@@ -22,9 +22,9 @@
         </div>
     </div>
 
-    <!-- Tabs de Salones -->
+    <!-- Tabs de Salones Fijos -->
     @if(count($salones) > 0)
-    <div class="bg-white border-b border-gray-200 sticky top-[52px] md:top-[68px] z-10">
+    <div class="bg-white border-b border-gray-200 flex-shrink-0">
         <div class="container mx-auto px-3">
             <nav class="flex space-x-4 md:space-x-8 overflow-x-auto">
                 @foreach($salones as $salon)
@@ -39,81 +39,87 @@
     </div>
     @endif
 
-    <!-- Estadísticas del Salón - Compacto para Móvil -->
-    @if($salonActivo)
-    <div class="bg-white border-b border-gray-200">
-        <div class="container mx-auto px-3 py-3">
-            <div class="grid grid-cols-4 gap-2">
-                <div class="text-center">
-                    <div class="flex items-center justify-center w-8 h-8 md:w-12 md:h-12 bg-green-100 rounded-full mx-auto mb-1">
-                        <i class="fas fa-cutlery text-green-600 text-xs md:text-base"></i>
+    <!-- Contenedor con Scroll: Estadísticas + Mesas -->
+    <div class="flex-1 overflow-hidden">
+        <div class="flex h-full gap-4 lg:gap-6">
+            <!-- Área de Estadísticas y Mesas con Scroll -->
+            <div class="w-full overflow-y-auto">
+                @if($salonActivo)
+                    <!-- Estadísticas del Salón -->
+                    <div class="bg-white border-b border-gray-200 sticky top-0 z-10">
+                        <div class="container mx-auto px-3 py-3">
+                            <div class="grid grid-cols-4 gap-2">
+                                <div class="text-center">
+                                    <div class="flex items-center justify-center w-8 h-8 md:w-12 md:h-12 bg-green-100 rounded-full mx-auto mb-1">
+                                        <i class="fas fa-cutlery text-green-600 text-xs md:text-base"></i>
+                                    </div>
+                                    <div class="text-sm md:text-base font-primary font-bold text-green-600">{{ $this->getContadorMesasPorEstado('libre') }}</div>
+                                    <div class="text-[10px] md:text-sm font-secondary text-gray-600">Libres</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="flex items-center justify-center w-8 h-8 md:w-12 md:h-12 bg-red-100 rounded-full mx-auto mb-1">
+                                        <i class="fas fa-users text-red-600 text-xs md:text-base"></i>
+                                    </div>
+                                    <div class="text-sm md:text-base font-primary font-bold text-red-600">{{ $this->getContadorMesasPorEstado('ocupada') }}</div>
+                                    <div class="text-[10px] md:text-sm font-secondary text-gray-600">Ocupadas</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="flex items-center justify-center w-8 h-8 md:w-12 md:h-12 bg-blue-200 rounded-full mx-auto mb-1">
+                                        <i class="fas fa-dollar text-blue-800 text-xs md:text-base"></i>
+                                    </div>
+                                    <div class="text-sm md:text-base font-primary font-bold text-blue-800">{{ $this->getContadorMesasPorEstado('pronto_cierre') }}</div>
+                                    <div class="text-[10px] md:text-sm font-secondary text-gray-600 leading-tight">Pronto<br class="md:hidden"> Cierre</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="flex items-center justify-center w-8 h-8 md:w-12 md:h-12 bg-yellow-100 rounded-full mx-auto mb-1">
+                                        <i class="fas fa-bookmark text-yellow-600 text-xs md:text-base"></i>
+                                    </div>
+                                    <div class="text-sm md:text-base font-primary font-bold text-yellow-600">{{ $this->getContadorMesasPorEstado('reservada') }}</div>
+                                    <div class="text-[10px] md:text-sm font-secondary text-gray-600">Reservadas</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="text-sm md:text-base font-primary font-bold text-green-600">{{ $this->getContadorMesasPorEstado('libre') }}</div>
-                    <div class="text-[10px] md:text-sm font-secondary text-gray-600">Libres</div>
-                </div>
-                <div class="text-center">
-                    <div class="flex items-center justify-center w-8 h-8 md:w-12 md:h-12 bg-red-100 rounded-full mx-auto mb-1">
-                        <i class="fas fa-users text-red-600 text-xs md:text-base"></i>
-                    </div>
-                    <div class="text-sm md:text-base font-primary font-bold text-red-600">{{ $this->getContadorMesasPorEstado('ocupada') }}</div>
-                    <div class="text-[10px] md:text-sm font-secondary text-gray-600">Ocupadas</div>
-                </div>
-                <div class="text-center">
-                    <div class="flex items-center justify-center w-8 h-8 md:w-12 md:h-12 bg-blue-200 rounded-full mx-auto mb-1">
-                        <i class="fas fa-dollar text-blue-800 text-xs md:text-base"></i>
-                    </div>
-                    <div class="text-sm md:text-base font-primary font-bold text-blue-800">{{ $this->getContadorMesasPorEstado('pronto_cierre') }}</div>
-                    <div class="text-[10px] md:text-sm font-secondary text-gray-600 leading-tight">Pronto<br class="md:hidden"> Cierre</div>
-                </div>
-                <div class="text-center">
-                    <div class="flex items-center justify-center w-8 h-8 md:w-12 md:h-12 bg-yellow-100 rounded-full mx-auto mb-1">
-                        <i class="fas fa-bookmark text-yellow-600 text-xs md:text-base"></i>
-                    </div>
-                    <div class="text-sm md:text-base font-primary font-bold text-yellow-600">{{ $this->getContadorMesasPorEstado('reservada') }}</div>
-                    <div class="text-[10px] md:text-sm font-secondary text-gray-600">Reservadas</div>
-                </div>
-            </div>
-        </div>
-    </div>
-    @endif
 
-    <!-- Layout Principal: Grid de Mesas + Panel de Detalle -->
-    <div class="container mx-auto px-3 py-4">
-        <div class="flex gap-4 lg:gap-6">
-            <!-- Grid de Mesas -->
-            <div class="{{ $mostrarDetalle ? 'hidden lg:block lg:w-2/3' : 'w-full' }} transition-all duration-300">
-                @if($salonActivo && count($mesas) > 0)
-                <!-- Grid Responsive -->
-                <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 {{ $mostrarDetalle ? 'lg:grid-cols-4 xl:grid-cols-5' : 'lg:grid-cols-8 xl:grid-cols-10' }} gap-2">
+                    <!-- Grid de Mesas -->
+                    @if(count($mesas) > 0)
+                    <div class="container mx-auto px-3 py-4">
+                        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 {{ $mostrarDetalle ? 'lg:grid-cols-4 xl:grid-cols-5' : 'lg:grid-cols-8 xl:grid-cols-10' }} gap-2 pb-4">
                     @foreach($mesas as $mesa)
                     <div wire:click="seleccionarMesa({{ $mesa->NUMERO }})"
-                         class="relative cursor-pointer transform hover:scale-105 transition-all duration-200 active:scale-95">
+                         class="cursor-pointer transform hover:scale-105 transition-all duration-200 active:scale-95">
 
                         <!-- Mesa Card -->
-                        <div class="relative {{ $this->getColorMesa($mesa->RECURSO) }} rounded-xl p-3 md:p-4 shadow-lg border-2 hover:shadow-xl">
+                        <div class="{{ $this->getColorMesa($mesa->RECURSO) }} rounded-xl p-3 md:p-4 shadow-md border-2 hover:shadow-lg h-full flex flex-col justify-center">
                             <!-- Número de Mesa -->
                             <div class="text-center">
                                 <div class="text-xs md:text-sm lg:text-base font-primary font-bold {{ $this->getColorTextoMesa($mesa->RECURSO) }}">
                                     Mesa<br class="hidden sm:inline">
                                     <span class="text-base md:text-lg lg:text-xl">{{ $mesa->NUMERO }}</span>
                                 </div>
+                                <div class="text-[10px] md:text-xs {{ $this->getColorTextoMesa($mesa->RECURSO) }} opacity-80 truncate mt-1 h-4" title="{{ $mesa->nombre_mozo ?? '' }}">
+                                    @if($mesa->nombre_mozo && !in_array($this->getEstadoMesa($mesa->RECURSO), ['Libre', 'Reservada']))
+                                        <i class="fas fa-user-tie mr-0.5"></i>{{ $mesa->nombre_mozo }}
+                                    @endif
+                                </div>
                             </div>
                         </div>
                     </div>
-                    @endforeach
-                </div>
-
-                @elseif($salonActivo)
-                <!-- Sin Mesas -->
-                <div class="text-center py-12">
-                    <i class="fas fa-utensils text-gray-400 text-4xl md:text-5xl mb-4"></i>
-                    <h3 class="text-base md:text-lg font-primary font-medium text-gray-900 mb-2">No hay mesas en este salón</h3>
-                    <p class="text-sm text-gray-600 font-secondary">El salón "{{ $this->getSalonNombre($salonActivo) }}" no tiene mesas configuradas</p>
-                </div>
+                        @endforeach
+                        </div>
+                    </div>
+                    @else
+                    <!-- Sin Mesas -->
+                    <div class="container mx-auto px-3 py-12 text-center">
+                        <i class="fas fa-utensils text-gray-400 text-4xl md:text-5xl mb-4"></i>
+                        <h3 class="text-base md:text-lg font-primary font-medium text-gray-900 mb-2">No hay mesas en este salón</h3>
+                        <p class="text-sm text-gray-600 font-secondary">El salón "{{ $this->getSalonNombre($salonActivo) }}" no tiene mesas configuradas</p>
+                    </div>
+                    @endif
 
                 @else
                 <!-- Sin Salón Seleccionado -->
-                <div class="text-center py-12">
+                <div class="container mx-auto px-3 py-12 text-center">
                     <i class="fas fa-door-open text-gray-400 text-4xl md:text-5xl mb-4"></i>
                     <h3 class="text-base md:text-lg font-primary font-medium text-gray-900 mb-2">Seleccione un salón</h3>
                     <p class="text-sm text-gray-600 font-secondary">Elija un salón de las pestañas superiores para ver sus mesas</p>
@@ -121,16 +127,10 @@
                 @endif
             </div>
 
-            <!-- Panel de Detalle de Mesa - Modal en Móvil, Sidebar en Desktop -->
+            <!-- Panel de Detalle de Mesa - Modal fijo a la derecha -->
             @if($mostrarDetalle)
-            <!-- Overlay móvil -->
-            <div wire:click="cerrarDetalle"
-                 class="lg:hidden fixed inset-0 bg-black bg-opacity-50 transition-opacity z-40"></div>
-
-            <!-- Panel -->
-            <div class="fixed inset-x-0 bottom-0 lg:relative lg:inset-auto lg:w-1/3 bg-white border-gray-200 shadow-lg
-                        rounded-t-2xl lg:rounded-xl z-50 lg:z-auto">
-                <div class="h-[80vh] lg:h-auto lg:max-h-[calc(100vh-200px)] flex flex-col">
+            <div class="fixed right-0 top-0 h-full w-full sm:w-[90%] lg:w-[450px] xl:w-[500px] bg-white shadow-2xl z-50 overflow-hidden">
+                <div class="h-full flex flex-col">
                 <!-- Header del Panel -->
                 <div class="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
                     <h3 class="text-base md:text-lg font-primary font-semibold text-gray-900 flex items-center">
@@ -155,7 +155,14 @@
                             <span class="font-secondary text-gray-900 ml-1">{{ $mesaSeleccionada->COMENSALES ?: '-' }}</span>
                         </div>
 
-                        @if($mesaSeleccionada->fechaaper)
+                        @if($nombreMozo)
+                        <div class="col-span-2">
+                            <span class="font-secondary font-medium text-gray-600"><i class="fas fa-user-tie text-[#FFAF22] mr-1"></i>Mozo:</span>
+                            <span class="font-secondary text-gray-900 ml-1">{{ $nombreMozo }}</span>
+                        </div>
+                        @endif
+
+                        @if($mesaSeleccionada->fechaaper && $this->getEstadoMesa($mesaSeleccionada->RECURSO) != 'Libre')
                         <div class="col-span-2">
                             <span class="font-secondary font-medium text-gray-600">Apertura:</span>
                             <span class="font-secondary text-gray-900 ml-1">
@@ -252,11 +259,3 @@
     </div>
 </div>
 
-<!-- Auto-actualización cada 10 segundos -->
-<script>
-document.addEventListener('livewire:initialized', () => {
-    setInterval(() => {
-        @this.call('actualizarMesas');
-    }, 10000);
-});
-</script>

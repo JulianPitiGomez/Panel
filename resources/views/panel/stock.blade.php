@@ -7,11 +7,16 @@
                 <i class="fas fa-boxes text-[#FFAF22] mr-2"></i>
                 Filtros de Stock
             </h2>
-            <button wire:click="limpiarFiltros" 
-                    class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors duration-200 text-sm font-secondary">
-                <i class="fas fa-broom mr-1"></i>
-                Limpiar Filtros
-            </button>
+            <div class="flex items-end gap-2">
+                <button 
+                        class="btn-primary flex-1 sm:flex-none text-sm">
+                    <i class="fas fa-filter mr-1"></i><span class="hidden sm:inline">Aplicar</span>
+                </button>
+                <button wire:click="limpiarFiltros"
+                        class="px-3 sm:px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition duration-200 flex-1 sm:flex-none text-sm">
+                    <i class="fas fa-eraser mr-1"></i><span class="hidden sm:inline">Limpiar</span>
+                </button>
+            </div>
         </div>
 
         <!-- Búsqueda por texto -->
@@ -158,7 +163,8 @@
         </div>
 
         @if($articulos->count() > 0)
-        <div class="overflow-x-auto">
+        <!-- Vista Desktop: Tabla -->
+        <div class="hidden lg:block overflow-x-auto">
             <table class="w-full">
                 <thead class="bg-gray-50">
                     <tr>
@@ -232,6 +238,9 @@
                         <td class="px-6 py-4 whitespace-nowrap text-right">
                             <div class="text-sm font-secondary text-gray-900">
                                 ${{ number_format($articulo->precioven, 2) }}
+                            </div>                            
+                            <div class="text-xs font-secondary text-gray-500">                                
+                                    <span class="inline-block bg-gray-100 px-2 py-1 rounded mr-1">{{ $articulo->fecmod }}</span>                                
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
@@ -246,7 +255,7 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-center">
                             @if($articulo->stockotro)
-                                <button wire:click="verStockRelacionado('{{ $articulo->codigo }}')" 
+                                <button wire:click="verStockRelacionado('{{ $articulo->codigo }}')"
                                         class="text-[#FFAF22] hover:text-[#222036] font-secondary text-sm">
                                     <i class="fas fa-link mr-1"></i>
                                     Ver Relacionados
@@ -259,6 +268,69 @@
                     @endforeach
                 </tbody>
             </table>
+        </div>
+
+        <!-- Vista Mobile: Cards -->
+        <div class="lg:hidden divide-y divide-gray-200">
+            @foreach($articulos as $articulo)
+            <div class="p-4 hover:bg-gray-50 transition-colors duration-200">
+                <div class="flex justify-between items-start mb-2">
+                    <div class="flex-1 min-w-0">
+                        <div class="text-xs font-secondary text-gray-500 mb-0.5">{{ $articulo->codigo }}</div>
+                        <div class="text-sm font-secondary font-bold text-gray-900 truncate">{{ $articulo->nombre }}</div>
+                        @if($articulo->rubro_nombre || $articulo->departamento_nombre)
+                        <div class="flex flex-wrap gap-1 mt-1">
+                            @if($articulo->rubro_nombre)
+                                <span class="inline-block bg-gray-100 px-2 py-0.5 rounded text-xs font-secondary text-gray-600">{{ $articulo->rubro_nombre }}</span>
+                            @endif
+                            @if($articulo->departamento_nombre)
+                                <span class="inline-block bg-blue-100 px-2 py-0.5 rounded text-xs font-secondary text-blue-700">{{ $articulo->departamento_nombre }}</span>
+                            @endif
+                        </div>
+                        @endif
+                    </div>
+                    <div class="ml-3 text-right flex-shrink-0">
+                        <div class="text-xs font-secondary text-gray-500">Stock</div>
+                        <div class="text-lg font-secondary {{ $this->getClaseStock($articulo->stockact, $articulo->stockmin) }}">
+                            {{ number_format($articulo->stockact, 2) }}
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-xs mt-2">
+                    <div>
+                        <span class="font-secondary text-gray-500">Stock Mín:</span>
+                        <span class="font-secondary font-medium text-gray-700 ml-1">{{ number_format($articulo->stockmin, 2) }}</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="font-secondary text-gray-500">Marca:</span>
+                        <span class="font-secondary font-medium text-gray-700 ml-1">{{ $articulo->marca_nombre ?? '-' }}</span>
+                    </div>
+                    <div>
+                        <span class="font-secondary text-gray-500">P. Costo:</span>
+                        <span class="font-secondary font-medium text-gray-900 ml-1">${{ number_format($articulo->preciocos, 2) }}</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="font-secondary text-gray-500">P. Venta:</span>
+                        <span class="font-secondary font-medium text-gray-900 ml-1">${{ number_format($articulo->precioven, 2) }}</span>
+                    </div>
+                    @if($articulo->proveedor_nombre)
+                    <div class="col-span-2 pt-1">
+                        <span class="font-secondary text-gray-500">Proveedor:</span>
+                        <span class="font-secondary font-medium text-gray-700 ml-1">{{ $articulo->proveedor_nombre }}</span>
+                    </div>
+                    @endif
+                </div>
+                @if($articulo->stockotro)
+                <div class="mt-2 pt-2 border-t border-gray-100">
+                    <button wire:click="verStockRelacionado('{{ $articulo->codigo }}')"
+                            class="text-[#FFAF22] hover:text-[#222036] font-secondary text-xs font-medium">
+                        <i class="fas fa-link mr-1"></i>
+                        Ver Relacionados
+                    </button>
+                </div>
+                @endif
+            </div>
+            @endforeach
         </div>
 
         <!-- Paginación -->

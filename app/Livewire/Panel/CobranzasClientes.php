@@ -19,8 +19,6 @@ class CobranzasClientes extends Component
     
     // Datos
     public $resumenFormasPago = [];
-    public $clientes = [];
-    public $cajas = [];
     public $totalPagos = 0;
     
     // Panel lateral
@@ -34,17 +32,16 @@ class CobranzasClientes extends Component
     public $paginacionSize = 20; // Elementos por página
     
     protected $tablePrefix;
-    protected $paginationTheme = 'bootstrap';
+    protected $paginationTheme = 'tailwind';
 
     public function mount()
     {
         $this->setupClientDatabase();
         
-        // Fechas por defecto (último mes)
-        $this->fechaDesde = Carbon::now()->startOfMonth()->format('Y-m-d');
+        // Fechas por defecto (últimos 7 días)
+        $this->fechaDesde = Carbon::now()->subDays(7)->format('Y-m-d');
         $this->fechaHasta = Carbon::now()->format('Y-m-d');
-        
-        $this->cargarDatosIniciales();
+
         $this->calcularTotalPagos();
         $this->calcularResumenFormasPago();
     }
@@ -62,25 +59,6 @@ class CobranzasClientes extends Component
                 $this->tablePrefix = $cliente->getTablePrefix();
             }
         }
-    }
-
-    public function cargarDatosIniciales()
-    {
-        // Cargar clientes
-        $this->clientes = DB::connection('client_db')
-            ->table($this->tablePrefix . 'clientes')
-            ->select('codigo', 'nombre')
-            ->orderBy('nombre')
-            ->get();
-
-        // Cargar cajas (obtener las distintas cajas de la tabla pagos)
-        $this->cajas = DB::connection('client_db')
-            ->table($this->tablePrefix . 'pagos')
-            ->select('caja')
-            ->distinct()
-            ->whereNotNull('caja')
-            ->orderBy('caja')
-            ->get();
     }
 
     public function getPagosProperty()
@@ -149,14 +127,19 @@ class CobranzasClientes extends Component
     public function calcularResumenFormasPago()
     {
         $this->setupClientDatabase();
-        
-        // Obtener todos los números de pagos que coinciden con los filtros (sin paginación)
+
         $query = DB::connection('client_db')
-            ->table($this->tablePrefix . 'pagos as p')
-            ->select('p.NUMERO')
+            ->table($this->tablePrefix . 'pagcon as pc')
+            ->leftJoin($this->tablePrefix . 'forpag as fp', 'pc.CODCON', '=', 'fp.codigo')
+            ->join($this->tablePrefix . 'pagos as p', 'pc.NUMERO', '=', 'p.NUMERO')
+            ->select(
+                'fp.codigo',
+                'fp.nombre as forma_pago',
+                DB::raw('SUM(pc.IMPORTE) as total_importe'),
+                DB::raw('COUNT(*) as cantidad_pagos')
+            )
             ->whereBetween('p.FECHA', [$this->fechaDesde, $this->fechaHasta]);
 
-        // Aplicar filtros
         if ($this->clienteSeleccionado) {
             $query->where('p.CLIENTE', $this->clienteSeleccionado);
         }
@@ -169,23 +152,7 @@ class CobranzasClientes extends Component
             $query->where('p.checkeado', true);
         }
 
-        $numerosPagos = $query->pluck('NUMERO')->toArray();
-        
-        if (empty($numerosPagos)) {
-            $this->resumenFormasPago = [];
-            return;
-        }
-
-        $this->resumenFormasPago = DB::connection('client_db')
-            ->table($this->tablePrefix . 'pagcon as pc')
-            ->leftJoin($this->tablePrefix . 'forpag as fp', 'pc.CODCON', '=', 'fp.codigo')
-            ->select(
-                'fp.codigo',
-                'fp.nombre as forma_pago',
-                DB::raw('SUM(pc.IMPORTE) as total_importe'),
-                DB::raw('COUNT(*) as cantidad_pagos')
-            )
-            ->whereIn('pc.NUMERO', $numerosPagos)
+        $this->resumenFormasPago = $query
             ->groupBy('fp.codigo', 'fp.nombre')
             ->orderBy('total_importe', 'desc')
             ->get();
@@ -196,9 +163,9 @@ class CobranzasClientes extends Component
         $this->clienteSeleccionado = '';
         $this->cajaSeleccionada = '';
         $this->soloSinCerrar = false;
-        $this->fechaDesde = Carbon::now()->startOfMonth()->format('Y-m-d');
+        $this->fechaDesde = Carbon::now()->subDays(7)->format('Y-m-d');
         $this->fechaHasta = Carbon::now()->format('Y-m-d');
-        
+
         $this->resetPage(); // Resetear paginación
         $this->actualizarDatos();
     }
@@ -273,11 +240,29 @@ class CobranzasClientes extends Component
         $this->calcularResumenFormasPago();
     }
 
-    #[Layout('layouts.app')]    
+    #[Layout('layouts.app')]
     public function render()
     {
+        $this->setupClientDatabase();
+
+        $clientes = DB::connection('client_db')
+            ->table($this->tablePrefix . 'clientes')
+            ->select('codigo', 'nombre')
+            ->orderBy('nombre')
+            ->get();
+
+        $cajas = DB::connection('client_db')
+            ->table($this->tablePrefix . 'pagos')
+            ->select('caja')
+            ->distinct()
+            ->whereNotNull('caja')
+            ->orderBy('caja')
+            ->get();
+
         return view('panel.cobranzas-clientes', [
-            'pagos' => $this->pagos
+            'pagos' => $this->pagos,
+            'clientes' => $clientes,
+            'cajas' => $cajas,
         ]);
     }
 

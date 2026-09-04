@@ -23,7 +23,7 @@
                         <i class="fas fa-calendar-alt mr-1"></i>Fecha Desde
                     </label>
                     <input type="date"
-                           wire:model="fechaDesde"
+                           wire:model.live.debounce.500ms="fechaDesde"
                            id="fechaDesde"
                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                 </div>
@@ -34,7 +34,7 @@
                         <i class="fas fa-calendar-alt mr-1"></i>Fecha Hasta
                     </label>
                     <input type="date"
-                           wire:model="fechaHasta"
+                           wire:model.live.debounce.500ms="fechaHasta"
                            id="fechaHasta"
                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                 </div>
@@ -86,6 +86,95 @@
                     <div>
                         <p class="text-sm text-gray-600">Cantidad Facturas</p>
                         <p class="text-xl font-semibold text-blue-600">{{ number_format($cantidadFacturas) }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjetas de Formas de Facturación -->
+        <div class="mt-4 pt-4 border-t border-gray-200">
+            <h4 class="text-sm font-semibold text-gray-700 mb-3">
+                <i class="fas fa-money-bill-wave text-green-600 mr-2"></i>Formas de Facturación
+            </h4>
+            @php
+                // Clases literales para que Tailwind las compile
+                $fpStyles = [
+                    ['card' => 'bg-emerald-50', 'icon' => 'bg-emerald-100', 'text' => 'text-emerald-600'],
+                    ['card' => 'bg-sky-50',     'icon' => 'bg-sky-100',     'text' => 'text-sky-600'],
+                    ['card' => 'bg-violet-50',  'icon' => 'bg-violet-100',  'text' => 'text-violet-600'],
+                    ['card' => 'bg-amber-50',   'icon' => 'bg-amber-100',   'text' => 'text-amber-600'],
+                    ['card' => 'bg-rose-50',    'icon' => 'bg-rose-100',    'text' => 'text-rose-600'],
+                    ['card' => 'bg-cyan-50',    'icon' => 'bg-cyan-100',    'text' => 'text-cyan-600'],
+                    ['card' => 'bg-indigo-50',  'icon' => 'bg-indigo-100',  'text' => 'text-indigo-600'],
+                    ['card' => 'bg-teal-50',    'icon' => 'bg-teal-100',    'text' => 'text-teal-600'],
+                    ['card' => 'bg-fuchsia-50', 'icon' => 'bg-fuchsia-100', 'text' => 'text-fuchsia-600'],
+                    ['card' => 'bg-lime-50',    'icon' => 'bg-lime-100',    'text' => 'text-lime-600'],
+                ];
+            @endphp
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                @forelse($formasPago as $i => $fp)
+                    @php $s = $fpStyles[$i % count($fpStyles)]; @endphp
+                    <div class="{{ $s['card'] }} p-4 rounded-lg">
+                        <div class="flex items-center">
+                            <div class="p-2 {{ $s['icon'] }} rounded-lg mr-3 shrink-0">
+                                <i class="fas fa-receipt {{ $s['text'] }}"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-sm text-gray-600 truncate" title="{{ $fp['forma'] }}">{{ $fp['forma'] }}</p>
+                                <p class="text-lg font-semibold {{ $s['text'] }}">${{ number_format($fp['total'], 2) }}</p>
+                                <p class="text-xs text-gray-400">{{ $fp['cantidad'] }} mov.</p>
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <div class="col-span-full text-center text-gray-400 text-sm py-4">
+                        <i class="fas fa-info-circle mr-1"></i>Sin datos en el período
+                    </div>
+                @endforelse
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6"
+         x-data="ventasFechasCharts()"
+         x-init="$watch('dataHash', () => { if(visible) $nextTick(() => renderCharts()) })">
+        <div class="flex items-center justify-between mb-2">
+            <h3 class="text-base sm:text-lg font-semibold text-gray-800">
+                <i class="fas fa-chart-bar text-[#FFAF22] mr-2"></i>Gráficos de Análisis
+            </h3>
+            <button @click="toggle()"
+                    class="px-3 py-1.5 text-xs sm:text-sm bg-[#FFAF22] text-white rounded-md hover:bg-[#FFAF22]/90 transition-colors">
+                <i class="fas" :class="visible ? 'fa-eye-slash' : 'fa-eye'"></i>
+                <span x-text="visible ? 'Ocultar Gráficos' : 'Ver Gráficos'"></span>
+            </button>
+        </div>
+
+        {{-- Data source: Livewire updates these attributes on morph --}}
+        <div id="ventasChartsDataSource"
+             data-clientes="{{ json_encode($datosGraficoClientes) }}"
+             data-diasemana="{{ json_encode($datosGraficoDiaSemana) }}"
+             style="display:none;"></div>
+
+        <div x-show="visible" style="display: none;">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-4">
+                <!-- Gráfico Ventas por Cliente -->
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <h4 class="text-sm font-semibold text-gray-700 mb-3">
+                        <i class="fas fa-users mr-1 text-blue-500"></i>Top 10 Clientes por Ventas
+                    </h4>
+                    <div class="relative" style="height: 300px;" wire:ignore>
+                        <canvas x-ref="chartClientes"></canvas>
+                    </div>
+                </div>
+
+                <!-- Gráfico Ventas por Día de la Semana -->
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <h4 class="text-sm font-semibold text-gray-700 mb-3">
+                        <i class="fas fa-calendar-week mr-1 text-green-500"></i>Ventas por Día de la Semana
+                    </h4>
+                    <div class="relative" style="height: 300px;" wire:ignore>
+                        <canvas x-ref="chartDiaSemana"></canvas>
                     </div>
                 </div>
             </div>
@@ -253,4 +342,5 @@
             </div>
         @endif
     </div>
+
 </div>

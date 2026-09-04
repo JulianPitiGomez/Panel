@@ -9,8 +9,8 @@
                 <span class="sm:hidden">Filtros</span>
             </h2>
             <button wire:click="limpiarFiltros"
-                    class="px-2 md:px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors duration-200 text-xs md:text-sm font-secondary">
-                <i class="fas fa-broom md:mr-1"></i>
+                    class="px-2 md:px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors duration-200 text-xs md:text-sm font-secondary cursor-pointer">
+                <i class="fas fa-eraser md:mr-1"></i>
                 <span class="hidden md:inline">Limpiar Filtros</span>
             </button>
         </div>
@@ -20,7 +20,7 @@
             <div>
                 <label class="block text-xs md:text-sm font-secondary font-medium text-gray-700 mb-1">Desde</label>
                 <input type="date"
-                       wire:model.live="fechaDesde"
+                       wire:model.live.debounce.500ms="fechaDesde"
                        class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent font-secondary">
             </div>
 
@@ -28,7 +28,7 @@
             <div>
                 <label class="block text-xs md:text-sm font-secondary font-medium text-gray-700 mb-1">Hasta</label>
                 <input type="date"
-                       wire:model.live="fechaHasta"
+                       wire:model.live.debounce.500ms="fechaHasta"
                        class="w-full px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent font-secondary">
             </div>
 
@@ -137,7 +137,7 @@
     <!-- Layout Principal con Panel Lateral -->
     <div class="flex flex-col lg:flex-row gap-6">
         <!-- Contenido Principal -->
-        <div class="{{ $mostrarDetallePedido ? 'hidden lg:block lg:w-2/3' : 'w-full' }} transition-all duration-300 overflow-hidden">
+        <div class="w-full transition-all duration-300 overflow-hidden">
             
             <!-- Sección: Pedidos -->
             @if($mostrarDetalle)
@@ -353,7 +353,7 @@
                             <button wire:click="verDetallePedido({{ $pedido->id }})"
                                     class="w-full px-3 py-2 bg-[#FFAF22] text-white rounded-lg font-secondary text-sm hover:bg-[#FFAF22]/90 transition-colors active:scale-95">
                                 <i class="fas fa-eye mr-1"></i>
-                                Ver Detalle
+                                Ver
                             </button>
                         </div>
                     </div>
@@ -379,10 +379,15 @@
 
         </div>
 
-        <!-- Panel Lateral de Detalle - Móvil Optimizado -->
+        <!-- Panel Lateral Modal - Fijo a la derecha -->
         @if($mostrarDetallePedido && $pedidoSeleccionado)
-        <div class="w-full lg:w-1/3 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
-            <div class="h-full flex flex-col max-h-screen lg:max-h-[800px]">
+        <!-- Overlay oscuro en mobile -->
+        <div class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+             wire:click="cerrarDetallePedido"></div>
+
+        <!-- Panel lateral fijo -->
+        <div class="fixed right-0 top-0 h-full w-full sm:w-[90%] lg:w-[450px] xl:w-[500px] bg-white shadow-2xl z-50 overflow-hidden">
+            <div class="h-full flex flex-col">
                 <!-- Header del Panel -->
                 <div class="flex items-center justify-between p-3 md:p-4 border-b border-gray-200 bg-gray-50">
                     <h3 class="text-base md:text-lg font-primary font-semibold text-gray-900 flex items-center">
@@ -432,6 +437,15 @@
                                 {{ $estados[$pedidoSeleccionado->estado] ?? 'N/A' }}
                             </span>
                         </div>
+                        @if(isset($pedidoSeleccionado->formapago) && $pedidoSeleccionado->formapago)
+                        <div class="flex justify-between items-center">
+                            <span class="font-secondary font-medium text-gray-600">Forma de pago:</span>
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-secondary font-medium bg-emerald-100 text-emerald-800">
+                                <i class="fas fa-credit-card mr-1"></i>
+                                {{ $this->getFormaPagoLabel($pedidoSeleccionado->formapago) }}
+                            </span>
+                        </div>
+                        @endif
                         @if($pedidoSeleccionado->horaent)
                         <div class="flex justify-between">
                             <span class="font-secondary font-medium text-gray-600">Hora entrega:</span>

@@ -22,7 +22,7 @@
                         <i class="fas fa-calendar-alt mr-1"></i>Fecha Desde
                     </label>
                     <input type="date"
-                           wire:model="fechaDesde"
+                           wire:model.live.debounce.500ms="fechaDesde"
                            id="fechaDesde"
                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                 </div>
@@ -33,7 +33,7 @@
                         <i class="fas fa-calendar-alt mr-1"></i>Fecha Hasta
                     </label>
                     <input type="date"
-                           wire:model="fechaHasta"
+                           wire:model.live.debounce.500ms="fechaHasta"
                            id="fechaHasta"
                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                 </div>

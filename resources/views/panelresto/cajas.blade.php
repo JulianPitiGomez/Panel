@@ -51,7 +51,116 @@
         </div>
     </div>
 
-    <!-- Filtros -->
+    <!-- Toggle Tipo de Caja -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-3 md:p-4">
+        <div class="flex items-center justify-between">
+            <span class="text-sm md:text-base font-secondary font-medium text-gray-700">
+                {{ $tipoCaja === 'cerradas' ? 'Cajas Cerradas' : 'Cajas Abiertas' }}
+            </span>
+            <button wire:click="$set('tipoCaja', '{{ $tipoCaja === 'cerradas' ? 'abiertas' : 'cerradas' }}')"
+                    class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#FFAF22] focus:ring-offset-2 {{ $tipoCaja === 'abiertas' ? 'bg-[#FFAF22]' : 'bg-gray-200' }}">
+                <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform {{ $tipoCaja === 'abiertas' ? 'translate-x-6' : 'translate-x-1' }}"></span>
+            </button>
+        </div>
+    </div>
+
+    @if($tipoCaja === 'abiertas')
+    <!-- Selector de Caja para Cajas Abiertas -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-3 md:p-4">
+        <label class="block text-sm md:text-base font-secondary font-medium text-gray-700 mb-2">Seleccione Caja:</label>
+        <select wire:model.live="cajaAbiertaSelecionada"
+                class="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-[#FFAF22] font-secondary text-sm md:text-base">
+            <option value="">-- Seleccione una caja --</option>
+            @foreach($listaCajasAbiertas as $numeroCaja)
+                <option value="{{ $numeroCaja }}">Caja {{ $numeroCaja }}</option>
+            @endforeach
+        </select>
+        @if($listaCajasAbiertas->isEmpty())
+            <p class="mt-2 text-xs md:text-sm text-gray-500 italic">No hay cajas abiertas en este momento</p>
+        @endif
+    </div>
+
+    {{-- Skeleton loading al seleccionar caja --}}
+    <div wire:loading.block wire:target="cajaAbiertaSelecionada" class="w-full bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        {{-- Header --}}
+        <div class="px-3 md:px-6 py-3 md:py-4 border-b border-gray-200 bg-gray-50">
+            <div class="h-5 md:h-6 bg-gray-200 rounded animate-pulse w-48 md:w-72"></div>
+        </div>
+
+        {{-- Desktop skeleton --}}
+        <table class="w-full hidden md:table">
+            <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                    <th class="px-6 py-3 text-left"><div class="h-3 bg-gray-200 rounded animate-pulse w-20"></div></th>
+                    <th class="px-6 py-3 text-right"><div class="h-3 bg-gray-200 rounded animate-pulse w-12 ml-auto"></div></th>
+                    <th class="px-6 py-3 text-right"><div class="h-3 bg-gray-200 rounded animate-pulse w-12 ml-auto"></div></th>
+                    <th class="px-6 py-3 text-right bg-blue-50"><div class="h-3 bg-gray-300 rounded animate-pulse w-16 ml-auto"></div></th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                @for($i = 0; $i < 8; $i++)
+                <tr>
+                    <td class="px-6 py-4"><div class="h-4 bg-gray-200 rounded animate-pulse w-4/5" style="animation-delay: {{ $i * 75 }}ms"></div></td>
+                    <td class="px-6 py-4"><div class="h-4 bg-gray-200 rounded animate-pulse w-3/4 ml-auto" style="animation-delay: {{ $i * 75 + 50 }}ms"></div></td>
+                    <td class="px-6 py-4"><div class="h-4 bg-gray-200 rounded animate-pulse w-3/4 ml-auto" style="animation-delay: {{ $i * 75 + 100 }}ms"></div></td>
+                    <td class="px-6 py-4 bg-blue-50"><div class="h-4 bg-gray-{{ $i % 2 == 0 ? '200' : '300' }} rounded animate-pulse w-3/4 ml-auto" style="animation-delay: {{ $i * 75 + 150 }}ms"></div></td>
+                </tr>
+                @endfor
+            </tbody>
+            <tfoot class="bg-gray-100 border-t-2 border-gray-300">
+                <tr>
+                    <td class="px-6 py-4"><div class="h-5 bg-gray-300 rounded animate-pulse w-20"></div></td>
+                    <td class="px-6 py-4"><div class="h-5 bg-gray-300 rounded animate-pulse w-3/4 ml-auto"></div></td>
+                    <td class="px-6 py-4"><div class="h-5 bg-gray-300 rounded animate-pulse w-3/4 ml-auto"></div></td>
+                    <td class="px-6 py-4 bg-blue-100"><div class="h-5 bg-gray-400 rounded animate-pulse w-3/4 ml-auto"></div></td>
+                </tr>
+            </tfoot>
+        </table>
+
+        {{-- Mobile skeleton --}}
+        <div class="md:hidden divide-y divide-gray-200">
+            @for($i = 0; $i < 5; $i++)
+            <div class="p-4">
+                <div class="h-4 bg-gray-200 rounded animate-pulse w-3/4 mb-3" style="animation-delay: {{ $i * 100 }}ms"></div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="flex justify-between">
+                        <div class="h-3 bg-gray-200 rounded animate-pulse w-10"></div>
+                        <div class="h-3 bg-gray-200 rounded animate-pulse w-16" style="animation-delay: {{ $i * 100 + 50 }}ms"></div>
+                    </div>
+                    <div class="flex justify-between">
+                        <div class="h-3 bg-gray-200 rounded animate-pulse w-10"></div>
+                        <div class="h-3 bg-gray-200 rounded animate-pulse w-16" style="animation-delay: {{ $i * 100 + 100 }}ms"></div>
+                    </div>
+                    <div class="col-span-2 pt-2 mt-2 border-t border-gray-200 bg-blue-50 -mx-4 px-4 py-2 flex justify-between">
+                        <div class="h-3 bg-gray-300 rounded animate-pulse w-14"></div>
+                        <div class="h-3 bg-gray-300 rounded animate-pulse w-20" style="animation-delay: {{ $i * 100 + 150 }}ms"></div>
+                    </div>
+                </div>
+            </div>
+            @endfor
+            <div class="bg-gray-100 p-4">
+                <div class="h-4 bg-gray-300 rounded animate-pulse w-20 mb-3"></div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="flex justify-between">
+                        <div class="h-3 bg-gray-300 rounded animate-pulse w-10"></div>
+                        <div class="h-3 bg-gray-300 rounded animate-pulse w-20"></div>
+                    </div>
+                    <div class="flex justify-between">
+                        <div class="h-3 bg-gray-300 rounded animate-pulse w-10"></div>
+                        <div class="h-3 bg-gray-300 rounded animate-pulse w-20"></div>
+                    </div>
+                    <div class="col-span-2 pt-2 mt-2 border-t border-gray-300 bg-blue-100 -mx-4 px-4 py-2 flex justify-between">
+                        <div class="h-4 bg-gray-400 rounded animate-pulse w-14"></div>
+                        <div class="h-4 bg-gray-400 rounded animate-pulse w-24"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    @if($tipoCaja === 'cerradas')
+    <!-- Filtros para Cajas Cerradas -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-3 md:p-6">
         <div class="flex items-center justify-between mb-2 md:mb-4">
             <h2 class="text-base md:text-lg font-primary font-semibold text-gray-800 flex items-center">
@@ -124,10 +233,179 @@
         </div>
     </div>
 
+    @endif
+
+    @if($tipoCaja === 'abiertas' && !empty($cajaAbiertaSelecionada))
+    <!-- Información de Ventas Totales del Turno -->
+    @if($ventasTotalesTurno > 0)
+    <div wire:loading.remove wire:target="cajaAbiertaSelecionada" class="bg-purple-50 border border-purple-200 rounded-xl p-3 md:p-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <i class="fas fa-chart-line text-purple-600 text-lg md:text-2xl mr-3"></i>
+                <div>
+                    <p class="text-xs md:text-sm text-purple-600 font-semibold font-secondary">VENTAS TOTALES TURNO</p>
+                    <p class="text-sm md:text-base text-purple-500 font-secondary italic">Información adicional - no forma parte de la caja</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <p class="text-lg md:text-2xl font-bold text-purple-700 font-primary">${{ number_format($ventasTotalesTurno, 2) }}</p>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- Vista de Cajas Abiertas -->
+    <div wire:loading.remove wire:target="cajaAbiertaSelecionada" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="px-3 md:px-6 py-3 md:py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-base md:text-lg font-primary font-semibold text-gray-800 flex items-center">
+                <i class="fas fa-lock-open text-[#FFAF22] mr-2 text-sm md:text-base"></i>
+                Movimientos de Caja {{ $cajaAbiertaSelecionada }}
+            </h2>
+        </div>
+
+        @if($cajasAbiertas && $cajasAbiertas->count() > 0)
+        <!-- Vista Desktop: Tabla -->
+        <div class="hidden md:block overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-secondary font-semibold text-gray-700 uppercase tracking-wider">
+                            Concepto
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-secondary font-semibold text-gray-700 uppercase tracking-wider">
+                            Debe
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-secondary font-semibold text-gray-700 uppercase tracking-wider">
+                            Haber
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-secondary font-semibold text-gray-700 uppercase tracking-wider bg-blue-50">
+                            Efectivo
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    @foreach($cajasAbiertas as $movimiento)
+                    <tr class="hover:bg-gray-50 transition-colors duration-200">
+                        <td class="px-6 py-4 text-sm font-secondary text-gray-900">
+                            {{ $movimiento->concepto }}
+                        </td>
+                        <td class="px-6 py-4 text-sm font-secondary text-right text-green-600 font-medium">
+                            @if($movimiento->debe > 0)
+                                ${{ number_format($movimiento->debe, 2) }}
+                            @else
+                                -
+                            @endif
+                        </td>
+                        <td class="px-6 py-4 text-sm font-secondary text-right text-red-600 font-medium">
+                            @if($movimiento->haber > 0)
+                                ${{ number_format($movimiento->haber, 2) }}
+                            @else
+                                -
+                            @endif
+                        </td>
+                        <td class="px-6 py-4 text-sm font-secondary text-right bg-blue-50 font-bold {{ $movimiento->efec >= 0 ? 'text-blue-600' : 'text-orange-600' }}">
+                            @if($movimiento->efec != 0)
+                                ${{ number_format($movimiento->efec, 2) }}
+                            @else
+                                -
+                            @endif
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+                <tfoot class="bg-gray-100 border-t-2 border-gray-300">
+                    <tr>
+                        <td class="px-6 py-4 text-sm font-secondary font-bold text-gray-900">
+                            TOTALES
+                        </td>
+                        <td class="px-6 py-4 text-sm font-secondary text-right font-bold text-green-700">
+                            ${{ number_format($cajasAbiertas->sum('debe'), 2) }}
+                        </td>
+                        <td class="px-6 py-4 text-sm font-secondary text-right font-bold text-red-700">
+                            ${{ number_format($cajasAbiertas->sum('haber'), 2) }}
+                        </td>
+                        <td class="px-6 py-4 text-sm font-secondary text-right bg-blue-100 font-bold text-blue-700 text-base">
+                            ${{ number_format($cajasAbiertas->sum('efec'), 2) }}
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <!-- Vista Mobile: Tarjetas -->
+        <div class="md:hidden divide-y divide-gray-200">
+            @foreach($cajasAbiertas as $movimiento)
+            <div class="p-4 hover:bg-gray-50 transition-colors duration-200">
+                <div class="font-medium text-sm text-gray-900 mb-3">{{ $movimiento->concepto }}</div>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Debe:</span>
+                        <span class="font-medium text-green-600">
+                            @if($movimiento->debe > 0)
+                                ${{ number_format($movimiento->debe, 2) }}
+                            @else
+                                -
+                            @endif
+                        </span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Haber:</span>
+                        <span class="font-medium text-red-600">
+                            @if($movimiento->haber > 0)
+                                ${{ number_format($movimiento->haber, 2) }}
+                            @else
+                                -
+                            @endif
+                        </span>
+                    </div>
+                    <div class="flex justify-between col-span-2 pt-2 border-t border-gray-200 bg-blue-50 -mx-4 px-4 py-2 mt-2">
+                        <span class="text-gray-700 font-semibold">Efectivo:</span>
+                        <span class="font-bold {{ $movimiento->efec >= 0 ? 'text-blue-600' : 'text-orange-600' }}">
+                            @if($movimiento->efec != 0)
+                                ${{ number_format($movimiento->efec, 2) }}
+                            @else
+                                -
+                            @endif
+                        </span>
+                    </div>
+                </div>
+            </div>
+            @endforeach
+
+            <!-- Totales Mobile -->
+            <div class="bg-gray-100 p-4">
+                <div class="font-bold text-sm text-gray-900 mb-2">TOTALES</div>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Debe:</span>
+                        <span class="font-bold text-green-700">${{ number_format($cajasAbiertas->sum('debe'), 2) }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Haber:</span>
+                        <span class="font-bold text-red-700">${{ number_format($cajasAbiertas->sum('haber'), 2) }}</span>
+                    </div>
+                    <div class="flex justify-between col-span-2 pt-2 border-t border-gray-300 bg-blue-100 -mx-4 px-4 py-2 mt-2">
+                        <span class="text-gray-700 font-bold">Efectivo:</span>
+                        <span class="font-bold text-blue-700 text-base">${{ number_format($cajasAbiertas->sum('efec'), 2) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @else
+        <div class="text-center py-8 md:py-12">
+            <i class="fas fa-inbox text-gray-400 text-4xl md:text-5xl mb-3 md:mb-4"></i>
+            <h3 class="text-base md:text-lg font-primary font-medium text-gray-900 mb-2">No hay movimientos</h3>
+            <p class="text-gray-600 font-secondary text-sm md:text-base">No se encontraron movimientos en cajas abiertas</p>
+        </div>
+        @endif
+    </div>
+    @endif
+
+    @if($tipoCaja === 'cerradas')
 <!-- Layout Principal con Panel Lateral -->
 <div class="flex flex-col lg:flex-row gap-6">
     <!-- Contenido Principal -->
-    <div class="{{ $mostrarPanel ? 'hidden lg:block lg:w-2/3' : 'w-full' }} transition-all duration-300 overflow-hidden">
+    <div class="w-full transition-all duration-300 overflow-hidden">
 
     <!-- Tabla/Lista de Cajas -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -162,9 +440,6 @@
             <table class="w-full">
                 <thead class="bg-gray-50 border-b border-gray-200">
                     <tr>
-                        <th class="px-6 py-3 text-center">
-                            <span class="text-xs font-secondary font-semibold text-gray-700 uppercase tracking-wider">Acciones</span>
-                        </th>
                         <th class="px-6 py-3 text-left">
                             <button wire:click="ordenar('fecha')"
                                     class="flex items-center space-x-1 text-xs font-secondary font-semibold text-gray-700 uppercase tracking-wider hover:text-[#FFAF22] transition-colors duration-200">
@@ -212,19 +487,14 @@
                                 @endif
                             </button>
                         </th>
+                        <th class="px-6 py-3 text-center">
+                            <span class="text-xs font-secondary font-semibold text-gray-700 uppercase tracking-wider">Acciones</span>
+                        </th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     @foreach($cajas as $caja)
                     <tr class="hover:bg-gray-50 transition-colors duration-200">
-                        <td class="px-6 py-4 whitespace-nowrap text-center">
-                            <button wire:click="verDetalleCaja({{ $caja->id }})"
-                                    type="button"
-                                    class="inline-flex items-center px-3 py-1.5 border border-[#FFAF22]/40 rounded-lg text-sm font-secondary font-medium text-[#FFAF22] bg-[#FFAF22]/10 hover:bg-[#FFAF22]/15 hover:border-[#FFAF22]/50 transition-colors duration-200">
-                                <i class="fas fa-eye mr-1"></i>
-                                Ver Detalle
-                            </button>
-                        </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm font-secondary font-medium text-gray-900">
                                 {{ \Carbon\Carbon::parse($caja->fecha)->format('d/m/Y') }}
@@ -262,6 +532,14 @@
                             <div class="text-sm font-secondary {{ $this->getClaseSaldo($caja->saldo) }}">
                                 {{ $this->getTipoSaldo($caja->saldo) }}
                             </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <button wire:click="verDetalleCaja({{ $caja->id }})"
+                                    type="button"
+                                    class="inline-flex items-center px-3 py-1.5 border border-[#FFAF22]/40 rounded-lg text-sm font-secondary font-medium text-[#FFAF22] bg-[#FFAF22]/10 hover:bg-[#FFAF22]/15 hover:border-[#FFAF22]/50 transition-colors duration-200">
+                                <i class="fas fa-eye mr-1"></i>
+                                Ver
+                            </button>
                         </td>
                     </tr>
                     @endforeach
@@ -310,7 +588,7 @@
                         type="button"
                         class="w-full px-3 py-1.5 border border-[#FFAF22]/40 rounded-lg text-xs font-secondary font-medium text-[#FFAF22] bg-[#FFAF22]/10 hover:bg-[#FFAF22]/15 transition-colors duration-200">
                     <i class="fas fa-eye mr-1"></i>
-                    Ver Detalle
+                    Ver
                 </button>
             </div>
             @endforeach
@@ -420,10 +698,15 @@
     </div>
     <!-- Fin Contenido Principal -->
 
-    <!-- Panel Lateral de Detalle -->
+    <!-- Panel Lateral Modal - Fijo a la derecha -->
     @if($mostrarPanel && $cajaSeleccionada)
-    <div class="w-full lg:w-1/3 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
-    <div class="h-full flex flex-col max-h-screen lg:max-h-[800px]">
+    <!-- Overlay oscuro en mobile -->
+    <div class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+         wire:click="cerrarPanel"></div>
+
+    <!-- Panel lateral fijo -->
+    <div class="fixed right-0 top-0 h-full w-full sm:w-[90%] lg:w-[450px] xl:w-[500px] bg-white shadow-2xl z-50 overflow-hidden">
+    <div class="h-full flex flex-col">
         <!-- Header del Panel -->
         <div class="flex items-center justify-between p-3 md:p-4 border-b border-gray-200 bg-gray-50">
             <h3 class="text-base md:text-lg font-primary font-semibold text-gray-900 flex items-center">
@@ -576,6 +859,7 @@
         </div>
     </div>
     </div>
+    @endif
     @endif
 
 </div>

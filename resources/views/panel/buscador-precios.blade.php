@@ -1,4 +1,49 @@
-<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex flex-col">
+<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex flex-col"
+     x-data="{
+         temporizadorActivo: null,
+         iniciarTemporizador(tiempo = 10) {
+             if (this.temporizadorActivo) {
+                 clearInterval(this.temporizadorActivo);
+             }
+
+             let segundosRestantes = tiempo;
+             const contadorElement = document.getElementById('contador');
+
+             if (contadorElement) {
+                 contadorElement.textContent = segundosRestantes;
+             }
+
+             this.temporizadorActivo = setInterval(() => {
+                 segundosRestantes--;
+
+                 if (contadorElement) {
+                     contadorElement.textContent = segundosRestantes;
+
+                     if (segundosRestantes <= 3) {
+                         contadorElement.className = 'font-bold text-red-500 animate-pulse';
+                     } else if (segundosRestantes <= 5) {
+                         contadorElement.className = 'font-bold text-yellow-500';
+                     } else {
+                         contadorElement.className = 'font-bold text-[#FFAF22]';
+                     }
+                 }
+
+                 if (segundosRestantes <= 0) {
+                     clearInterval(this.temporizadorActivo);
+                     $wire.call('limpiarPantalla');
+                     setTimeout(() => {
+                         const input = document.getElementById('codigoInput');
+                         if (input) {
+                             input.focus();
+                             input.select();
+                         }
+                     }, 200);
+                 }
+             }, 1000);
+         }
+     }"
+     @iniciar-temporizador.window="iniciarTemporizador($event.detail.tiempo || 10)"
+     @enfocar-campo.window="setTimeout(() => { document.getElementById('codigoInput')?.focus(); document.getElementById('codigoInput')?.select(); }, 100)">
     <!-- Header -->
     <div class="bg-gray-800 border-b border-gray-700 p-4">
         <div class="container mx-auto flex items-center justify-between">
@@ -195,89 +240,8 @@
         </div>
     </div>
 </div>
-    <!-- JavaScript para Control de Tiempo y Enfoque -->
-    @push('scripts')
-    <script>
-    document.addEventListener('livewire:initialized', () => {
-        let temporizadorActivo = null;
-
-        // Función para enfocar el campo de entrada
-        function enfocarCampo() {
-            setTimeout(() => {
-                const input = document.getElementById('codigoInput');
-                if (input) {
-                    input.focus();
-                    input.select();
-                }
-            }, 100);
-        }
-
-        // Función para iniciar el temporizador
-        function iniciarTemporizador(tiempo = 10) {
-            if (temporizadorActivo) {
-                clearInterval(temporizadorActivo);
-            }
-
-            let segundosRestantes = tiempo;
-            const contadorElement = document.getElementById('contador');
-
-            if (contadorElement) {
-                contadorElement.textContent = segundosRestantes;
-            }
-
-            temporizadorActivo = setInterval(() => {
-                segundosRestantes--;
-
-                if (contadorElement) {
-                    contadorElement.textContent = segundosRestantes;
-
-                    // Cambiar color según el tiempo restante
-                    if (segundosRestantes <= 3) {
-                        contadorElement.className = 'font-bold text-red-500 animate-pulse';
-                    } else if (segundosRestantes <= 5) {
-                        contadorElement.className = 'font-bold text-yellow-500';
-                    } else {
-                        contadorElement.className = 'font-bold text-[#FFAF22]';
-                    }
-                }
-
-                if (segundosRestantes <= 0) {
-                    clearInterval(temporizadorActivo);
-                    Livewire.dispatch('limpiarPantalla');
-                    enfocarCampo();
-                }
-            }, 1000);
-        }
-
-        // Escuchar eventos Livewire
-        Livewire.on('iniciarTemporizador', (data = {}) => {
-            const tiempo = data.tiempo || 10;
-            iniciarTemporizador(tiempo);
-        });
-
-        Livewire.on('enfocarCampo', () => {
-            enfocarCampo();
-        });
-
-        // Enfocar cuando se actualiza Livewire (ej: se limpia la pantalla)
-        Livewire.hook('message.processed', (message, component) => {
-            enfocarCampo();
-        });
-
-        // Enfocar al cargar
-        enfocarCampo();
-
-        // Limpiar temporizador al salir
-        window.addEventListener('beforeunload', () => {
-            if (temporizadorActivo) {
-                clearInterval(temporizadorActivo);
-            }
-        });
-    });
-    </script>
-
-
     <!-- Estilos adicionales -->
+    @push('styles')
     <style>
     .animate-fadeIn {
         animation: fadeIn 0.5s ease-in-out;

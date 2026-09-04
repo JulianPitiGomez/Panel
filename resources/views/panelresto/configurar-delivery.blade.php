@@ -8,7 +8,7 @@
         <span class="block sm:inline" x-text="mensaje.texto"></span>
     </div>
 
-    <!-- Card de configuración -->
+    <!-- Card de configuración Delivery -->
     <div class="bg-white rounded-lg shadow-md overflow-hidden">
         <div class="px-6 py-4 bg-gradient-to-r from-[#FFAF22] to-[#FFAF22]/90 border-b border-gray-200">
             <h2 class="text-lg font-semibold text-white">
@@ -42,10 +42,9 @@
                             <label for="search_input" class="block text-sm font-medium text-gray-700 mb-2">
                                 Ubicá tu local:
                             </label>
-                            <input type="text"
-                                   id="search_input"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]"
-                                   placeholder="Ingrese dirección">
+                            <div wire:ignore>
+                                <div id="search_container" class="w-full"></div>
+                            </div>
                         </div>
 
                         <div>
@@ -129,8 +128,7 @@
 
                                 <div class="sm:col-span-2 flex items-center justify-end">
                                     <button type="button"
-                                            @click="eliminarZona({{ $index }})"
-                                            class="text-red-500 hover:text-red-700">
+                                            class="zona-eliminar text-red-500 hover:text-red-700">
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
                                 </div>
@@ -155,6 +153,7 @@
             </div>
         </div>
     </div>
+
 </div>
 
 @script
@@ -164,9 +163,17 @@ Alpine.data('deliveryConfig', () => ({
     marker: null,
     delivery: null,
     geocoder: null,
-    drawingManager: null,
     poligonos: [],
     dibujando: false,
+    // Estado del dibujo manual de zonas (reemplaza google.maps.drawing.DrawingManager)
+    dibujoVertices: [],
+    dibujoMarkers: [],
+    dibujoPolyline: null,
+    dibujoClickListener: null,
+    dibujoDblClickListener: null,
+    dibujoClickTimer: null,
+    dibujoIdx: null,
+    dibujoColor: null,
     mensaje: {
         visible: false,
         tipo: '',
@@ -187,7 +194,7 @@ Alpine.data('deliveryConfig', () => ({
     },
 
     loadGoogleMaps() {
-        if (typeof google !== 'undefined' && google.maps) {
+        if (typeof google !== 'undefined' && google.maps && google.maps.Map) {
             this.initMap();
             return;
         }
@@ -195,7 +202,7 @@ Alpine.data('deliveryConfig', () => ({
         if (!window.googleMapsLoading) {
             window.googleMapsLoading = true;
             const script = document.createElement('script');
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${@js($googleMapsApiKey)}&libraries=drawing,places`;
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${@js($googleMapsApiKey)}&libraries=places`;
             script.async = true;
             script.defer = true;
             script.onload = () => {
@@ -248,49 +255,106 @@ Alpine.data('deliveryConfig', () => ({
             this.delivery.setCenter(pos);
         });
 
-        // Autocomplete
-        const searchInput = document.getElementById('search_input');
-        const autocomplete = new google.maps.places.Autocomplete(searchInput, { types: ['geocode'] });
-
-        google.maps.event.addListener(autocomplete, 'place_changed', () => {
-            const place = autocomplete.getPlace();
-            if (place.geometry) {
-                const newLatLng = new google.maps.LatLng(
-                    place.geometry.location.lat(),
-                    place.geometry.location.lng()
-                );
-                this.marker.setPosition(newLatLng);
-                this.map.panTo(newLatLng);
-                const ubicacion = newLatLng.lat() + ', ' + newLatLng.lng();
-                this.$wire.call('actualizarUbicacion', ubicacion);
-                this.delivery.setCenter(newLatLng);
-            }
-        });
-
-        // Cargar polígonos existentes
+        // Cargar polígonos existentes (antes del buscador, así no depende de él)
         this.cargarPoligonosExistentes();
+
+        // Buscador de direcciones (PlaceAutocompleteElement reemplaza al viejo Autocomplete)
+        this.initAutocomplete();
     },
 
     cargarPoligonosExistentes() {
-        const zonas = @js($zonas);
         const colores = ['#8C52FF','#5271FF','#FFBD59','#FF5757','#00C2CB','#7ED957','#FF66C4','#5CE1E6','#C9E265','#CB6CE6','#38B6FF','#FFDE59'];
 
-        zonas.forEach((zona, index) => {
-            if (zona.poligono) {
-                const paths = this.convertirPoligono(zona.poligono);
-                const color = colores[index % 12];
+        // Recorremos las filas del DOM (no dependemos de índices de Livewire).
+        const filas = document.querySelectorAll('#zonasContainer .zona-item');
+        filas.forEach((fila, index) => {
+            const poligonoStr = fila.querySelector('.zona-poligono')?.value || '';
+            if (!poligonoStr) return;
 
-                const polygon = new google.maps.Polygon({
-                    paths: paths,
-                    strokeColor: color,
-                    fillColor: color,
-                    fillOpacity: 0.35,
-                    map: this.map
-                });
+            const paths = this.convertirPoligono(poligonoStr);
+            if (!paths.length) return;
 
-                this.poligonos[index] = polygon;
-            }
+            const color = colores[index % 12];
+            const polygon = new google.maps.Polygon({
+                paths: paths,
+                strokeColor: color,
+                fillColor: color,
+                fillOpacity: 0.35,
+                map: this.map,
+                clickable: true,
+                editable: true,
+                draggable: true
+            });
+
+            this.poligonos.push(polygon);
+            this.vincularZona(fila, polygon);
         });
+    },
+
+    // Conecta una fila de zona con su polígono: borrar y actualizar coordenadas al editar.
+    vincularZona(fila, polygon) {
+        // Botón borrar (cableado en JS, funciona también en filas inyectadas).
+        const btn = fila.querySelector('.zona-eliminar');
+        if (btn) {
+            btn.addEventListener('click', () => {
+                polygon.setMap(null);
+                fila.remove();
+            });
+        }
+
+        // Cuando se mueve un vértice o toda la zona, guardamos el nuevo polígono
+        // en el input oculto, así se persiste al grabar.
+        const actualizar = () => {
+            const pathArr = polygon.getPath().getArray();
+            const str = pathArr.map(p => `(${p.lat()},${p.lng()})`).join(',');
+            const input = fila.querySelector('.zona-poligono');
+            if (input) input.value = str;
+        };
+
+        const path = polygon.getPath();
+        google.maps.event.addListener(path, 'insert_at', actualizar);
+        google.maps.event.addListener(path, 'set_at', actualizar);
+        google.maps.event.addListener(path, 'remove_at', actualizar);
+        google.maps.event.addListener(polygon, 'dragend', actualizar);
+    },
+
+    initAutocomplete() {
+        // El buscador es opcional: si falla (p. ej. Places API New no habilitada),
+        // NO debe romper el mapa. Por eso todo va dentro de un try/catch.
+        try {
+            const container = document.getElementById('search_container');
+            if (!container || !google.maps.places || !google.maps.places.PlaceAutocompleteElement) {
+                return;
+            }
+
+            // Evita duplicar el elemento si Livewire re-inicializa el componente
+            if (container.querySelector('gmp-place-autocomplete')) {
+                return;
+            }
+
+            const placeAutocomplete = new google.maps.places.PlaceAutocompleteElement();
+            placeAutocomplete.style.width = '100%';
+            container.appendChild(placeAutocomplete);
+
+            // El evento moderno es 'gmp-select', que trae una predicción de lugar
+            placeAutocomplete.addEventListener('gmp-select', async ({ placePrediction }) => {
+                const place = placePrediction.toPlace();
+                await place.fetchFields({ fields: ['location'] });
+
+                const loc = place.location;
+                if (!loc) return;
+
+                const newLatLng = new google.maps.LatLng(loc.lat(), loc.lng());
+                this.marker.setPosition(newLatLng);
+                this.map.panTo(newLatLng);
+
+                const ubicacion = loc.lat() + ', ' + loc.lng();
+                this.$wire.call('actualizarUbicacion', ubicacion);
+                this.delivery.setCenter(newLatLng);
+            });
+        } catch (e) {
+            console.error('No se pudo inicializar el buscador de direcciones:', e);
+        }
     },
 
     convertirPoligono(poligonoStr) {
@@ -323,72 +387,165 @@ Alpine.data('deliveryConfig', () => ({
     },
 
     agregarZona() {
-        this.dibujando = true;
+        if (this.dibujando) { return; }   // evita iniciar dos dibujos a la vez
+
         const colores = ['#8C52FF','#5271FF','#FFBD59','#FF5757','#00C2CB','#7ED957','#FF66C4','#5CE1E6','#C9E265','#CB6CE6','#38B6FF','#FFDE59'];
         const index = this.poligonos.length;
         const color = colores[index % 12];
 
-        this.drawingManager = new google.maps.drawing.DrawingManager({
-            drawingMode: google.maps.drawing.OverlayType.POLYGON,
-            drawingControl: true,
-            drawingControlOptions: {
-                position: google.maps.ControlPosition.TOP_CENTER,
-                drawingModes: [google.maps.drawing.OverlayType.POLYGON]
-            },
-            polygonOptions: {
-                fillColor: color,
-                strokeColor: color,
-                fillOpacity: 0.35
-            }
+        this.iniciarDibujo(index, color);
+    },
+
+    // Inicia el modo de dibujo: cada click en el mapa agrega un vértice,
+    // se cierra la zona con doble click o haciendo click en el primer vértice.
+    iniciarDibujo(index, color) {
+        this.dibujando = true;
+        this.dibujoIdx = index;
+        this.dibujoColor = color;
+        this.dibujoVertices = [];
+        this.dibujoMarkers = [];
+
+        // Modo dibujo: cursor de cruz, sin zoom por doble click (lo uso para cerrar)
+        // y sin íconos de lugares clickeables (evita que se abra el popup de la dirección).
+        this.map.setOptions({
+            disableDoubleClickZoom: true,
+            draggableCursor: 'crosshair',
+            clickableIcons: false
         });
 
-        this.drawingManager.setMap(this.map);
+        this.dibujoPolyline = new google.maps.Polyline({
+            map: this.map,
+            path: [],
+            strokeColor: color,
+            strokeWeight: 2,
+            strokeOpacity: 0.9
+        });
 
-        google.maps.event.addListener(this.drawingManager, 'overlaycomplete', (event) => {
-            this.poligonos[index] = event.overlay;
-            const path = event.overlay.getPath().getArray();
-            const poligonoStr = path.map(p => `(${p.lat()},${p.lng()})`).join(',');
+        // Click simple: agrega un vértice (con un pequeño retardo para
+        // poder distinguirlo de un doble click sin agregar puntos de más).
+        this.dibujoClickListener = this.map.addListener('click', (e) => {
+            if (this.dibujoClickTimer) { clearTimeout(this.dibujoClickTimer); }
+            const latLng = e.latLng;
+            this.dibujoClickTimer = setTimeout(() => {
+                this.dibujoClickTimer = null;
+                this.agregarVertice(latLng);
+            }, 220);
+        });
 
-            const zonasContainer = document.getElementById('zonasContainer');
-            const html = `
-                <div class="bg-gray-50 p-4 rounded-lg zona-item" data-index="${index}">
-                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                        <input type="hidden" class="zona-id" value="0">
-                        <input type="hidden" class="zona-poligono" value="${poligonoStr}">
-                        <div class="sm:col-span-4">
-                            <input type="text" class="zona-nombre w-full px-3 py-2 border border-gray-300 rounded-md"
-                                   placeholder="Nombre zona" style="color: ${color}">
-                        </div>
-                        <div class="sm:col-span-3">
-                            <input type="number" step="0.01" class="zona-precio w-full px-3 py-2 border border-gray-300 rounded-md"
-                                   placeholder="Precio">
-                        </div>
-                        <div class="sm:col-span-3 flex items-center">
-                            <input type="checkbox" class="zona-habilitada w-4 h-4 text-[#FFAF22] bg-gray-100 border-gray-300 rounded focus:ring-[#FFAF22]" checked>
-                            <label class="ml-2 text-sm text-gray-700">Habilitada</label>
-                        </div>
-                        <div class="sm:col-span-2 flex items-center justify-end">
-                            <button type="button" @click="eliminarZona(${index})" class="text-red-500 hover:text-red-700">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            zonasContainer.insertAdjacentHTML('beforeend', html);
-
-            this.drawingManager.setMap(null);
-            this.dibujando = false;
+        // Doble click: cierra y finaliza la zona.
+        this.dibujoDblClickListener = this.map.addListener('dblclick', () => {
+            if (this.dibujoClickTimer) { clearTimeout(this.dibujoClickTimer); this.dibujoClickTimer = null; }
+            this.finalizarDibujo();
         });
     },
 
-    eliminarZona(index) {
-        if (this.poligonos[index]) {
-            this.poligonos[index].setMap(null);
+    agregarVertice(latLng) {
+        this.dibujoVertices.push(latLng);
+        this.dibujoPolyline.setPath(this.dibujoVertices);
+
+        const marker = new google.maps.Marker({
+            position: latLng,
+            map: this.map,
+            icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 5,
+                fillColor: this.dibujoColor,
+                fillOpacity: 1,
+                strokeColor: '#ffffff',
+                strokeWeight: 1
+            }
+        });
+
+        // Al hacer click sobre el primer vértice se cierra el polígono.
+        if (this.dibujoVertices.length === 1) {
+            marker.addListener('click', () => {
+                if (this.dibujoClickTimer) { clearTimeout(this.dibujoClickTimer); this.dibujoClickTimer = null; }
+                this.finalizarDibujo();
+            });
         }
-        const zonaEl = document.querySelector(`[data-index="${index}"]`);
-        if (zonaEl) {
-            zonaEl.remove();
+        this.dibujoMarkers.push(marker);
+    },
+
+    finalizarDibujo() {
+        if (!this.dibujando) { return; }
+        if (this.dibujoVertices.length < 3) {
+            alert('Hacé al menos 3 clicks en el mapa para definir la zona.');
+            return;
+        }
+
+        const index = this.dibujoIdx;
+        const color = this.dibujoColor;
+
+        // Polígono final, editable y arrastrable para poder ajustarlo después.
+        const poligono = new google.maps.Polygon({
+            map: this.map,
+            paths: this.dibujoVertices,
+            clickable: true,
+            editable: true,
+            draggable: true,
+            fillColor: color,
+            strokeColor: color,
+            fillOpacity: 0.35
+        });
+
+        this.poligonos.push(poligono);
+
+        // Mismo formato que usaba DrawingManager: "(lat,lng),(lat,lng),..."
+        const path = poligono.getPath().getArray();
+        const poligonoStr = path.map(p => `(${p.lat()},${p.lng()})`).join(',');
+
+        const zonasContainer = document.getElementById('zonasContainer');
+        const html = `
+            <div class="bg-gray-50 p-4 rounded-lg zona-item" data-index="${index}">
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                    <input type="hidden" class="zona-id" value="0">
+                    <input type="hidden" class="zona-poligono" value="${poligonoStr}">
+                    <div class="sm:col-span-4">
+                        <input type="text" class="zona-nombre w-full px-3 py-2 border border-gray-300 rounded-md"
+                               placeholder="Nombre zona" style="color: ${color}">
+                    </div>
+                    <div class="sm:col-span-3">
+                        <input type="number" step="0.01" class="zona-precio w-full px-3 py-2 border border-gray-300 rounded-md"
+                               placeholder="Precio">
+                    </div>
+                    <div class="sm:col-span-3 flex items-center">
+                        <input type="checkbox" class="zona-habilitada w-4 h-4 text-[#FFAF22] bg-gray-100 border-gray-300 rounded focus:ring-[#FFAF22]" checked>
+                        <label class="ml-2 text-sm text-gray-700">Habilitada</label>
+                    </div>
+                    <div class="sm:col-span-2 flex items-center justify-end">
+                        <button type="button" class="zona-eliminar text-red-500 hover:text-red-700">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        zonasContainer.insertAdjacentHTML('beforeend', html);
+
+        // Cableamos borrar + edición en la fila recién insertada.
+        const nuevaFila = zonasContainer.lastElementChild;
+        this.vincularZona(nuevaFila, poligono);
+
+        this.limpiarDibujo();
+    },
+
+    limpiarDibujo() {
+        if (this.dibujoClickListener) { google.maps.event.removeListener(this.dibujoClickListener); this.dibujoClickListener = null; }
+        if (this.dibujoDblClickListener) { google.maps.event.removeListener(this.dibujoDblClickListener); this.dibujoDblClickListener = null; }
+        if (this.dibujoClickTimer) { clearTimeout(this.dibujoClickTimer); this.dibujoClickTimer = null; }
+        if (this.dibujoPolyline) { this.dibujoPolyline.setMap(null); this.dibujoPolyline = null; }
+        this.dibujoMarkers.forEach(m => m.setMap(null));
+        this.dibujoMarkers = [];
+        this.dibujoVertices = [];
+        this.dibujando = false;
+        this.dibujoIdx = null;
+        this.dibujoColor = null;
+        if (this.map) {
+            this.map.setOptions({
+                disableDoubleClickZoom: false,
+                draggableCursor: null,
+                clickableIcons: true
+            });
         }
     },
 

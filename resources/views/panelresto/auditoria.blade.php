@@ -22,7 +22,7 @@
                         <i class="fas fa-calendar-alt mr-1"></i>Desde
                     </label>
                     <input type="date"
-                           wire:model="fechaDesde"
+                           wire:model.live.debounce.500ms="fechaDesde"
                            id="fechaDesde"
                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                 </div>
@@ -33,7 +33,7 @@
                         <i class="fas fa-calendar-alt mr-1"></i>Hasta
                     </label>
                     <input type="date"
-                           wire:model="fechaHasta"
+                           wire:model.live.debounce.500ms="fechaHasta"
                            id="fechaHasta"
                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                 </div>
@@ -43,7 +43,7 @@
                     <label for="tipoFiltro" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                         <i class="fas fa-tag mr-1"></i>Tipo
                     </label>
-                    <select wire:model="tipoFiltro"
+                    <select wire:model.live="tipoFiltro"
                             id="tipoFiltro"
                             class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
                         <option value="">Todos</option>
@@ -59,7 +59,7 @@
                         <i class="fas fa-user mr-1"></i>Usuario
                     </label>
                     <input type="text"
-                           wire:model="usuarioFiltro"
+                           wire:model.live="usuarioFiltro"
                            id="usuarioFiltro"
                            placeholder="Usuario..."
                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
@@ -71,7 +71,7 @@
                         <i class="fas fa-table mr-1"></i>Mesa
                     </label>
                     <input type="number"
-                           wire:model="mesaFiltro"
+                           wire:model.live="mesaFiltro"
                            id="mesaFiltro"
                            placeholder="Nº Mesa..."
                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
@@ -83,7 +83,7 @@
                         <i class="fas fa-receipt mr-1"></i>Pedido
                     </label>
                     <input type="number"
-                           wire:model="pedidoFiltro"
+                           wire:model.live="pedidoFiltro"
                            id="pedidoFiltro"
                            placeholder="Nº Pedido..."
                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FFAF22]">
@@ -111,7 +111,7 @@
                     <i class="fas fa-filter mr-1"></i><span class="hidden sm:inline">Aplicar Filtros</span><span class="sm:hidden">Aplicar</span>
                 </button>
                 <button wire:click="limpiarFiltros"
-                        class="px-3 sm:px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition duration-200 flex-1 sm:flex-none text-sm">
+                        class="px-3 sm:px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors duration-200 flex-1 sm:flex-none text-sm cursor-pointer font-secondary">
                     <i class="fas fa-eraser mr-1"></i><span class="hidden sm:inline">Limpiar</span>
                 </button>
             </div>

@@ -116,7 +116,7 @@
     <div class="fixed bottom-4 right-4 bg-gray-800 bg-opacity-90 text-white px-4 py-2 rounded-full text-sm">
         <div class="flex items-center">
             <div class="w-2 h-2 bg-[#FFAF22] rounded-full mr-2 animate-pulse"></div>
-            BCN Soft
+            bcnsoft
         </div>
     </div>
     @if(session()->has('monitor_user_id'))

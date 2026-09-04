@@ -16,6 +16,9 @@ class Inicio extends Component
     // KPIs
     public $ventasDelPeriodo = 0;
     public $comprasDelPeriodo = 0;
+    public $sueldosDelPeriodo = 0;
+    public $gananciaNeta = 0;
+    public $utilidadGlobal = 0;
     public $deudasACobrar = 0;
     public $deudasAPagar = 0;
 
@@ -46,10 +49,12 @@ class Inicio extends Component
         $this->setupClientDatabase();
         $this->cargarVentas();
         $this->cargarCompras();
+        $this->cargarSueldos();
         $this->cargarDeudas();
         $this->cargarProductosMasVendidos();
         $this->cargarVentasPorDepartamento();
         $this->cargarGraficoDiario();
+        $this->calcularUtilidad();
         $this->dispatch('datos-actualizados');
     }
 
@@ -69,8 +74,8 @@ class Inicio extends Component
         $ventas = DB::connection('client_db')->select("
             SELECT COALESCE(SUM(importe * IF(ticomp='NC',-1,1)), 0) as total
             FROM {$this->tablePrefix}ventas_encab
-            WHERE DATE(fecha) >= ?
-            AND DATE(fecha) <= ?
+            WHERE fecha >= ?
+            AND fecha < ? + INTERVAL 1 DAY
         ", [$this->fechaDesde, $this->fechaHasta]);
 
         $this->ventasDelPeriodo = $ventas[0]->total ?? 0;
@@ -83,8 +88,8 @@ class Inicio extends Component
             $compras = DB::connection('client_db')->select("
                 SELECT COALESCE(SUM(importe * IF(tipocomp='NC',-1,1)), 0) as total
                 FROM {$this->tablePrefix}compras
-                WHERE DATE(fecfac) >= ?
-                AND DATE(fecfac) <= ?
+                WHERE fecfac >= ?
+                AND fecfac < ? + INTERVAL 1 DAY
             ", [$this->fechaDesde, $this->fechaHasta]);
 
             $this->comprasDelPeriodo = $compras[0]->total ?? 0;
@@ -93,14 +98,41 @@ class Inicio extends Component
         }
     }
 
+    private function cargarSueldos()
+    {
+        try {
+            $sueldos = DB::connection('client_db')->select("
+                SELECT COALESCE(SUM(importe), 0) as total
+                FROM {$this->tablePrefix}emp_pagsueldo
+                WHERE fecha >= ?
+                AND fecha < ? + INTERVAL 1 DAY
+            ", [$this->fechaDesde, $this->fechaHasta]);
+
+            $this->sueldosDelPeriodo = $sueldos[0]->total ?? 0;
+        } catch (\Exception $e) {
+            $this->sueldosDelPeriodo = 0;
+        }
+    }
+
+    private function calcularUtilidad()
+    {
+        $this->gananciaNeta = $this->ventasDelPeriodo - $this->comprasDelPeriodo - $this->sueldosDelPeriodo;
+        $this->utilidadGlobal = $this->ventasDelPeriodo > 0
+            ? round(($this->gananciaNeta / $this->ventasDelPeriodo) * 100, 2)
+            : 0;
+    }
+
     private function cargarDeudas()
     {
-        // Deudas a cobrar (cuotas pendientes de clientes)
+        // Deudas a cobrar (cuotas pendientes de clientes).
+        // Solo último semestre: deuda más vieja se considera incobrable/pérdida.
+        $seisMesesAtras = Carbon::now()->subMonths(6)->format('Y-m-d');
         $deudasCobrar = DB::connection('client_db')->select("
             SELECT COALESCE(SUM(saldo * IF(tipo='NC',-1,1)), 0) as total
-            FROM {$this->tablePrefix}ventas_cuota 
+            FROM {$this->tablePrefix}ventas_cuota
             WHERE saldo > 0
-        ");
+            AND FECHA >= ?
+        ", [$seisMesesAtras]);
         
         $this->deudasACobrar = $deudasCobrar[0]->total ?? 0;
 
@@ -128,8 +160,8 @@ class Inicio extends Component
                 SUM(d.cantidad * IF(LEFT(d.nrofac,2) = 'NC',-1,1)) as cantidad_vendida,
                 SUM(d.importe * IF(LEFT(d.nrofac,2) = 'NC',-1,1)) as total_vendido
             FROM {$this->tablePrefix}ventas_det d
-            WHERE DATE(d.fecha) >= ?
-            AND DATE(d.fecha) <= ?
+            WHERE d.fecha >= ?
+            AND d.fecha < ? + INTERVAL 1 DAY
             GROUP BY d.codart, d.detart
             ORDER BY cantidad_vendida DESC
             LIMIT 10
@@ -148,16 +180,23 @@ class Inicio extends Component
     private function cargarVentasPorDepartamento()
     {
         try {
+            // Se agrega ventas_det por artículo PRIMERO (usa índice de fecha) y
+            // recién después se joinea el resultado chico a articu/deptos.
+            // Evita que el optimizador escanee toda ventas_det (era ~79s → ~65ms).
             $departamentos = DB::connection('client_db')->select("
                 SELECT
                     COALESCE(de.nombre, 'Sin Departamento') as departamento,
-                    COUNT(DISTINCT a.depto) as cantidad_ventas,
-                    SUM(d.importe) as total_vendido
-                FROM {$this->tablePrefix}ventas_det d
-                INNER JOIN {$this->tablePrefix}articu a ON d.codart = a.codigo
+                    COUNT(DISTINCT x.codart) as cantidad_ventas,
+                    SUM(x.total_vendido) as total_vendido
+                FROM (
+                    SELECT d.codart, SUM(d.importe) as total_vendido
+                    FROM {$this->tablePrefix}ventas_det d
+                    WHERE d.fecha >= ?
+                    AND d.fecha < ? + INTERVAL 1 DAY
+                    GROUP BY d.codart
+                ) x
+                INNER JOIN {$this->tablePrefix}articu a ON a.codigo = x.codart
                 INNER JOIN {$this->tablePrefix}deptos de ON de.codigo = a.depto
-                WHERE DATE(d.fecha) >= ?
-                AND DATE(d.fecha) <= ?
                 GROUP BY de.nombre
                 ORDER BY total_vendido DESC
                 LIMIT 8
@@ -184,8 +223,8 @@ class Inicio extends Component
                     DATE(fecha) as fecha,
                     SUM(importe * IF(ticomp='NC',-1,1)) as total
                 FROM {$this->tablePrefix}ventas_encab
-                WHERE DATE(fecha) >= ?
-                AND DATE(fecha) <= ?
+                WHERE fecha >= ?
+                AND fecha < ? + INTERVAL 1 DAY
                 GROUP BY DATE(fecha)
                 ORDER BY fecha
             ", [$this->fechaDesde, $this->fechaHasta]);
@@ -207,8 +246,8 @@ class Inicio extends Component
                     DATE(fecfac) as fecha,
                     SUM(importe * IF(tipocomp='NC',-1,1)) as total
                 FROM {$this->tablePrefix}compras
-                WHERE DATE(fecfac) >= ?
-                AND DATE(fecfac) <= ?
+                WHERE fecfac >= ?
+                AND fecfac < ? + INTERVAL 1 DAY
                 GROUP BY DATE(fecfac)
             ", [$this->fechaDesde, $this->fechaHasta]);
 
@@ -227,6 +266,11 @@ class Inicio extends Component
     {
         $this->cargarDatos();
         $this->dispatch('datos-actualizados');
+    }
+
+    public function verEstadoResultado()
+    {
+        $this->dispatch('panel-navigate', page: 'estado-resultado');
     }
 
     #[Layout('layouts.app')]

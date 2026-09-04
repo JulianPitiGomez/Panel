@@ -121,6 +121,7 @@ class Stock extends Component
                 'a.preciocos',
                 'a.precioven',
                 'a.stockotro',
+                'a.fecmod',
                 'm.nombre as marca_nombre',
                 'p.nombre as proveedor_nombre',
                 'r.nombre as rubro_nombre',

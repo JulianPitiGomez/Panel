@@ -9,12 +9,12 @@
             <div class="flex flex-row gap-2 items-end">
                 <div class="flex-1">
                     <label class="block text-xs font-secondary text-gray-600 mb-1">Desde</label>
-                    <input type="date" wire:model.live="fechaDesde"
+                    <input type="date" wire:model.live.debounce.500ms="fechaDesde"
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#FFAF22] focus:border-[#FFAF22]">
                 </div>
                 <div class="flex-1">
                     <label class="block text-xs font-secondary text-gray-600 mb-1">Hasta</label>
-                    <input type="date" wire:model.live="fechaHasta"
+                    <input type="date" wire:model.live.debounce.500ms="fechaHasta"
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#FFAF22] focus:border-[#FFAF22]">
                 </div>
                 <div>
@@ -85,16 +85,72 @@
         </div>
     </div>
 
+    <!-- Resumen Financiero -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Sueldos del Período -->
+        <div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-5 border border-orange-200 shadow-md">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-secondary text-orange-700 mb-1">Sueldos del Período</p>
+                    <p class="text-2xl font-primary font-bold text-orange-800">${{ number_format($sueldosDelPeriodo, 2) }}</p>
+                </div>
+                <div class="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center shadow-lg">
+                    <i class="fas fa-users text-white text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ganancia Neta -->
+        <div class="bg-gradient-to-br {{ $gananciaNeta >= 0 ? 'from-emerald-50 to-emerald-100 border-emerald-200' : 'from-rose-50 to-rose-100 border-rose-200' }} rounded-xl p-5 border shadow-md">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-secondary {{ $gananciaNeta >= 0 ? 'text-emerald-700' : 'text-rose-700' }} mb-1">Ganancia Neta</p>
+                    <p class="text-2xl font-primary font-bold {{ $gananciaNeta >= 0 ? 'text-emerald-800' : 'text-rose-800' }}">${{ number_format($gananciaNeta, 2) }}</p>
+                </div>
+                <div class="w-12 h-12 {{ $gananciaNeta >= 0 ? 'bg-emerald-500' : 'bg-rose-500' }} rounded-lg flex items-center justify-center shadow-lg">
+                    <i class="fas {{ $gananciaNeta >= 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down' }} text-white text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- % Utilidad Global -->
+        <div class="bg-gradient-to-br {{ $utilidadGlobal >= 0 ? 'from-indigo-50 to-indigo-100 border-indigo-200' : 'from-rose-50 to-rose-100 border-rose-200' }} rounded-xl p-5 border shadow-md">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-secondary {{ $utilidadGlobal >= 0 ? 'text-indigo-700' : 'text-rose-700' }} mb-1">% Utilidad Global</p>
+                    <p class="text-2xl font-primary font-bold {{ $utilidadGlobal >= 0 ? 'text-indigo-800' : 'text-rose-800' }}">{{ number_format($utilidadGlobal, 2) }}%</p>
+                </div>
+                <div class="w-12 h-12 {{ $utilidadGlobal >= 0 ? 'bg-indigo-500' : 'bg-rose-500' }} rounded-lg flex items-center justify-center shadow-lg">
+                    <i class="fas fa-percentage text-white text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botón Estado de Resultado -->
+    <div class="flex justify-center">
+        <button wire:click="verEstadoResultado"
+                class="inline-flex items-center gap-3 bg-gradient-to-r from-[#222036] to-[#2d2a4a] hover:from-[#2d2a4a] hover:to-[#222036] text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all">
+            <i class="fas fa-chart-pie text-[#FFAF22] text-lg"></i>
+            <span>Ver Estado de Resultado completo</span>
+            <i class="fas fa-arrow-right text-sm"></i>
+        </button>
+    </div>
+
     <!-- Gráfico de Barras: Ventas y Compras -->
-    <div class="bg-white rounded-xl shadow-md p-6 border border-gray-100">
+    <div class="bg-white rounded-xl shadow-md p-6 border border-gray-100"
+         x-data="inicioChartVentas()"
+         x-init="render()">
         <h3 class="text-lg font-primary font-semibold text-gray-800 mb-4 flex items-center">
             <i class="fas fa-chart-bar text-[#FFAF22] mr-3"></i>
             Ventas y Compras por Día
         </h3>
-        <div class="relative" style="height: 350px;"
+        <div id="inicioVentasData"
              data-ventas="{{ json_encode($ventasPorDia) }}"
-             data-compras="{{ json_encode($comprasPorDia) }}">
-            <canvas id="chartVentasCompras"></canvas>
+             data-compras="{{ json_encode($comprasPorDia) }}"
+             style="display:none;"></div>
+        <div class="relative" style="height: 350px;" wire:ignore>
+            <canvas x-ref="chartVentasCompras"></canvas>
         </div>
     </div>
 
@@ -160,192 +216,19 @@
 
     <!-- Gráfico de Departamentos -->
     @if(count($ventasPorDepartamento) > 0)
-    <div class="bg-white rounded-xl shadow-md p-6 border border-gray-100">
+    <div class="bg-white rounded-xl shadow-md p-6 border border-gray-100"
+         x-data="inicioChartDeptos()"
+         x-init="render()">
         <h3 class="text-lg font-primary font-semibold text-gray-800 mb-4 flex items-center">
             <i class="fas fa-chart-bar text-purple-500 mr-3"></i>
             Distribución de Ventas por Departamento
         </h3>
-        <div class="relative" style="height: 300px;"
-             data-departamentos="{{ json_encode($ventasPorDepartamento) }}">
-            <canvas id="chartDepartamentos"></canvas>
+        <div id="inicioDeptosData"
+             data-deptos="{{ json_encode($ventasPorDepartamento) }}"
+             style="display:none;"></div>
+        <div class="relative" style="height: 300px;" wire:ignore>
+            <canvas x-ref="chartDeptos"></canvas>
         </div>
     </div>
     @endif
 </div>
-
-@push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script>
-    document.addEventListener('livewire:init', () => {
-        let chartVentasCompras = null;
-        let chartDepartamentos = null;
-
-        const renderCharts = () => {
-            // Gráfico de Ventas y Compras
-            const ctxVentas = document.getElementById('chartVentasCompras');
-            if (ctxVentas) {
-                if (chartVentasCompras) {
-                    chartVentasCompras.destroy();
-                }
-
-                // Leer datos desde los atributos data
-                const container = ctxVentas.parentElement;
-                const ventasPorDia = JSON.parse(container.getAttribute('data-ventas') || '[]');
-                const comprasPorDia = JSON.parse(container.getAttribute('data-compras') || '[]');
-
-                console.log('Ventas por día:', ventasPorDia);
-                console.log('Compras por día:', comprasPorDia);
-
-                const todasFechas = [...new Set([
-                    ...ventasPorDia.map(v => v.fecha),
-                    ...comprasPorDia.map(c => c.fecha)
-                ])].sort();
-
-                console.log('Todas las fechas:', todasFechas);
-
-                const ventasData = todasFechas.map(fecha => {
-                    const item = ventasPorDia.find(v => v.fecha === fecha);
-                    return item ? item.total : 0;
-                });
-
-                const comprasData = todasFechas.map(fecha => {
-                    const item = comprasPorDia.find(c => c.fecha === fecha);
-                    return item ? item.total : 0;
-                });
-
-                console.log('Datos de ventas para gráfico:', ventasData);
-                console.log('Datos de compras para gráfico:', comprasData);
-
-                chartVentasCompras = new Chart(ctxVentas, {
-                    type: 'bar',
-                    data: {
-                        labels: todasFechas,
-                        datasets: [
-                            {
-                                label: 'Ventas',
-                                data: ventasData,
-                                backgroundColor: 'rgba(34, 197, 94, 0.8)',
-                                borderColor: 'rgb(34, 197, 94)',
-                                borderWidth: 1
-                            },
-                            {
-                                label: 'Compras',
-                                data: comprasData,
-                                backgroundColor: 'rgba(239, 68, 68, 0.8)',
-                                borderColor: 'rgb(239, 68, 68)',
-                                borderWidth: 1
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'top',
-                            },
-                            tooltip: {
-                                mode: 'index',
-                                intersect: false,
-                                callbacks: {
-                                    label: function(context) {
-                                        let label = context.dataset.label || '';
-                                        if (label) {
-                                            label += ': ';
-                                        }
-                                        label += '$' + context.parsed.y.toLocaleString();
-                                        return label;
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    callback: function(value) {
-                                        return '$' + value.toLocaleString();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-
-            // Gráfico de Departamentos
-            const ctxDeptos = document.getElementById('chartDepartamentos');
-            if (ctxDeptos) {
-                if (chartDepartamentos) {
-                    chartDepartamentos.destroy();
-                }
-
-                // Leer datos desde los atributos data
-                const containerDeptos = ctxDeptos.parentElement;
-                const departamentos = JSON.parse(containerDeptos.getAttribute('data-departamentos') || '[]');
-
-                console.log('Departamentos:', departamentos);
-
-                if (departamentos && departamentos.length > 0) {
-                    const labels = departamentos.map(d => d.departamento);
-                    const data = departamentos.map(d => d.total);
-
-                    chartDepartamentos = new Chart(ctxDeptos, {
-                        type: 'bar',
-                        data: {
-                            labels: labels,
-                            datasets: [{
-                                label: 'Ventas por Departamento',
-                                data: data,
-                                backgroundColor: 'rgba(147, 51, 234, 0.8)',
-                                borderColor: 'rgb(147, 51, 234)',
-                                borderWidth: 1
-                            }]
-                        },
-                        options: {
-                            indexAxis: 'y',
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    display: false
-                                },
-                                tooltip: {
-                                    callbacks: {
-                                        label: function(context) {
-                                            return '$' + context.parsed.x.toLocaleString();
-                                        }
-                                    }
-                                }
-                            },
-                            scales: {
-                                x: {
-                                    beginAtZero: true,
-                                    ticks: {
-                                        callback: function(value) {
-                                            return '$' + value.toLocaleString();
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    });
-                }
-            }
-        };
-
-        // Renderizar al cargar
-        renderCharts();
-
-        // Re-renderizar cuando se actualicen los datos
-        Livewire.on('grafico-actualizado', () => {
-            setTimeout(renderCharts, 200);
-        });
-
-        Livewire.on('datos-actualizados', () => {
-            setTimeout(renderCharts, 200);
-        });
-    });
-</script>
-@endpush

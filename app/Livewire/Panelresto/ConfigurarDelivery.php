@@ -148,7 +148,7 @@ class ConfigurarDelivery extends Component
     public function render()
     {
         return view('panelresto.configurar-delivery', [
-            'googleMapsApiKey' => config('app.google_maps_api_key', env('GOOGLE_MAPS_API_KEY'))
+            'googleMapsApiKey' => config('app.google_maps_api_key')
         ]);
     }
 }

@@ -8,11 +8,16 @@
                 <span class="hidden sm:inline">Filtros de Búsqueda</span>
                 <span class="sm:hidden">Filtros</span>
             </h2>
-            <button wire:click="limpiarFiltros"
-                    class="px-2 md:px-4 py-1.5 md:py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors duration-200 text-xs md:text-sm font-secondary">
-                <i class="fas fa-broom mr-1"></i>
-                <span class="hidden sm:inline">Limpiar</span>
-            </button>
+            <div class="flex items-end gap-2">
+                <button 
+                        class="btn-primary flex-1 sm:flex-none text-sm">
+                    <i class="fas fa-filter mr-1"></i><span class="hidden sm:inline">Aplicar</span>
+                </button>
+                <button wire:click="limpiarFiltros"
+                        class="px-3 sm:px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition duration-200 flex-1 sm:flex-none text-sm">
+                    <i class="fas fa-eraser mr-1"></i><span class="hidden sm:inline">Limpiar</span>
+                </button>
+            </div>
         </div>
 
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
@@ -118,7 +123,7 @@
                 </div>
                 <p class="text-lg md:text-2xl font-primary font-bold text-[#FFAF22]">${{ number_format($forma->total_importe, 2) }}</p>
                 <p class="text-xs md:text-sm font-secondary text-gray-600">
-                    {{ number_format(($forma->total_importe / $totalPagos) * 100, 1) }}% del total
+                    {{ $totalPagos > 0 ? number_format(($forma->total_importe / $totalPagos) * 100, 1) : 0 }}% del total
                 </p>
             </div>
             @endforeach
@@ -135,7 +140,7 @@
     <!-- Layout Principal con Panel Lateral -->
     <div class="flex flex-col lg:flex-row gap-6">
         <!-- Contenido Principal -->
-        <div class="{{ $mostrarDetallePago ? 'hidden lg:block lg:w-2/3' : 'w-full' }}">
+        <div class="w-full">
 
             <!-- Sección: Pagos por Fecha -->
             @if($mostrarDetalle)
@@ -233,7 +238,7 @@
                                     <button wire:click="verDetallePago({{ $pago->NUMERO }})"
                                             class="text-[#FFAF22] hover:text-[#222036] font-secondary text-sm">
                                         <i class="fas fa-eye mr-1"></i>
-                                        Ver Detalle
+                                        Ver
                                     </button>
                                 </td>
                             </tr>
@@ -398,10 +403,15 @@
 
         </div>
 
-        <!-- Panel Lateral de Detalle -->
+        <!-- Panel Lateral Modal - Fijo a la derecha -->
         @if($mostrarDetallePago && $pagoSeleccionado)
-        <div class="w-full lg:w-1/3 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
-            <div class="h-full flex flex-col max-h-screen lg:max-h-[800px]">
+        <!-- Overlay oscuro en mobile -->
+        <div class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+             wire:click="cerrarDetallePago"></div>
+
+        <!-- Panel lateral fijo -->
+        <div class="fixed right-0 top-0 h-full w-full sm:w-[90%] lg:w-[450px] xl:w-[500px] bg-white shadow-2xl z-50 overflow-hidden">
+            <div class="h-full flex flex-col">
                 <!-- Header del Panel -->
                 <div class="flex items-center justify-between p-3 md:p-4 border-b border-gray-200 bg-gray-50">
                     <h3 class="text-base md:text-lg font-primary font-semibold text-gray-900 flex items-center">

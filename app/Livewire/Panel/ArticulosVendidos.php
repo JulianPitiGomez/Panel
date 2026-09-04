@@ -85,12 +85,12 @@ class ArticulosVendidos extends Component
                 AVG(d.importe) as precio_promedio,
                 COUNT(DISTINCT d.nrofac) as cantidad_facturas
             FROM {$this->tablePrefix}ventas_det d            
-            WHERE DATE(d.fecha) >= ? 
-            AND DATE(d.fecha) <= ?
+            WHERE d.fecha >= ?
+            AND d.fecha < ? + INTERVAL 1 DAY
         ";
-        
+
         $params = [$this->fechaDesde, $this->fechaHasta];
-        
+
         // Agregar filtro de búsqueda por producto si existe
         if (!empty($this->buscarProducto)) {
             $query .= " AND (d.codart LIKE ? OR d.detart LIKE ?)";
@@ -139,12 +139,12 @@ class ArticulosVendidos extends Component
                 SUM(d.cantidad * IF(left(d.nrofac,2)='NC',-1,1)) as cantidad_vendida,
                 SUM(d.importe * IF(left(d.nrofac,2)='NC',-1,1)) as total_importe
             FROM {$this->tablePrefix}ventas_det d            
-            WHERE DATE(d.fecha) >= ? 
-            AND DATE(d.fecha) <= ?
+            WHERE d.fecha >= ?
+            AND d.fecha < ? + INTERVAL 1 DAY
         ";
-        
+
         $params = [$this->fechaDesde, $this->fechaHasta];
-        
+
         // Incluir filtro de búsqueda también en el gráfico
         if (!empty($this->buscarProducto)) {
             $query .= " AND (d.codart LIKE ? OR d.detart LIKE ?)";

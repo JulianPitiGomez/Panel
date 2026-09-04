@@ -27,6 +27,7 @@ class PagosProveedores extends Component
     public $mostrarDetallePago = false;
     public $pagoSeleccionado = null;
     public $detallePagoCon = [];
+    public $detalleFacturas = [];
 
     // Configuración
     public $mostrarDetalle = true;
@@ -206,6 +207,11 @@ class PagosProveedores extends Component
     public function toggleDetalle()
     {
         $this->mostrarDetalle = !$this->mostrarDetalle;
+
+        // Si se oculta el detalle, cerrar también el panel de detalle del pago
+        if (!$this->mostrarDetalle) {
+            $this->cerrarDetallePago();
+        }
     }
 
     public function toggleResumen()
@@ -236,17 +242,28 @@ class PagosProveedores extends Component
             ->where('p.NUMERO', $numeroPago)
             ->first();
 
-        // Obtener detalle de formas de pago
-        $this->detallePagoCon = DB::connection('client_db')
-            ->table($this->tablePrefix . 'ordcon as pc')
+        // Obtener facturas pagadas
+        $this->detalleFacturas = DB::connection('client_db')
+            ->table($this->tablePrefix . 'ordfac')
             ->select(
-                'pc.CODCON',
-                'pc.observa as forma_pago',
-                'pc.IMPORTE',
-                'pc.OBSERVA'
+                'TIPOCOMP',
+                'LETRA',
+                'NUMFAC',
+                'FECHA',
+                'IMPORTE'
             )
-            ->where('pc.NUMERO', $numeroPago)
-            ->orderBy('pc.IMPORTE', 'desc')
+            ->where('NUMERO', $numeroPago)
+            ->get();
+
+        // Obtener detalle de formas de pago (ordcon tiene OBSERVA que es la descripción de la forma de pago)
+        $this->detallePagoCon = DB::connection('client_db')
+            ->table($this->tablePrefix . 'ordcon')
+            ->select(
+                'IMPORTE',
+                'OBSERVA'
+            )
+            ->where('NUMERO', $numeroPago)
+            ->orderBy('IMPORTE', 'desc')
             ->get();
 
         $this->mostrarDetallePago = true;
@@ -257,6 +274,7 @@ class PagosProveedores extends Component
         $this->mostrarDetallePago = false;
         $this->pagoSeleccionado = null;
         $this->detallePagoCon = [];
+        $this->detalleFacturas = [];
     }
 
     public function cambiarTamanoPagina($size)

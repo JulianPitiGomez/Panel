@@ -50,6 +50,7 @@ class ComprasFechas extends Component
     public function updatedBuscar()
     {
         $this->resetPage();
+        $this->cargarDatosGrafico();
         $this->dispatch('filtros-aplicados', datosGrafico: $this->datosGrafico);
     }
 
@@ -85,8 +86,8 @@ class ComprasFechas extends Component
                 DATE_FORMAT(c.fecfac, '%d/%m/%Y') as fecha_formateada
             FROM {$this->tablePrefix}compras c
             INNER JOIN {$this->tablePrefix}provee p ON c.codpro = p.codigo
-            WHERE DATE(c.fecfac) >= ? 
-            AND DATE(c.fecfac) <= ?
+            WHERE c.fecfac >= ?
+            AND c.fecfac < ? + INTERVAL 1 DAY
         ";
         
         $params = [$this->fechaDesde, $this->fechaHasta];
@@ -135,8 +136,8 @@ class ComprasFechas extends Component
                 SUM(importe * IF(tipocomp='NC',-1,1)) as total_dia,
                 COUNT(*) as cantidad_facturas
             FROM {$this->tablePrefix}compras
-            WHERE DATE(fecfac) >= ?
-            AND DATE(fecfac) <= ?
+            WHERE fecfac >= ?
+            AND fecfac < ? + INTERVAL 1 DAY
             GROUP BY DATE(fecfac)", [$this->fechaDesde, $this->fechaHasta]);
 
         // Preparar datos para el gráfico
@@ -149,15 +150,27 @@ class ComprasFechas extends Component
             ];
         })->toArray();
 
-        // Calcular totales
-        $totales = DB::connection('client_db')->select("
-            SELECT 
+        // Calcular totales con filtro de búsqueda
+        $queryTotales = "
+            SELECT
                 SUM(importe * IF(tipocomp='NC',-1,1)) as total,
                 COUNT(*) as cantidad
-            FROM {$this->tablePrefix}compras
-            WHERE DATE(fecfac) >= ? 
-            AND DATE(fecfac) <= ?
-        ", [$this->fechaDesde, $this->fechaHasta]);
+            FROM {$this->tablePrefix}compras c
+            INNER JOIN {$this->tablePrefix}provee p ON c.codpro = p.codigo
+            WHERE c.fecfac >= ?
+            AND c.fecfac < ? + INTERVAL 1 DAY
+        ";
+
+        $paramsTotales = [$this->fechaDesde, $this->fechaHasta];
+
+        // Agregar filtro de búsqueda si existe
+        if (!empty($this->buscar)) {
+            $queryTotales .= " AND (c.numfac LIKE ? OR p.nombre LIKE ?)";
+            $paramsTotales[] = '%' . $this->buscar . '%';
+            $paramsTotales[] = '%' . $this->buscar . '%';
+        }
+
+        $totales = DB::connection('client_db')->select($queryTotales, $paramsTotales);
 
         $this->totalCompras = $totales[0]->total ?? 0;
         $this->cantidadFacturas = $totales[0]->cantidad ?? 0;

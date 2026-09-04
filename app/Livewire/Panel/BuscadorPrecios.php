@@ -86,7 +86,7 @@ class BuscadorPrecios extends Component
         $this->mostrarInfo = true;
         
         // Limpiar la pantalla después de 10 segundos
-        $this->dispatch('iniciarTemporizador', ['tiempo' => $this->tiempoMostrar]);
+        $this->dispatch('iniciar-temporizador', tiempo: $this->tiempoMostrar);
     }
 
     private function buscarPromocionActiva($codigoProducto)
@@ -114,7 +114,7 @@ class BuscadorPrecios extends Component
         $this->mostrarInfo = true;
         
         // Limpiar más rápido para productos no encontrados (5 segundos)
-        $this->dispatch('iniciarTemporizador', ['tiempo' => 5]);
+        $this->dispatch('iniciar-temporizador', tiempo: 5);
     }
 
     public function limpiarPantalla()
