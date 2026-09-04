@@ -44,14 +44,15 @@ class TiendaPedidoService
     }
 
     /**
-     * Deja la fila satelite de un pedido recien creado.
+     * Deja la fila satelite de un pedido recien creado y devenga la comision.
      * Se llama dentro de la misma transaccion que el alta en pedidos_encab:
      * si esto falla, el pedido no queda a medias.
      *
      * $datos admite cualquier columna de tienda_pedidos; lo que no venga toma
-     * el valor de F0 (sin entrega, sin pago, sin comision).
+     * el valor de F0 (sin entrega, sin pago). $clienteId es el id en config_clientes,
+     * de donde sale el porcentaje de comision.
      */
-    public function registrarSatelite(int $idpedido, array $datos = []): void
+    public function registrarSatelite(int $idpedido, int $clienteId, array $datos = []): void
     {
         $fila = array_merge([
             'idpedido'        => $idpedido,
@@ -70,6 +71,29 @@ class TiendaPedidoService
         ], $datos);
 
         $this->tabla('tienda_pedidos')->insert($fila);
+
+        $this->registrarEvento($idpedido, self::WEB_RECIBIDO, 'Pedido recibido desde la tienda web', 'comprador');
+
+        (new TiendaComisionService($this->prefijo))->devengar($idpedido, $clienteId);
+    }
+
+    /** Anota un evento en el timeline del pedido (tienda_eventos). */
+    public function registrarEvento(int $idpedido, string $estado, ?string $detalle = null, string $origen = 'sistema', ?string $usuario = null): void
+    {
+        $this->tabla('tienda_eventos')->insert([
+            'idpedido' => $idpedido,
+            'estado'   => $estado,
+            'detalle'  => $detalle ? mb_substr($detalle, 0, 255) : null,
+            'origen'   => $origen,
+            'usuario'  => $usuario,
+            'fecha'    => now(),
+        ]);
+    }
+
+    /** Timeline de un pedido, del mas viejo al mas nuevo. */
+    public function eventos(int $idpedido)
+    {
+        return $this->tabla('tienda_eventos')->where('idpedido', $idpedido)->orderBy('fecha')->orderBy('id')->get();
     }
 
     /** Fila satelite de un pedido (null si el pedido no vino de la tienda). */

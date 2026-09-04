@@ -16,7 +16,9 @@
 --    mientras tanto este archivo se aplica a mano en bcn_base1.
 --
 -- Historial:
---  v1  2026-09-04  tienda_compradores, tienda_direcciones, tienda_pedidos
+--  v1  2026-09-04  tienda_compradores, tienda_direcciones, tienda_pedidos, tienda_eventos
+--                  (F1 agrego comision_saldo a tienda_pedidos y tienda_eventos; v1 todavia no salio a produccion,
+--                   por eso se edita en lugar de crear v2)
 -- =====================================================================
 
 -- Quien compra en la web. NO es lo mismo que clientes de gestion: se enlaza
@@ -86,7 +88,8 @@ CREATE TABLE IF NOT EXISTS `{p}tienda_pedidos` (
   `comision_base`       DECIMAL(10,2) NOT NULL DEFAULT 0.00,     -- items - descuentos - promos, sin envio
   `comision_pct`        DECIMAL(5,2)  NOT NULL DEFAULT 0.00,     -- copiado de config_clientes.comision al confirmar
   `comision_importe`    DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  `comision_estado`     VARCHAR(12)  NOT NULL DEFAULT 'pendiente', -- pendiente | devengada | revertida | revisar
+  `comision_estado`     VARCHAR(12)  NOT NULL DEFAULT 'pendiente', -- pendiente | devengada | revertida | revisar | no_aplica
+  `comision_saldo`      DECIMAL(10,2) NOT NULL DEFAULT 0.00,     -- lo que el comercio debe por este pedido: = importe al devengar, 0 al pagar o revertir (mismo patron que pedidos.saldo en resto)
   -- estado propio del ecommerce (el de gestion sigue en pedidos_encab.estado)
   `estado_web`          VARCHAR(16)  NOT NULL DEFAULT 'recibido',
   `creado`              DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -94,4 +97,19 @@ CREATE TABLE IF NOT EXISTS `{p}tienda_pedidos` (
   KEY `idx_{p}tienda_pedidos_comprador` (`comprador_id`),
   KEY `idx_{p}tienda_pedidos_estado_web` (`estado_web`),
   KEY `idx_{p}tienda_pedidos_creado` (`creado`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Timeline del pedido web: lo que ve el comprador y la trazabilidad cuando alguien reclama.
+-- Tambien es donde la conciliacion de comisiones deja anotado lo que hizo.
+CREATE TABLE IF NOT EXISTS `{p}tienda_eventos` (
+  `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `idpedido`   INT          NOT NULL,
+  `estado`     VARCHAR(20)  NOT NULL,                             -- estado_web alcanzado, o el tipo de evento (comision_devengada, comision_revertida, ...)
+  `detalle`    VARCHAR(255) DEFAULT NULL,
+  `origen`     VARCHAR(20)  NOT NULL DEFAULT 'sistema',           -- sistema | comercio | comprador | conciliacion
+  `usuario`    VARCHAR(60)  DEFAULT NULL,
+  `notificado` TINYINT(1)   NOT NULL DEFAULT 0,
+  `fecha`      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_{p}tienda_eventos_pedido` (`idpedido`, `fecha`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

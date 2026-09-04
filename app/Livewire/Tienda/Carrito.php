@@ -279,7 +279,7 @@ class Carrito extends Component
         }
 
         // Fila satelite del ecommerce (comprador web, entrega, pago, comision, estado web)
-        (new \App\Services\TiendaPedidoService($this->tablePrefix))->registrarSatelite($pedidoId);
+        (new \App\Services\TiendaPedidoService($this->tablePrefix))->registrarSatelite($pedidoId, (int) session('tienda_config_id'));
 
         return $pedidoId;
         });

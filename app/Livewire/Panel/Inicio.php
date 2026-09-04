@@ -32,6 +32,15 @@ class Inicio extends Component
 
     private $tablePrefix;
 
+    // Comisiones de la tienda web (solo clientes con tienda y comision activa)
+    public $tieneComisiones = false;
+    public $mostrarModalComisiones = false;
+    public $comisiones = [];   // ver TiendaComisionService::resumenComercio()
+    public $comisionPct = 0;
+    public $discIva = 0;
+    public $cbu = '';
+    public $alias = '';
+
     public function mount()
     {
         $this->setupClientDatabase();
@@ -42,6 +51,47 @@ class Inicio extends Component
         $this->fechaHasta = Carbon::now()->format('Y-m-d');
 
         $this->cargarDatos();
+        $this->cargarComisiones();
+    }
+
+    /**
+     * Estado de cuenta de la tienda web: saldo, pedidos, plazo y datos para pagar.
+     * Portado de Panelresto/Inicio; los numeros salen de TiendaComisionService.
+     */
+    private function cargarComisiones()
+    {
+        $clientId = (int) session('client_id');
+
+        if (!\App\Services\TiendaService::habilitada($clientId) || !\App\Services\TiendaService::esquemaAlDia($clientId)) {
+            return;
+        }
+
+        $cliente = DB::connection('config')->table('config_clientes')
+            ->where('id', $clientId)
+            ->first(['lComision', 'comision', 'disc_iva', 'id_perfil']);
+
+        if (!$cliente || !$cliente->lComision) {
+            return;
+        }
+
+        $this->tieneComisiones = true;
+        $this->comisionPct = (float) $cliente->comision;
+        $this->discIva = (int) $cliente->disc_iva;
+
+        try {
+            $this->comisiones = (new \App\Services\TiendaComisionService($this->tablePrefix))->resumenComercio();
+        } catch (\Throwable $e) {
+            $this->tieneComisiones = false;
+            return;
+        }
+
+        if ($cliente->id_perfil) {
+            $perfil = DB::connection('config')->table('perfiles')
+                ->where('id', $cliente->id_perfil)
+                ->first(['cbu', 'alias']);
+            $this->cbu = $perfil->cbu ?? '';
+            $this->alias = $perfil->alias ?? '';
+        }
     }
 
     public function cargarDatos()

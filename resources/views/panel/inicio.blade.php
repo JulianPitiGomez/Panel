@@ -30,6 +30,11 @@
         </div>
     </div>
 
+    {{-- Tienda web: estado de cuenta de comisiones (solo clientes con tienda y comisión activa) --}}
+    @if($tieneComisiones)
+        @include('panel.partials.comisiones-tienda')
+    @endif
+
     <!-- KPIs Principales -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Ventas del Período -->

@@ -45,6 +45,33 @@ return [
     'ofrecer_servicio' => (bool) env('TIENDA_OFRECER_SERVICIO', false),
 
     /*
+    | Estados del pedido en GESTION (pedidos_encab.estado). Es la unica lista:
+    | ningun componente repite estas letras. Fivewin es quien las escribe.
+    |   P pendiente, A en armado, F facturado (los tres existen hoy)
+    |   N anulado, R rechazado: los agrega el usuario en Fivewin; las letras son
+    |   provisorias hasta que confirme cuales usa. Ver TiendaEstadoPedido.
+    */
+    'estados_gestion' => [
+        'P' => 'Pendiente',
+        'A' => 'En armado',
+        'F' => 'Facturado',
+        'N' => 'Anulado',
+        'R' => 'Rechazado',
+    ],
+
+    // Estados que revierten la comision (la conciliacion los busca)
+    'estados_anulados' => ['N', 'R'],
+
+    // Estados que comprometen stock (F2): armado, pendiente y en proceso. Facturado ya descontó.
+    'estados_comprometen_stock' => ['P', 'A'],
+
+    /*
+    | Comision: plazo en dias desde el primer pedido con saldo para pagar la
+    | cuenta (mismo criterio que resto).
+    */
+    'comision_plazo_dias' => 31,
+
+    /*
     | WhatsApp de BCN al que se manda al comercio que quiere contratar la
     | tienda (mismo numero que usan los logins del panel).
     */
