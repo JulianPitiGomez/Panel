@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Config;
 use App\Models\Cliente;
 use App\Services\TiendaService;
+use App\Services\TiendaCompradorService;
 
 class TiendaController extends Controller
 {
@@ -32,47 +33,33 @@ class TiendaController extends Controller
             'password' => 'required',
         ]);
 
-        // El middleware ya configuró la DB
-        $tablePrefix = session('tienda_prefix');
+        // El middleware ya configuró la DB. El ingreso es contra tienda_compradores
+        // (contraseña hasheada); el viejo login por DNI de clientes quedó apagado.
+        $compradores = new TiendaCompradorService(session('tienda_prefix'));
+        $login = $compradores->autenticar($request->email, $request->password);
 
-        $comprador = DB::connection('client_db')
-            ->table("{$tablePrefix}clientes")
-            ->where('MAIL', $request->email)
-            ->first();
+        switch ($login['resultado']) {
+            case TiendaCompradorService::LOGIN_OK:
+                $compradores->iniciarSesion($login['comprador']);
+                return redirect()->route('tienda.catalogo', $tienda);
 
-        if (!$comprador) {
-            return back()->withErrors(['email' => 'Email no registrado']);
+            case TiendaCompradorService::LOGIN_PENDIENTE:
+                return back()->withInput($request->only('email'))
+                    ->withErrors(['email' => 'Tu cuenta todavía está pendiente de aprobación por el comercio.']);
+
+            case TiendaCompradorService::LOGIN_RECHAZADO:
+                return back()->withInput($request->only('email'))
+                    ->withErrors(['email' => 'Tu cuenta no está habilitada. Consultá con el comercio.']);
+
+            default:
+                return back()->withInput($request->only('email'))
+                    ->withErrors(['password' => 'Email o contraseña incorrectos.']);
         }
-
-        if ($request->password != $comprador->DNI) {
-            return back()->withErrors(['password' => 'Contraseña incorrecta']);
-        }
-
-        session([
-            'tienda_comprador_id' => $comprador->CODIGO,
-            'tienda_comprador_nombre' => $comprador->NOMBRE,
-            'tienda_comprador_email' => $request->email,
-            'tienda_comprador_lispre' => $comprador->LISPRE,
-            'tienda_comprador_lispreesp' => $comprador->lispreesp ?? $comprador->LISPREESP ?? null,
-            'tienda_comprador_descuento' => $comprador->DESCUENTO ?? 0,
-            'tienda_comprador_vendedor' => $comprador->VENDEDOR ?? null,
-        ]);
-
-        return redirect()->route('tienda.catalogo', $tienda);
     }
 
     public function logout($tienda)
     {
-        session()->forget([
-            'tienda_comprador_id',
-            'tienda_comprador_nombre',
-            'tienda_comprador_email',
-            'tienda_comprador_lispre',
-            'tienda_comprador_lispreesp',
-            'tienda_comprador_descuento',
-            'tienda_comprador_vendedor',
-            'tienda_carrito',
-        ]);
+        session()->forget(array_merge(TiendaCompradorService::clavesSesion(), ['tienda_carrito']));
 
         return redirect()->route('tienda.index', $tienda);
     }

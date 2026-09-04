@@ -127,20 +127,30 @@ class TiendaCompradorService
             ->first();
     }
 
+    public const LOGIN_OK = 'ok';
+    public const LOGIN_CREDENCIALES = 'credenciales';   // mail o contrasena incorrectos (no se dice cual)
+    public const LOGIN_PENDIENTE = 'pendiente';          // cuenta esperando aprobacion del comercio
+    public const LOGIN_RECHAZADO = 'rechazado';
+
     /**
-     * Valida mail + contrasena. Devuelve el comprador si puede entrar, null si no.
-     * Un comprador pendiente o rechazado no entra aunque la contrasena sea correcta.
+     * Valida mail + contrasena. Devuelve ['resultado' => LOGIN_*, 'comprador' => object|null].
+     * Un comprador pendiente o rechazado no entra aunque la contrasena sea correcta,
+     * pero se le explica por que.
      */
-    public function autenticar(string $email, string $password): ?object
+    public function autenticar(string $email, string $password): array
     {
         $comprador = $this->porEmail($email);
 
         if (!$comprador || !Hash::check($password, $comprador->password_hash)) {
-            return null;
+            return ['resultado' => self::LOGIN_CREDENCIALES, 'comprador' => null];
+        }
+
+        if ($comprador->estado === self::ESTADO_PENDIENTE) {
+            return ['resultado' => self::LOGIN_PENDIENTE, 'comprador' => $comprador];
         }
 
         if ($comprador->estado !== self::ESTADO_APROBADO) {
-            return null;
+            return ['resultado' => self::LOGIN_RECHAZADO, 'comprador' => $comprador];
         }
 
         $comprador->ultimo_ingreso = now()->toDateTimeString();
@@ -148,7 +158,49 @@ class TiendaCompradorService
             ->where('id', $comprador->id)
             ->update(['ultimo_ingreso' => $comprador->ultimo_ingreso]);
 
-        return $comprador;
+        return ['resultado' => self::LOGIN_OK, 'comprador' => $comprador];
+    }
+
+    /**
+     * Arma la sesion del comprador logueado.
+     *
+     * 'tienda_comprador_id' sigue siendo el CODIGO de clientes de gestion (codcli),
+     * porque asi lo usan el alta del pedido (pedidos_encab.codcli) y Mis Pedidos.
+     * El id propio de la tienda va en 'tienda_comprador_web_id' para el satelite.
+     * Si el comprador no esta enlazado a un cliente de gestion (registro web, F5),
+     * lista de precios, descuento y vendedor quedan vacios y aplica el precio publico.
+     */
+    public function iniciarSesion(object $comprador): void
+    {
+        $cliente = $comprador->codcli
+            ? $this->tabla('clientes')->where('CODIGO', $comprador->codcli)->first()
+            : null;
+
+        session([
+            'tienda_comprador_web_id' => $comprador->id,
+            'tienda_comprador_id' => $comprador->codcli,
+            'tienda_comprador_nombre' => $cliente->NOMBRE ?? $comprador->nombre,
+            'tienda_comprador_email' => $comprador->email,
+            'tienda_comprador_lispre' => $cliente->LISPRE ?? null,
+            'tienda_comprador_lispreesp' => $cliente->lispreesp ?? $cliente->LISPREESP ?? null,
+            'tienda_comprador_descuento' => $cliente->DESCUENTO ?? 0,
+            'tienda_comprador_vendedor' => $cliente->VENDEDOR ?? null,
+        ]);
+    }
+
+    /** Claves de sesion que deja iniciarSesion(), para cerrarla completa. */
+    public static function clavesSesion(): array
+    {
+        return [
+            'tienda_comprador_web_id',
+            'tienda_comprador_id',
+            'tienda_comprador_nombre',
+            'tienda_comprador_email',
+            'tienda_comprador_lispre',
+            'tienda_comprador_lispreesp',
+            'tienda_comprador_descuento',
+            'tienda_comprador_vendedor',
+        ];
     }
 
     private function passwordAleatoria(): string

@@ -57,7 +57,7 @@
                         </div>
                     </div>
                     <div>
-                        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Clave</label>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
                                 <i class="fas fa-lock"></i>
@@ -65,7 +65,7 @@
                             <input type="password" id="password" name="password" required
                                    class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent outline-none transition"
                                    style="--tw-ring-color: {{ $colorBoton }}"
-                                   placeholder="Ingresa tu clave">
+                                   placeholder="Ingresá tu contraseña">
                         </div>
                     </div>
                 </div>
