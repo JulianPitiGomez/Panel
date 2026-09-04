@@ -15,6 +15,9 @@ return [
 
     'default' => env('FILESYSTEM_DISK', 'local'),
 
+    // Disco donde viven las fotos de productos de la tienda (ver ImagenProductoService)
+    'imagenes_productos' => env('IMAGENES_PRODUCTOS_DISK', 'r2'),
+
     /*
     |--------------------------------------------------------------------------
     | Filesystem Disks
@@ -45,6 +48,21 @@ return [
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
+        ],
+
+        // Cloudflare R2 (compatible S3): fotos de productos de la tienda
+        'r2' => [
+            'driver' => 's3',
+            'key' => env('R2_ACCESS_KEY_ID'),
+            'secret' => env('R2_SECRET_ACCESS_KEY'),
+            'region' => 'auto',
+            'bucket' => env('R2_BUCKET'),
+            'endpoint' => env('R2_ENDPOINT'),
+            'url' => env('R2_URL'),
+            // R2 no usa ACLs: el acceso publico se da a nivel bucket/dominio, no por archivo.
+            // Por eso no se declara 'visibility' (mandaria un header x-amz-acl que R2 no acepta).
+            'use_path_style_endpoint' => true,
+            'throw' => true,
         ],
 
         's3' => [
