@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Config;
 use App\Models\Cliente;
+use App\Services\TiendaService;
 
 class TiendaMiddleware
 {
@@ -22,7 +23,8 @@ class TiendaMiddleware
                          ->where('pack', 'GE3')
                          ->first();
 
-        if (!$cliente) {
+        // Cliente inexistente o fuera del piloto: misma respuesta, no se revela nada
+        if (!$cliente || !TiendaService::habilitada($cliente->id)) {
             abort(404);
         }
 
@@ -43,6 +45,9 @@ class TiendaMiddleware
             $datosComercio = json_decode($configWeb->configuracion, true) ?: [];
         }
 
+        // Modo de acceso: vive en el JSON de config web, no en codven
+        $modo = TiendaService::normalizarModo($datosComercio[TiendaService::CLAVE_MODO] ?? null);
+
         // Detectar logo y portada
         $logoPath = "img/logos/{$cliente->id}/logo.png";
         $portadaPath = "img/logos/{$cliente->id}/portada.png";
@@ -54,7 +59,7 @@ class TiendaMiddleware
             'tienda_config_id' => $cliente->id,
             'tienda_prefix' => $tablePrefix,
             'tienda_nombre' => $cliente->nomemp ?: $cliente->nombre,
-            'tienda_modo' => $cliente->codven,
+            'tienda_modo' => $modo,
             'tienda_slug' => $tienda,
             'tienda_base' => $cliente->base,
             'tienda_logo' => $logoUrl,
@@ -67,7 +72,7 @@ class TiendaMiddleware
         $routeName = $request->route()->getName();
         $rutasPublicas = ['tienda.index', 'tienda.login'];
 
-        if ($cliente->codven == 1 && !session('tienda_comprador_id') && !in_array($routeName, $rutasPublicas)) {
+        if (TiendaService::esPrivada($modo) && !session('tienda_comprador_id') && !in_array($routeName, $rutasPublicas)) {
             return redirect()->route('tienda.index', $tienda);
         }
 

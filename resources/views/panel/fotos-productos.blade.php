@@ -89,8 +89,9 @@
                         <div class="flex items-center gap-2 min-w-0">
                             <select wire:model.live="tiendaModo"
                                     class="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent">
-                                <option value="0">Acceso libre (cualquiera puede ver)</option>
-                                <option value="1">Privado (requiere usuario y contraseña)</option>
+                                @foreach(\App\Services\TiendaService::modos() as $valor => $etiqueta)
+                                    <option value="{{ $valor }}">{{ $etiqueta }}</option>
+                                @endforeach
                             </select>
                             <button wire:click="guardarTiendaModo"
                                     class="px-3 sm:px-4 py-2 bg-[#FFAF22] text-white rounded-lg hover:bg-[#E89B0A] transition font-semibold text-sm whitespace-nowrap flex-shrink-0">
@@ -98,7 +99,7 @@
                             </button>
                         </div>
                         <p class="text-xs text-gray-400 mt-1">
-                            @if($tiendaModo == '0')
+                            @if($tiendaModo === \App\Services\TiendaService::MODO_PUBLICA)
                                 <i class="fas fa-unlock text-green-500 mr-1"></i> Cualquier persona con el enlace puede ver tu catálogo.
                             @else
                                 <i class="fas fa-lock text-orange-500 mr-1"></i> Tus clientes deben iniciar sesión para ver el catálogo.

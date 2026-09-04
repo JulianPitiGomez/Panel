@@ -15,7 +15,7 @@ class Carrito extends Component
     public $tiendaSlug;
     public $tablePrefix;
     public $nombreTienda;
-    public $modo; // 0 = pública, 1 = privada
+    public $modo; // TiendaService::MODO_PUBLICA | MODO_PRIVADA
 
     public $carrito = [];
     public $emailComprador = '';
@@ -37,7 +37,7 @@ class Carrito extends Component
         $this->setupClientDatabase();
 
         $this->nombreTienda = session('tienda_nombre');
-        $this->modo = session('tienda_modo');
+        $this->modo = \App\Services\TiendaService::normalizarModo(session('tienda_modo'));
         $this->carrito = session('tienda_carrito', []);
         $this->parafecha = date('Y-m-d');
 
@@ -50,7 +50,7 @@ class Carrito extends Component
         ];
 
         // Si es modo privado, el comprador ya está validado
-        if ($this->modo == 1 && session('tienda_comprador_id')) {
+        if (\App\Services\TiendaService::esPrivada($this->modo) && session('tienda_comprador_id')) {
             $this->compradorValidado = true;
             $this->compradorNombre = session('tienda_comprador_nombre');
         }

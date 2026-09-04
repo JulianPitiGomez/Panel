@@ -13,7 +13,7 @@ class Catalogo extends Component
     public $tiendaSlug;
     public $tablePrefix;
     public $nombreTienda;
-    public $modo; // 0 = pública, 1 = privada
+    public $modo; // TiendaService::MODO_PUBLICA | MODO_PRIVADA
 
     public $busqueda = '';
     public $rubrosSeleccionados = [];
@@ -53,7 +53,7 @@ class Catalogo extends Component
         $this->setupClientDatabase();
 
         $this->nombreTienda = session('tienda_nombre');
-        $this->modo = session('tienda_modo');
+        $this->modo = \App\Services\TiendaService::normalizarModo(session('tienda_modo'));
         $this->carrito = session('tienda_carrito', []);
         $this->cantidadCarrito = count($this->carrito);
 
@@ -235,7 +235,7 @@ class Catalogo extends Component
     public function obtenerPrecio($producto)
     {
         // Si es tienda privada y hay comprador logueado, usar su lista de precios
-        if ($this->modo == 1 && session('tienda_comprador_id')) {
+        if (\App\Services\TiendaService::esPrivada($this->modo) && session('tienda_comprador_id')) {
             return $this->obtenerPrecioCliente($producto);
         }
 

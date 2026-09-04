@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
 use App\Services\ImagenProductoService;
+use App\Services\TiendaService;
 
 class FotosProductos extends Component
 {
@@ -61,7 +62,7 @@ class FotosProductos extends Component
 
     // Tienda config
     public $tiendaSlug = '';
-    public $tiendaModo = '0'; // '0'=libre, '1'=privado
+    public $tiendaModo = TiendaService::MODO_PUBLICA; // ver config/tienda.php
 
     // Tab activo
     public $tabActivo = 'productos'; // 'productos', 'configuracion'
@@ -139,8 +140,9 @@ class FotosProductos extends Component
 
         if ($cliente) {
             $this->tiendaSlug = $cliente->tienda ?? '';
-            $this->tiendaModo = (string) ($cliente->codven ?? '0');
         }
+
+        $this->tiendaModo = TiendaService::modo((int) $clientId);
     }
 
     public function setConfigCatalogo($key, $value)
@@ -192,12 +194,13 @@ class FotosProductos extends Component
 
     public function guardarTiendaModo()
     {
-        $clientId = session('client_id');
+        $clientId = (int) session('client_id');
 
-        DB::connection('config')
-            ->table('config_clientes')
-            ->where('id', $clientId)
-            ->update(['codven' => $this->tiendaModo]);
+        $this->tiendaModo = TiendaService::normalizarModo($this->tiendaModo);
+        TiendaService::guardarModo($clientId, $this->tiendaModo);
+
+        // Mantener sincronizada la copia en memoria del JSON, que guardarDatosComercio() reescribe entero
+        $this->datosComercio[TiendaService::CLAVE_MODO] = $this->tiendaModo;
 
         $this->mensaje = 'Modo de acceso actualizado correctamente.';
         $this->tipoMensaje = 'success';

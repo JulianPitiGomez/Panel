@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Config;
 use App\Models\Cliente;
+use App\Services\TiendaService;
 
 class TiendaController extends Controller
 {
@@ -14,7 +15,7 @@ class TiendaController extends Controller
         // El middleware ya configuró sesión y DB
         // Solo decidir si mostrar login o redirigir al catálogo
 
-        if (session('tienda_modo') == 1 && !session('tienda_comprador_id')) {
+        if (TiendaService::esPrivada(session('tienda_modo')) && !session('tienda_comprador_id')) {
             return view('tienda.login', [
                 'tienda' => $tienda,
                 'nombreTienda' => session('tienda_nombre'),

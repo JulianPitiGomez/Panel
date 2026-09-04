@@ -136,7 +136,7 @@
                     <h3 class="text-lg font-bold mb-4" style="color: {{ $colores['texto'] }}">Resumen del pedido</h3>
 
                     <!-- Validación de email (solo modo público) -->
-                    @if($modo == 0 && !$compradorValidado)
+                    @if($modo === \App\Services\TiendaService::MODO_PUBLICA && !$compradorValidado)
                         <div class="mb-4 p-4 bg-blue-50 rounded-lg">
                             <p class="text-sm text-blue-700 mb-3">
                                 <i class="fas fa-info-circle mr-1"></i>
