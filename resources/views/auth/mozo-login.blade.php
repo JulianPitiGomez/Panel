@@ -92,7 +92,7 @@
             <div class="flex flex-row justify-between items-center">
                 <div class="text-left flex-1">
                     <p class="text-sm font-secondary text-white">
-                        © {{ date('Y') }} Panel Web. BCN Soft.
+                        © {{ date('Y') }} Panel Web. bcnsoft.
                     </p>
                 </div>
                 <div class="flex items-center space-x-4 flex-shrink-0">

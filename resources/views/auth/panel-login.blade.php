@@ -105,8 +105,8 @@
                 <div class="text-left flex-1">
                     <p class="text-sm font-secondary text-white">
                         © {{ date('Y') }} Panel Web.
-                        <span class="inline md:hidden"> BCN Soft.</span>
-                        <span class="hidden md:inline"> BCN Soft. Todos los derechos reservados.</span>
+                        <span class="inline md:hidden"> bcnoft.</span>
+                        <span class="hidden md:inline"> bcnsoft. Todos los derechos reservados.</span>
                     </p>
                 </div>
                 

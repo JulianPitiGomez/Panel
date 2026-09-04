@@ -7,6 +7,8 @@ use App\Http\Controllers\Auth\VendedorAuthController;
 use App\Http\Controllers\Auth\VendedorEmpresaAuthController;
 use App\Http\Controllers\Auth\MonitorAuthController;
 use App\Http\Controllers\SessionExpiredController;
+use App\Http\Controllers\TiendaController;
+use App\Http\Controllers\MercadoPagoController;
 
 
 // Página principal pública
@@ -76,6 +78,7 @@ Route::prefix('vendedores')->middleware(['client:vendedores'])->group(function (
         Route::get('/pedido/nuevo', \App\Livewire\Vendedores\GestorPedidosVendedor::class)->name('gestor-pedido-vendedor-nuevo');
         Route::get('/pedido/editar/{id}', \App\Livewire\Vendedores\GestorPedidosVendedor::class)->name('gestor-pedido-vendedor-editar');
         Route::get('/pedido/imprimir/{id}', [App\Livewire\Vendedores\DashboardVendedor::class, 'imprimirPedidoRuta'])->name('imprimir-pedido');
+        Route::get('/cliente/nuevo', \App\Livewire\Vendedores\NuevoCliente::class)->name('vendedor.nuevo-cliente');
         Route::get('/historial', \App\Livewire\Vendedores\Historial::class)->name('historial');
         Route::get('/listasprecios', \App\Livewire\Vendedores\ListasPrecios::class)->name('listas-precios');
         Route::get('/imprimirlista', [App\Livewire\Vendedores\ListasPrecios::class, 'imprimirListaRuta'])->name('imprimir-lista');
@@ -100,6 +103,58 @@ Route::prefix('vendedores-empresas')->middleware(['client:vendedores_empresas'])
         Route::get('/deudas', \App\Livewire\VendedoresEmpresas\Deudas::class)->name('deudas-empresa');
     });
 });
+
+// Rutas de Tienda Web (E-commerce)
+Route::prefix('web')->middleware([\App\Http\Middleware\TiendaMiddleware::class])->group(function () {
+    Route::get('/{tienda}', [TiendaController::class, 'index'])->name('tienda.index');
+    Route::post('/{tienda}/login', [TiendaController::class, 'login'])->name('tienda.login');
+    Route::get('/{tienda}/logout', [TiendaController::class, 'logout'])->name('tienda.logout');
+    Route::get('/{tienda}/catalogo', \App\Livewire\Tienda\Catalogo::class)->name('tienda.catalogo');
+    Route::get('/{tienda}/carrito', \App\Livewire\Tienda\Carrito::class)->name('tienda.carrito');
+    Route::get('/{tienda}/mis-pedidos', \App\Livewire\Tienda\MisPedidos::class)->name('tienda.mis-pedidos');
+});
+
+// Rutas de Kiosco público (sin middleware de panel)
+Route::get('/kiosco', \App\Livewire\KioscoLogin::class)->name('kiosco.login');
+Route::get('/kiosco/app', \App\Livewire\KioscoRestaurant::class)
+    ->middleware(\App\Http\Middleware\KioscoMiddleware::class)
+    ->name('kiosco.app');
+Route::get('/kiosco/logout', function (\Illuminate\Http\Request $request) {
+    $password = $request->query('password', '');
+    $clientId = session('kiosco_client_id');
+
+    if (!$clientId) {
+        return response()->json(['ok' => true]);
+    }
+
+    // Obtener la contraseña configurada
+    $configWeb = \Illuminate\Support\Facades\DB::connection('config')
+        ->table('config_clientes_web')
+        ->where('cliente_id', $clientId)
+        ->first();
+
+    $kioscoPassword = '';
+    if ($configWeb && $configWeb->configuracion) {
+        $config = json_decode($configWeb->configuracion, true);
+        $kioscoPassword = $config['kiosco_password'] ?? '';
+    }
+
+    if ($kioscoPassword && $password !== $kioscoPassword) {
+        return response()->json(['ok' => false, 'error' => 'Contraseña incorrecta']);
+    }
+
+    session()->forget(['kiosco_authenticated', 'kiosco_client_id', 'kiosco_session_id']);
+    return response()->json(['ok' => true]);
+})->name('kiosco.logout');
+
+// Rutas de Mercado Pago (webhook + polling)
+Route::post('/mp/webhook/{clientId}', [MercadoPagoController::class, 'webhook'])
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
+    ->name('mp.webhook');
+Route::get('/mp/status/{clientId}/{reference}', [MercadoPagoController::class, 'consultarEstado'])
+    ->name('mp.status');
+Route::get('/mp/point-status/{clientId}/{deviceId}/{intentId}', [MercadoPagoController::class, 'consultarEstadoPoint'])
+    ->name('mp.point-status');
 
 // Rutas de Monitor
 Route::prefix('monitor')->middleware(['client:monitor'])->group(function () {

@@ -6,13 +6,13 @@
     <header class="bg-[#222036] shadow-sm">
         <div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 pt-12">
             <div class="flex justify-center">
-                <div class="flex items-center space-x-6">
+                <div class="flex flex-col items-center space-y-2">
                     <!-- Logo -->
                     <div class="flex items-center justify-center">
                         <img src="{{ asset('images/logo.png') }}" alt="Logo" class="w-40 md:w-70">
                     </div>
                     <div class="text-center">
-                        <h1 class="text-2xl md:text-5xl font-bold text-white">Acceso Clientes</h1>
+                        <h1 class="text-xl md:text-3xl font-bold text-white">Accesos</h1>
                     </div>
                 </div>
             </div>
@@ -131,8 +131,8 @@
                 <div class="text-left flex-1">
                     <p class="text-sm font-secondary text-white">
                         © {{ date('Y') }} Panel Web.
-                        <span class="inline md:hidden"> BCN Soft.</span>
-                        <span class="hidden md:inline"> BCN Soft. Todos los derechos reservados.</span>
+                        <span class="inline md:hidden"> bcnsoft.</span>
+                        <span class="hidden md:inline"> bcnsoft. Todos los derechos reservados.</span>
                     </p>
                 </div>
                 

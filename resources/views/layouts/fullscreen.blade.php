@@ -19,6 +19,30 @@
     
     <!-- Livewire Styles -->
     @livewireStyles
+
+    <!-- Estilos de impresión para ticket -->
+    <style>
+        .print-only { display: none !important; }
+
+        @media print {
+            /* Ocultar todo excepto el ticket */
+            body * { visibility: hidden !important; }
+            .print-only, .print-only * {
+                visibility: visible !important;
+                display: block !important;
+            }
+            .no-print { display: none !important; }
+            .print-only {
+                position: absolute;
+                left: 0;
+                top: 0;
+            }
+            @page {
+                size: 80mm auto;
+                margin: 2mm;
+            }
+        }
+    </style>
 </head>
 <body class="font-sans antialiased">
     <div class="min-h-screen bg-gray-100">
