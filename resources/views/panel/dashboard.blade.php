@@ -123,15 +123,13 @@
                     <span class="font-secondary font-medium">Tu negocio hoy</span>
                 </button>
 
-                <!-- Catálogo / tienda (piloto: clientes habilitados en config/tienda.php) -->
-                @if(\App\Services\TiendaService::habilitada(session('client_id')))
+                <!-- Catálogo / tienda: si el comercio no la tiene contratada, la pantalla le ofrece el servicio -->
                 <button
                     wire:click="navigateTo('fotos-productos'); if(window.innerWidth < 640) $wire.call('toggleSidebar')"
                     class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'fotos-productos' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
                     <i class="fas fa-store mr-3 text-lg {{ $currentPage === 'fotos-productos' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
                     <span class="font-secondary font-medium">Catalogo</span>
                 </button>
-                @endif
 
                 <!-- Separador -->
                 <div class="border-t border-gray-200 my-4"></div>
@@ -273,7 +271,7 @@
                         @if(\App\Services\TiendaService::habilitada(session('client_id')))
                             @livewire('panel.fotos-productos')
                         @else
-                            @livewire('panel.inicio')
+                            @include('panel.tienda-no-contratada')
                         @endif
                         @break
                     @case('estado-resultado')

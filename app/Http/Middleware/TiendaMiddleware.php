@@ -23,9 +23,11 @@ class TiendaMiddleware
                          ->where('pack', 'GE3')
                          ->first();
 
-        // Cliente inexistente o fuera del piloto: misma respuesta, no se revela nada
+        // Tienda inexistente o sin el servicio contratado: pagina amigable, con 404 para los buscadores
         if (!$cliente || !TiendaService::habilitada($cliente->id)) {
-            abort(404);
+            return response()->view('tienda.no-disponible', [
+                'nombreTienda' => $cliente ? ($cliente->nomemp ?: $cliente->nombre) : null,
+            ], 404);
         }
 
         // Configurar conexión a la base del cliente

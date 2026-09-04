@@ -36,4 +36,10 @@ return [
 
     'modo_default' => 'publica',
 
+    /*
+    | WhatsApp de BCN al que se manda al comercio que quiere contratar la
+    | tienda (mismo numero que usan los logins del panel).
+    */
+    'contacto_whatsapp' => env('TIENDA_CONTACTO_WHATSAPP', '5491128654468'),
+
 ];
