@@ -39,6 +39,17 @@ class TiendaService
         return empty($habilitados) || in_array($clienteId, $habilitados, true);
     }
 
+    /**
+     * El comercio tiene que ver el item de tienda en su panel?
+     * Si: cuando la tiene habilitada, o cuando ya se la estamos ofreciendo
+     * (config tienda.ofrecer_servicio). Mientras el modulo no este terminado,
+     * los que no la tienen no ven nada.
+     */
+    public static function visibleEnPanel(?int $clienteId): bool
+    {
+        return self::habilitada($clienteId) || config('tienda.ofrecer_servicio', false);
+    }
+
     /** Modo de acceso del cliente, normalizado a uno de los modos conocidos. */
     public static function modo(int $clienteId): string
     {

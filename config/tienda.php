@@ -37,6 +37,14 @@ return [
     'modo_default' => 'publica',
 
     /*
+    | Mostrar el item Catalogo / tienda a los comercios que NO la tienen
+    | contratada, con la pantalla que les ofrece el servicio.
+    | Apagado hasta que la tienda este terminada: si se sube el panel por otro
+    | modulo, los clientes no tienen que ver nada ni empezar a preguntar.
+    */
+    'ofrecer_servicio' => (bool) env('TIENDA_OFRECER_SERVICIO', false),
+
+    /*
     | WhatsApp de BCN al que se manda al comercio que quiere contratar la
     | tienda (mismo numero que usan los logins del panel).
     */
