@@ -23,7 +23,18 @@
             <i class="fas fa-camera"></i>
             <span>Fotos Productos</span>
         </button>
+        <button wire:click="$set('tabActivo', 'envios')"
+                class="flex-1 flex items-center justify-center gap-2 px-2 sm:px-4 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-semibold transition-all
+                {{ $tabActivo === 'envios' ? 'bg-[#1E1B35] text-white shadow' : 'text-gray-600 hover:bg-gray-100' }}">
+            <i class="fas fa-truck"></i>
+            <span>Envíos</span>
+        </button>
     </div>
+
+    {{-- ==================== TAB ENVÍOS ==================== --}}
+    @if($tabActivo === 'envios')
+        @livewire('panel.configurar-envios', [], key('configurar-envios'))
+    @endif
 
     {{-- ==================== TAB CONFIGURACIÓN ==================== --}}
     @if($tabActivo === 'configuracion')

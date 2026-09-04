@@ -66,7 +66,7 @@ class FotosProductos extends Component
     public $tiendaModo = TiendaService::MODO_PUBLICA; // ver config/tienda.php
 
     // Tab activo
-    public $tabActivo = 'productos'; // 'productos', 'configuracion'
+    public $tabActivo = 'productos'; // 'productos', 'configuracion', 'envios' (todo lo de la tienda vive aca, no en el menu)
 
     // Contadores
     public $totalProductos = 0;

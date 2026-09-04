@@ -1,11 +1,6 @@
 <div x-data="enviosConfig()" x-init="init()" class="space-y-6 font-secondary">
 
-    <div>
-        <h2 class="text-2xl font-primary font-semibold text-gray-800 flex items-center gap-2">
-            <i class="fas fa-truck text-[#FFAF22]"></i> Envíos de la tienda
-        </h2>
-        <p class="text-sm text-gray-500">Cómo entregás los pedidos de la tienda web y cuánto cobrás por el reparto.</p>
-    </div>
+    <p class="text-sm text-gray-500">Cómo entregás los pedidos de la tienda web y cuánto cobrás por el reparto.</p>
 
     @if($mensaje)
         <div class="px-4 py-3 rounded-xl text-sm {{ $tipoMensaje === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200' }}">
