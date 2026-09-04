@@ -111,6 +111,24 @@ class TiendaService
         return config('tienda.modos', []);
     }
 
+    /**
+     * Apunta la conexion client_db a la base de un cliente y devuelve [Cliente, prefijo].
+     * Es lo que hacen a mano TiendaMiddleware y los componentes del panel; sirve para
+     * comandos y servicios que corren fuera de una sesion.
+     */
+    public static function conectarCliente(int $clienteId): array
+    {
+        $cliente = \App\Models\Cliente::find($clienteId);
+        if (!$cliente || !$cliente->base) {
+            throw new \RuntimeException("Cliente {$clienteId} inexistente o sin base asignada.");
+        }
+
+        \Illuminate\Support\Facades\Config::set('database.connections.client_db.database', $cliente->base);
+        DB::purge('client_db');
+
+        return [$cliente, $cliente->getTablePrefix()];
+    }
+
     /** JSON de config_clientes_web.configuracion como array (vacio si no existe). */
     public static function configuracionWeb(int $clienteId): array
     {
