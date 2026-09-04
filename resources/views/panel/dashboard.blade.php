@@ -133,6 +133,16 @@
                 </button>
                 @endif
 
+                <!-- Envíos de la tienda: solo clientes con la tienda habilitada -->
+                @if(\App\Services\TiendaService::habilitada(session('client_id')))
+                <button
+                    wire:click="navigateTo('envios-tienda'); if(window.innerWidth < 640) $wire.call('toggleSidebar')"
+                    class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'envios-tienda' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
+                    <i class="fas fa-truck mr-3 text-lg {{ $currentPage === 'envios-tienda' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
+                    <span class="font-secondary font-medium">Envíos</span>
+                </button>
+                @endif
+
                 <!-- Separador -->
                 <div class="border-t border-gray-200 my-4"></div>
 
@@ -211,6 +221,9 @@
                                     @case('fotos-productos')
                                         Catalogo
                                         @break
+                                    @case('envios-tienda')
+                                        Envíos
+                                        @break
                                     @case('estado-resultado')
                                         Estado de Resultado
                                         @break
@@ -274,6 +287,13 @@
                             @livewire('panel.fotos-productos')
                         @elseif(config('tienda.ofrecer_servicio'))
                             @include('panel.tienda-no-contratada')
+                        @else
+                            @livewire('panel.inicio')
+                        @endif
+                        @break
+                    @case('envios-tienda')
+                        @if(\App\Services\TiendaService::habilitada(session('client_id')))
+                            @livewire('panel.configurar-envios')
                         @else
                             @livewire('panel.inicio')
                         @endif

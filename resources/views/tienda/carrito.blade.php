@@ -182,6 +182,71 @@
                         </div>
                     @endif
 
+                    <!-- Entrega: modalidad y dirección -->
+                    @if(count($opcionesEntrega))
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">¿Cómo lo recibís?</label>
+                        <div class="space-y-2">
+                            @foreach($opcionesEntrega as $op)
+                                <label class="flex items-start gap-2 p-2.5 rounded-lg border cursor-pointer {{ $entregaModo === $op['modo'] ? 'border-gray-400 bg-gray-50' : 'border-gray-200' }} {{ !$op['disponible'] ? 'opacity-60 cursor-not-allowed' : '' }}">
+                                    <input type="radio" wire:model.live="entregaModo" value="{{ $op['modo'] }}" @disabled(!$op['disponible']) class="mt-1">
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <span class="text-sm font-medium" style="color: {{ $colores['texto'] }}">{{ $op['etiqueta'] }}</span>
+                                            @if($op['disponible'])
+                                                <span class="text-sm font-bold whitespace-nowrap" style="color: {{ $colores['precio'] }}">
+                                                    {{ $op['importe'] > 0 ? '$' . number_format($op['importe'], 2, ',', '.') : ($op['modo'] === 'a_convenir' ? 'a definir' : 'Gratis') }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                        <p class="text-xs text-gray-400 leading-snug">{{ $op['detalle'] }}</p>
+                                    </div>
+                                </label>
+                            @endforeach
+                        </div>
+
+                        @if(in_array($entregaModo, ['flota', 'a_convenir']) || (isset($opcionesEntrega['flota']) && !$opcionesEntrega['flota']['disponible']))
+                        <div class="mt-3 p-3 bg-gray-50 rounded-lg space-y-2">
+                            <p class="text-xs font-medium text-gray-600">Dirección de entrega</p>
+
+                            @if(count($direccionesGuardadas))
+                                <select wire:change="seleccionarDireccion($event.target.value)"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                                    <option value="">Otra dirección…</option>
+                                    @foreach($direccionesGuardadas as $d)
+                                        <option value="{{ $d['id'] }}" @selected($direccionSeleccionada == $d['id'])>
+                                            {{ $d['alias'] ? $d['alias'] . ': ' : '' }}{{ $d['calle'] }} {{ $d['numero'] }}, {{ $d['localidad'] }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            @endif
+
+                            <div wire:ignore id="tienda_dir_buscador"></div>
+
+                            <div class="grid grid-cols-3 gap-2">
+                                <input type="text" wire:model.blur="direccion.calle" placeholder="Calle" class="col-span-2 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <input type="text" wire:model.blur="direccion.numero" placeholder="Número" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <input type="text" wire:model.blur="direccion.piso" placeholder="Piso / depto" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <input type="text" wire:model.blur="direccion.localidad" placeholder="Localidad" class="col-span-2 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <input type="text" wire:model.blur="direccion.provincia" placeholder="Provincia" class="col-span-2 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <input type="text" wire:model.blur="direccion.cp" placeholder="Cód. postal" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <input type="text" wire:model.blur="direccion.referencia" placeholder="Referencia (timbre, entre calles…)" class="col-span-3 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            </div>
+
+                            @if(session('tienda_comprador_web_id') && !$direccionSeleccionada)
+                                <label class="flex items-center gap-2 text-xs text-gray-500">
+                                    <input type="checkbox" wire:model="guardarDireccion" class="w-4 h-4 rounded"> Guardar esta dirección para la próxima
+                                </label>
+                            @endif
+                        </div>
+                        @endif
+
+                        @if($entregaError)
+                            <p class="text-sm text-red-500 mt-2">{{ $entregaError }}</p>
+                        @endif
+                    </div>
+                    @endif
+
                     <!-- Fecha de entrega -->
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de entrega</label>
@@ -222,9 +287,16 @@
                         @endif
                     </div>
 
+                    @if($entregaModo)
+                        <div class="flex justify-between text-sm mb-2">
+                            <span class="text-gray-500">Envío</span>
+                            <span class="font-medium">{{ $envioImporte > 0 ? '$' . number_format($envioImporte, 2, ',', '.') : ($entregaModo === 'a_convenir' ? 'a convenir' : 'Gratis') }}</span>
+                        </div>
+                    @endif
+
                     <div class="flex justify-between text-lg font-bold border-t pt-3">
                         <span style="color: {{ $colores['texto'] }}">Total</span>
-                        <span style="color: {{ $colores['precio'] }}">${{ number_format($total, 2, ',', '.') }}</span>
+                        <span style="color: {{ $colores['precio'] }}">${{ number_format($totalConEnvio, 2, ',', '.') }}</span>
                     </div>
 
                     <!-- Botón confirmar -->
@@ -259,3 +331,59 @@
         </a>
     @endif
 </div>
+
+@script
+<script>
+// Autocompletado de direccion de entrega (Google Places). Es opcional: si no carga,
+// el comprador escribe la direccion a mano y las zonas se resuelven por codigo postal
+// o geocodificando en el servidor.
+(() => {
+    const KEY = @js($googleMapsApiKey);
+    let montado = false;
+
+    const montar = () => {
+        const c = document.getElementById('tienda_dir_buscador');
+        if (!c || montado || typeof google === 'undefined' || !google.maps?.places?.PlaceAutocompleteElement) return;
+        if (c.querySelector('gmp-place-autocomplete')) { montado = true; return; }
+        try {
+            const ac = new google.maps.places.PlaceAutocompleteElement({ includedRegionCodes: ['ar'] });
+            ac.style.width = '100%';
+            c.appendChild(ac);
+            montado = true;
+            ac.addEventListener('gmp-select', async ({ placePrediction }) => {
+                const place = placePrediction.toPlace();
+                await place.fetchFields({ fields: ['location', 'addressComponents'] });
+                const d = { calle: '', numero: '', localidad: '', provincia: '', cp: '', lat: null, lng: null };
+                (place.addressComponents || []).forEach(comp => {
+                    const t = comp.types || [];
+                    if (t.includes('route')) d.calle = comp.longText;
+                    else if (t.includes('street_number')) d.numero = comp.longText;
+                    else if (t.includes('locality')) d.localidad = comp.longText;
+                    else if (t.includes('administrative_area_level_1')) d.provincia = comp.longText;
+                    else if (t.includes('postal_code')) d.cp = comp.longText;
+                });
+                if (place.location) { d.lat = place.location.lat(); d.lng = place.location.lng(); }
+                $wire.setDireccionDesdeMapa(d);
+            });
+        } catch (e) { console.warn('Autocompletado de direccion no disponible', e); }
+    };
+
+    const cargar = () => {
+        if (!KEY) return;
+        if (typeof google !== 'undefined' && google.maps?.places) { montar(); return; }
+        if (window.googleMapsLoading) { const t = setInterval(() => { if (typeof google !== 'undefined' && google.maps?.places) { clearInterval(t); montar(); } }, 300); return; }
+        window.googleMapsLoading = true;
+        const s = document.createElement('script');
+        s.src = `https://maps.googleapis.com/maps/api/js?key=${KEY}&libraries=places`;
+        s.async = true; s.defer = true;
+        s.onload = () => { window.googleMapsLoading = false; montar(); };
+        s.onerror = () => { window.googleMapsLoading = false; };
+        document.head.appendChild(s);
+    };
+
+    cargar();
+    // El bloque de direccion aparece/desaparece segun la modalidad: re-montar tras cada actualizacion
+    Livewire.hook('morph.updated', () => { montado = !!document.querySelector('#tienda_dir_buscador gmp-place-autocomplete'); montar(); });
+})();
+</script>
+@endscript

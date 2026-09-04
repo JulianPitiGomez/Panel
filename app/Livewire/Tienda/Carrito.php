@@ -30,6 +30,16 @@ class Carrito extends Component
     public $pedidoConfirmado = false;
     public $numeroPedido = null;
 
+    // Entrega (F2): modalidad elegida, direccion y cotizacion (ver TiendaEnvioService)
+    public $entregaModo = '';
+    public $opcionesEntrega = [];
+    public $direccion = ['calle' => '', 'numero' => '', 'piso' => '', 'localidad' => '', 'provincia' => '', 'cp' => '', 'referencia' => '', 'lat' => null, 'lng' => null];
+    public $direccionesGuardadas = [];
+    public $direccionSeleccionada = '';
+    public $guardarDireccion = true;
+    public $envioImporte = 0;
+    public $entregaError = '';
+
     public $colores = [];
 
     public function mount($tienda)
@@ -54,7 +64,186 @@ class Carrito extends Component
         if (session('tienda_comprador_web_id')) {
             $this->compradorValidado = true;
             $this->compradorNombre = session('tienda_comprador_nombre');
+            $this->cargarDireccionesGuardadas();
         }
+    }
+
+    // ------------------------------------------------------------ entrega
+
+    /**
+     * Recalcula las opciones de entrega y el costo de envio para el carrito actual.
+     * Se llama en cada render: el costo depende del subtotal (minimo bonificado)
+     * y de la direccion, y asi hay un solo lugar que lo resuelve.
+     */
+    private function cotizarEntrega()
+    {
+        $this->setupClientDatabase();
+
+        if ($this->direccion['lat'] === null && $this->necesitaCoordenadas()) {
+            $this->geocodificarDireccion();
+        }
+
+        $srv = new \App\Services\TiendaEnvioService($this->tablePrefix);
+        $this->opcionesEntrega = $srv->opciones(
+            (float) $this->getTotal(),
+            $this->direccion['lat'] !== null ? (float) $this->direccion['lat'] : null,
+            $this->direccion['lng'] !== null ? (float) $this->direccion['lng'] : null,
+            $this->direccion['cp'] ?: null
+        );
+
+        // Modo elegido invalido o no disponible: pasar al primero disponible
+        if (!isset($this->opcionesEntrega[$this->entregaModo]) || !$this->opcionesEntrega[$this->entregaModo]['disponible']) {
+            $this->entregaModo = '';
+            foreach ($this->opcionesEntrega as $modo => $op) {
+                if ($op['disponible']) {
+                    $this->entregaModo = $modo;
+                    break;
+                }
+            }
+        }
+
+        $this->envioImporte = $this->entregaModo ? (float) $this->opcionesEntrega[$this->entregaModo]['importe'] : 0.0;
+    }
+
+    /** Hay zonas por radio o poligono y una direccion escrita sin coordenadas? */
+    private function necesitaCoordenadas(): bool
+    {
+        if (trim($this->direccion['calle']) === '' || trim($this->direccion['localidad']) === '') {
+            return false;
+        }
+
+        $zonas = (new \App\Services\TiendaEnvioService($this->tablePrefix))->zonas(true);
+        foreach ($zonas as $z) {
+            if ($z->tipo !== \App\Services\TiendaEnvioService::ZONA_CP) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private function geocodificarDireccion()
+    {
+        $texto = trim("{$this->direccion['calle']} {$this->direccion['numero']}, {$this->direccion['localidad']}, {$this->direccion['provincia']}, Argentina");
+        $coords = \App\Services\TiendaEnvioService::geocodificar($texto);
+        if ($coords) {
+            [$this->direccion['lat'], $this->direccion['lng']] = $coords;
+        }
+    }
+
+    /** Cualquier cambio en la direccion escrita invalida las coordenadas (se vuelven a resolver). */
+    public function updatedDireccion($valor, $campo)
+    {
+        if (in_array($campo, ['calle', 'numero', 'localidad', 'provincia', 'cp'], true)) {
+            $this->direccion['lat'] = null;
+            $this->direccion['lng'] = null;
+            $this->direccionSeleccionada = '';
+        }
+    }
+
+    /** Lo llama el autocompletado de Google desde el navegador. */
+    public function setDireccionDesdeMapa(array $d)
+    {
+        // Si venia de una direccion guardada, piso y referencia eran de esa: no arrastrarlos a la nueva
+        if ($this->direccionSeleccionada !== '') {
+            $this->direccion['piso'] = '';
+            $this->direccion['referencia'] = '';
+            $this->guardarDireccion = true;
+        }
+        foreach (['calle', 'numero', 'localidad', 'provincia', 'cp'] as $k) {
+            if (isset($d[$k])) {
+                $this->direccion[$k] = mb_substr((string) $d[$k], 0, 100);
+            }
+        }
+        $this->direccion['lat'] = is_numeric($d['lat'] ?? null) ? (float) $d['lat'] : null;
+        $this->direccion['lng'] = is_numeric($d['lng'] ?? null) ? (float) $d['lng'] : null;
+        $this->direccionSeleccionada = '';
+    }
+
+    private function cargarDireccionesGuardadas()
+    {
+        $webId = session('tienda_comprador_web_id');
+        if (!$webId) {
+            $this->direccionesGuardadas = [];
+            return;
+        }
+
+        $this->setupClientDatabase();
+        $this->direccionesGuardadas = DB::connection('client_db')
+            ->table("{$this->tablePrefix}tienda_direcciones")
+            ->where('comprador_id', $webId)
+            ->orderByDesc('predeterminada')->orderBy('id')
+            ->get()
+            ->map(fn ($d) => (array) $d)
+            ->all();
+
+        // Si todavia no escribio nada, precargar la predeterminada
+        if (empty($this->direccionesGuardadas) || trim($this->direccion['calle']) !== '') {
+            return;
+        }
+        $this->seleccionarDireccion($this->direccionesGuardadas[0]['id']);
+    }
+
+    public function seleccionarDireccion($id)
+    {
+        foreach ($this->direccionesGuardadas as $d) {
+            if ($d['id'] == $id) {
+                $this->direccion = [
+                    'calle' => $d['calle'], 'numero' => $d['numero'] ?? '', 'piso' => $d['piso'] ?? '',
+                    'localidad' => $d['localidad'], 'provincia' => $d['provincia'] ?? '', 'cp' => $d['cp'] ?? '',
+                    'referencia' => $d['referencia'] ?? '', 'lat' => null, 'lng' => null,
+                ];
+                $this->direccionSeleccionada = (string) $id;
+                $this->guardarDireccion = false;
+                return;
+            }
+        }
+    }
+
+    /** "Calle 123, piso 2 (ref)" para el satelite, el mail y la observacion del pedido. */
+    private function textoDireccion(bool $conLocalidad = false): string
+    {
+        $d = $this->direccion;
+        $t = trim($d['calle'] . ' ' . $d['numero']);
+        if (trim($d['piso']) !== '') {
+            $t .= ', ' . trim($d['piso']);
+        }
+        if ($conLocalidad && trim($d['localidad']) !== '') {
+            $t .= ', ' . trim($d['localidad']) . (trim($d['cp']) !== '' ? " ({$d['cp']})" : '');
+        }
+        if (trim($d['referencia']) !== '') {
+            $t .= ' - ' . trim($d['referencia']);
+        }
+        return $t;
+    }
+
+    private function guardarDireccionComprador()
+    {
+        $webId = session('tienda_comprador_web_id');
+        if (!$webId || !$this->guardarDireccion || trim($this->direccion['calle']) === '') {
+            return;
+        }
+
+        $tabla = DB::connection('client_db')->table("{$this->tablePrefix}tienda_direcciones");
+        $repetida = $tabla->where('comprador_id', $webId)
+            ->whereRaw('LOWER(calle) = ?', [mb_strtolower(trim($this->direccion['calle']))])
+            ->where('numero', trim($this->direccion['numero']) ?: null)
+            ->whereRaw('LOWER(localidad) = ?', [mb_strtolower(trim($this->direccion['localidad']))])
+            ->exists();
+        if ($repetida) {
+            return;
+        }
+
+        DB::connection('client_db')->table("{$this->tablePrefix}tienda_direcciones")->insert([
+            'comprador_id' => $webId,
+            'calle' => mb_substr(trim($this->direccion['calle']), 0, 100),
+            'numero' => mb_substr(trim($this->direccion['numero']), 0, 10) ?: null,
+            'piso' => mb_substr(trim($this->direccion['piso']), 0, 20) ?: null,
+            'localidad' => mb_substr(trim($this->direccion['localidad']), 0, 60),
+            'provincia' => mb_substr(trim($this->direccion['provincia']), 0, 40) ?: null,
+            'cp' => mb_substr(trim($this->direccion['cp']), 0, 10) ?: null,
+            'referencia' => mb_substr(trim($this->direccion['referencia']), 0, 200) ?: null,
+            'predeterminada' => empty($this->direccionesGuardadas) ? 1 : 0,
+        ]);
     }
 
     private function setupClientDatabase()
@@ -163,6 +352,7 @@ class Carrito extends Component
 
         $this->compradorValidado = true;
         $this->compradorNombre = session('tienda_comprador_nombre');
+        $this->cargarDireccionesGuardadas();
 
         // Recalcular precios según la lista del comprador
         $this->recalcularPrecios();
@@ -236,6 +426,27 @@ class Carrito extends Component
 
         $resumenIva = \App\Services\TiendaPrecioService::resumenIva($this->carrito);
 
+        // Entrega: recotizar con el servidor como verdad (no confiar en lo que quedo en pantalla)
+        $this->entregaError = '';
+        $this->cotizarEntrega();
+        $requiereDireccion = in_array($this->entregaModo, [\App\Services\TiendaPedidoService::ENTREGA_FLOTA, \App\Services\TiendaPedidoService::ENTREGA_A_CONVENIR], true);
+        if (!$this->entregaModo) {
+            $this->entregaError = 'Elegí cómo querés recibir el pedido.';
+            return;
+        }
+        if ($requiereDireccion && (trim($this->direccion['calle']) === '' || trim($this->direccion['localidad']) === '')) {
+            $this->entregaError = 'Completá calle y localidad de la dirección de entrega.';
+            return;
+        }
+        $opcion = $this->opcionesEntrega[$this->entregaModo];
+        $entregaResumen = $opcion['etiqueta'];
+        if ($requiereDireccion) {
+            $entregaResumen .= ': ' . $this->textoDireccion(true);
+        }
+        if ($this->envioImporte > 0) {
+            $entregaResumen .= ' ($' . number_format($this->envioImporte, 2, ',', '.') . ')';
+        }
+
         $compradorId = session('tienda_comprador_id');
         $compradorNombre = session('tienda_comprador_nombre');
         $compradorVendedor = session('tienda_comprador_vendedor');
@@ -255,7 +466,7 @@ class Carrito extends Component
 
         // Encabezado, detalle y satelite en una sola transaccion: o entra todo o no entra nada.
         // Lo que va a pedidos_encab / pedidos_det es exactamente lo de siempre (regla del proyecto).
-        $pedidoId = DB::connection('client_db')->transaction(function () use ($compradorId, $compradorNombre, $compradorVendedor, $vendedorNombre, $compradorDescuento, $resumenIva) {
+        $pedidoId = DB::connection('client_db')->transaction(function () use ($compradorId, $compradorNombre, $compradorVendedor, $vendedorNombre, $compradorDescuento, $resumenIva, $opcion, $entregaResumen, $requiereDireccion) {
 
         $pedidoId = DB::connection('client_db')
             ->table("{$this->tablePrefix}pedidos_encab")
@@ -267,7 +478,8 @@ class Carrito extends Component
                 'fecha' => date('Y-m-d'),
                 'parafecha' => $this->parafecha,
                 'estado' => 'P',
-                'observa' => $this->observaciones ? "Pedido Tienda Web: {$this->observaciones}" : 'Pedido desde Tienda Web',
+                // Misma columna y mismo texto base de siempre; se agrega como se entrega para que gestion lo vea
+                'observa' => mb_substr(($this->observaciones ? "Pedido Tienda Web: {$this->observaciones}" : 'Pedido desde Tienda Web') . ' | ' . $entregaResumen, 0, 200),
                 'nuevo' => true,
             ]);
 
@@ -292,18 +504,31 @@ class Carrito extends Component
 
         // Fila satelite del ecommerce (comprador web, entrega, pago, comision, estado web)
         (new \App\Services\TiendaPedidoService($this->tablePrefix))->registrarSatelite($pedidoId, (int) session('tienda_config_id'), [
-            'iva_incluido' => $resumenIva['iva'],
+            'iva_incluido'      => $resumenIva['iva'],
+            'entrega_modo'      => $this->entregaModo,
+            'entrega_direccion' => $requiereDireccion ? mb_substr($this->textoDireccion(), 0, 160) : null,
+            'entrega_localidad' => $requiereDireccion ? mb_substr(trim($this->direccion['localidad']), 0, 60) : null,
+            'entrega_cp'        => $requiereDireccion ? (mb_substr(trim($this->direccion['cp']), 0, 10) ?: null) : null,
+            'entrega_zona_id'   => $opcion['zona_id'],
+            'envio_importe'     => $this->envioImporte,
         ]);
+
+        if ($requiereDireccion) {
+            $this->guardarDireccionComprador();
+        }
 
         return $pedidoId;
         });
+
+        $entregaParaEmail = $entregaResumen;
+        $envioParaEmail = $this->envioImporte;
 
         // Preparar datos para email antes de limpiar
         $itemsParaEmail = $this->carrito;
         $totalEmail = collect($this->carrito)->sum('subtotal');
 
         // Enviar emails
-        $this->enviarEmails($pedidoId, $compradorNombre, $itemsParaEmail, $totalEmail);
+        $this->enviarEmails($pedidoId, $compradorNombre, $itemsParaEmail, $totalEmail, $entregaParaEmail, $envioParaEmail);
 
         // Limpiar carrito
         session()->forget('tienda_carrito');
@@ -312,7 +537,7 @@ class Carrito extends Component
         $this->numeroPedido = $pedidoId;
     }
 
-    private function enviarEmails($pedidoId, $clienteNombre, $items, $total)
+    private function enviarEmails($pedidoId, $clienteNombre, $items, $total, $entrega = '', $envio = 0)
     {
         try {
             $datos = session('tienda_datos', []);
@@ -325,7 +550,10 @@ class Carrito extends Component
                 'pedidoId' => $pedidoId,
                 'clienteNombre' => $clienteNombre,
                 'items' => $items,
-                'total' => $total,
+                'total' => $total + $envio,
+                'subtotalProductos' => $total,
+                'envio' => $envio,
+                'entrega' => $entrega,
                 'fecha' => date('Y-m-d'),
                 'parafecha' => $this->parafecha,
                 'observaciones' => $this->observaciones,
@@ -375,9 +603,15 @@ class Carrito extends Component
     #[Layout('layouts.tienda')]
     public function render()
     {
+        if (!$this->pedidoConfirmado && !empty($this->carrito)) {
+            $this->cotizarEntrega();
+        }
+
         return view('tienda.carrito', [
             'total' => $this->getTotal(),
+            'totalConEnvio' => $this->getTotal() + $this->envioImporte,
             'resumenIva' => \App\Services\TiendaPrecioService::resumenIva($this->carrito),
+            'googleMapsApiKey' => config('app.google_maps_api_key'),
         ]);
     }
 }

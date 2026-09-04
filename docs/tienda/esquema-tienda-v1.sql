@@ -16,7 +16,8 @@
 --    mientras tanto este archivo se aplica a mano en bcn_base1.
 --
 -- Historial:
---  v1  2026-09-04  tienda_compradores, tienda_direcciones, tienda_pedidos, tienda_eventos
+--  v1  2026-09-04  tienda_compradores, tienda_direcciones, tienda_pedidos, tienda_eventos,
+--                  tienda_envios_config, tienda_zonas (F2 checkout y zonas)
 --                  (F1 agrego comision_saldo a tienda_pedidos y tienda_eventos; v1 todavia no salio a produccion,
 --                   por eso se edita en lugar de crear v2)
 -- =====================================================================
@@ -112,4 +113,45 @@ CREATE TABLE IF NOT EXISTS `{p}tienda_eventos` (
   `fecha`      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_{p}tienda_eventos_pedido` (`idpedido`, `fecha`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Como entrega el comercio: una fila por comercio (se crea con valores por defecto
+-- la primera vez que se guarda). Credenciales de correo NO van aca (tienda_integraciones, F2b).
+CREATE TABLE IF NOT EXISTS `{p}tienda_envios_config` (
+  `id`               INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `retiro_local`     TINYINT(1)   NOT NULL DEFAULT 1,
+  `retiro_texto`     VARCHAR(200) DEFAULT NULL,                  -- "Lun a Vie 9 a 18, 25 de Mayo 123"
+  `flota_propia`     TINYINT(1)   NOT NULL DEFAULT 0,            -- envio a domicilio con zonas propias
+  `correo_activo`    TINYINT(1)   NOT NULL DEFAULT 0,            -- F2b: tarifario manual / API
+  `correo_proveedor` VARCHAR(20)  DEFAULT NULL,
+  `a_convenir`       TINYINT(1)   NOT NULL DEFAULT 1,            -- red de contencion: entra sin costo y se arregla por WhatsApp
+  `origen_direccion` VARCHAR(160) DEFAULT NULL,
+  `origen_cp`        VARCHAR(10)  DEFAULT NULL,
+  `origen_lat`       DECIMAL(10,7) DEFAULT NULL,
+  `origen_lng`       DECIMAL(10,7) DEFAULT NULL,
+  `peso_default`     DECIMAL(8,3) DEFAULT NULL,                  -- F2b
+  `bulto_default`    VARCHAR(40)  DEFAULT NULL,                  -- F2b
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Zonas de la flota propia, con su tarifa. Tres formas de definirlas (tipo):
+--   radio    : circulo de radio_km desde el origen; tarifa fija + opcional tarifa_por_km
+--   cp       : lista de codigos postales (cp_lista, separados por coma)
+--   poligono : dibujado en el mapa (poligono = JSON [[lat,lng],...])
+-- Resolucion cuando una direccion cae en varias: gana la mas especifica (poligono > cp > radio menor).
+CREATE TABLE IF NOT EXISTS `{p}tienda_zonas` (
+  `id`              INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `nombre`          VARCHAR(60)  NOT NULL,
+  `tipo`            VARCHAR(10)  NOT NULL DEFAULT 'radio',       -- radio | cp | poligono
+  `poligono`        TEXT         DEFAULT NULL,
+  `cp_lista`        TEXT         DEFAULT NULL,
+  `radio_km`        DECIMAL(6,2) DEFAULT NULL,
+  `tarifa`          DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `tarifa_por_km`   DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `minimo_gratis`   DECIMAL(10,2) DEFAULT NULL,                  -- compra minima para envio bonificado (null = nunca)
+  `demora_estimada` VARCHAR(60)  DEFAULT NULL,                   -- "24 a 48 hs", "en el dia"
+  `activa`          TINYINT(1)   NOT NULL DEFAULT 1,
+  `orden`           INT          NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_{p}tienda_zonas_activa` (`activa`, `orden`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

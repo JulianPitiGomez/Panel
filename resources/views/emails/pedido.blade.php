@@ -89,6 +89,16 @@
                                         <td style="padding: 10px 0; font-size: 13px; color: #374151; text-align: right; font-weight: 600;">${{ number_format($item['subtotal'], 2, ',', '.') }}</td>
                                     </tr>
                                 @endforeach
+                                @if(!empty($envio) && $envio > 0)
+                                    <tr>
+                                        <td colspan="3" style="padding: 10px 0 0; font-size: 13px; color: #6b7280; text-align: right;">Productos:</td>
+                                        <td style="padding: 10px 0 0; font-size: 13px; color: #374151; text-align: right;">${{ number_format($subtotalProductos ?? ($total - $envio), 2, ',', '.') }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="3" style="padding: 4px 0 0; font-size: 13px; color: #6b7280; text-align: right;">Envío:</td>
+                                        <td style="padding: 4px 0 0; font-size: 13px; color: #374151; text-align: right;">${{ number_format($envio, 2, ',', '.') }}</td>
+                                    </tr>
+                                @endif
                                 <tr>
                                     <td colspan="3" style="padding: 15px 0 10px; font-size: 16px; font-weight: 700; color: #1f2937; text-align: right;">
                                         Total:
@@ -98,6 +108,11 @@
                                     </td>
                                 </tr>
                             </table>
+                            @if(!empty($entrega))
+                                <p style="margin: 10px 0 0; font-size: 13px; color: #374151; background: #f9fafb; padding: 10px 12px; border-radius: 8px;">
+                                    <strong>Entrega:</strong> {{ $entrega }}
+                                </p>
+                            @endif
                         </td>
                     </tr>
 
