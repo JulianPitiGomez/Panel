@@ -23,6 +23,8 @@ class DetalleMesa extends Component
     public $requiereComensales = false;
     public $cobraCubierto = false;
     public $soloServicioMesa = false;
+    public $tieneProductos = false;
+    public $tieneProductosSinComandar = false;
 
     protected $mozosService;
 
@@ -54,9 +56,21 @@ class DetalleMesa extends Component
         $this->calcularTotal();
         $this->verificarParametros();
 
+        // Verificar si hay productos
+        $this->tieneProductos = count($this->detalle) > 0;
+
+        // Verificar si hay productos sin comandar (IMPRESA = false o null)
+        $this->tieneProductosSinComandar = false;
+        foreach ($this->detalle as $item) {
+            if (!$item->IMPRESA) {
+                $this->tieneProductosSinComandar = true;
+                break;
+            }
+        }
+
         // Verificar si solo hay servicio de mesa
         $this->soloServicioMesa = false;
-        if (count($this->detalle) > 0) {
+        if ($this->tieneProductos) {
             $soloServicio = true;
             foreach ($this->detalle as $item) {
                 if (!str_starts_with(strtoupper($item->NOMART), 'SERVICIO DE MESA')) {
@@ -142,6 +156,12 @@ class DetalleMesa extends Component
             return;
         }
 
+        // Validar que hay productos sin comandar
+        if (!$this->tieneProductosSinComandar) {
+            session()->flash('error', 'No hay productos sin comandar');
+            return;
+        }
+
         try {
             $this->mozosService->enviarComanda($this->numeroMesa);
             session()->flash('success', 'Comanda enviada a cocina');
@@ -155,6 +175,12 @@ class DetalleMesa extends Component
     {
         if (!session('mozo_precuenta')) {
             session()->flash('error', 'No tiene permisos para enviar precuenta');
+            return;
+        }
+
+        // Validar que hay productos cargados
+        if (!$this->tieneProductos) {
+            session()->flash('error', 'No hay productos cargados en la mesa');
             return;
         }
 
@@ -195,41 +221,22 @@ class DetalleMesa extends Component
 
             $comensalesAnteriores = $this->mesa->comensales;
 
-            // Si pasa de 0 comensales a más de 0, ocupar la mesa
-            if ($comensalesAnteriores == 0 && $this->comensales > 0) {
+            // Si cobra cubierto y pasa de 0 a comensales > 0, hacer apertura completa
+            if ($this->cobraCubierto && $comensalesAnteriores == 0 && $this->comensales > 0) {
+                $this->mozosService->abrirMesa($this->numeroMesa, $this->comensales);
+            } else {
+                // Solo actualizar comensales y mozo en la mesa
                 \Illuminate\Support\Facades\DB::connection('client_db')
                     ->table(session('client_table_prefix') . 'mesas')
                     ->where('NUMERO', $this->numeroMesa)
                     ->update([
                         'COMENSALES' => $this->comensales,
-                        'RECURSO' => \Illuminate\Support\Facades\DB::raw("IF(LEFT(recurso,1)='N',CONCAT(LEFT(recurso,6),'0'),CONCAT(LEFT(recurso,5),'0'))"),
-                        'ocupada' => true,
                         'MOZO' => session('mozo_user_id'),
-                        'fechaaper' => \Illuminate\Support\Facades\DB::raw('CURDATE()'),
-                        'horaaper' => \Illuminate\Support\Facades\DB::raw('CURTIME()')
                     ]);
 
-                // Registrar en auditoría
-                \Illuminate\Support\Facades\DB::connection('client_db')
-                    ->table(session('client_table_prefix') . 'auditoria')
-                    ->insert([
-                        'TIPO' => 1,
-                        'DESCRIPCION' => 'APERTURA DE MESA ' . $this->numeroMesa . ' (W)',
-                        'FECHA' => \Illuminate\Support\Facades\DB::raw('CURDATE()'),
-                        'HORA' => \Illuminate\Support\Facades\DB::raw('CURTIME()'),
-                        'USUARIO' => session('mozo_user'),
-                        'MESA' => $this->numeroMesa,
-                    ]);
-            } else {
-                // Solo actualizar comensales
-                \Illuminate\Support\Facades\DB::connection('client_db')
-                    ->table(session('client_table_prefix') . 'mesas')
-                    ->where('NUMERO', $this->numeroMesa)
-                    ->update(['COMENSALES' => $this->comensales]);
+                // Actualizar servicio de mesa si existe
+                $this->mozosService->actualizarServicioMesa($this->numeroMesa, $this->comensales);
             }
-
-            // Actualizar servicio de mesa si existe
-            $this->mozosService->actualizarServicioMesa($this->numeroMesa, $this->comensales);
 
             $this->cargarDatosMesa();
             session()->flash('success', 'Comensales actualizados');
@@ -263,6 +270,22 @@ class DetalleMesa extends Component
         if ($this->mostrarBusqueda) {
             $this->busqueda = '';
         }
+    }
+
+    public function volverAMesas()
+    {
+        // Si el mozo asignó comensales pero no cargó productos y no cobra cubierto,
+        // mantener mozo y comensales pero grabar mensaje en estado (la mesa no queda ocupada)
+        if ($this->comensales > 0 && !$this->tieneProductos && !$this->cobraCubierto) {
+            \Illuminate\Support\Facades\DB::connection('client_db')
+                ->table(session('client_table_prefix') . 'mesas')
+                ->where('NUMERO', $this->numeroMesa)
+                ->update([
+                    'estado' => 'Mesa tomada por el mozo',
+                ]);
+        }
+
+        $this->redirectRoute('mozos.mesas', navigate: true);
     }
 
     public function verPromociones()

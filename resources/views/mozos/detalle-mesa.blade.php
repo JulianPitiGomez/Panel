@@ -87,7 +87,7 @@
         </div>
 
         <!-- Área de contenido scrolleable -->
-        <div class="flex-1 overflow-y-auto p-2 pb-28" style="padding-bottom: calc(7rem + env(safe-area-inset-bottom)); -webkit-overflow-scrolling: touch;">
+        <div class="flex-1 overflow-y-auto p-2 pb-28" style="padding-bottom: calc(7rem + env(safe-area-inset-bottom)); -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain;">
             <!-- Mensajes Flash -->
             @if (session()->has('success'))
                 <div class="bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-lg mb-2 text-sm">
@@ -177,12 +177,15 @@
                     <span class="text-xs font-semibold">Agregar</span>
                 </button>
 
-                <!-- Botón Comanda -->
+                <!-- Botón Comanda (solo si hay productos sin comandar) -->
                 @if(session('mozo_comanda'))
+                    @php
+                        $comandaDeshabilitada = ($requiereComensales && $comensales < 1) || !$tieneProductosSinComandar;
+                    @endphp
                     <button wire:click="enviarComanda"
-                            {{ ($requiereComensales && $comensales < 1) ? 'disabled' : '' }}
+                            {{ $comandaDeshabilitada ? 'disabled' : '' }}
                             class="flex flex-col items-center justify-center py-2 rounded-lg transition
-                                   {{ ($requiereComensales && $comensales < 1)
+                                   {{ $comandaDeshabilitada
                                       ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
                                       : 'bg-blue-500 text-white hover:bg-blue-600' }}">
                         <i class="fa fa-utensils text-base mb-0.5"></i>
@@ -190,12 +193,15 @@
                     </button>
                 @endif
 
-                <!-- Botón Precuenta -->
+                <!-- Botón Precuenta (solo si hay productos) -->
                 @if(session('mozo_precuenta'))
+                    @php
+                        $precuentaDeshabilitada = ($requiereComensales && $comensales < 1) || !$tieneProductos;
+                    @endphp
                     <button wire:click="enviarPrecuenta"
-                            {{ ($requiereComensales && $comensales < 1) ? 'disabled' : '' }}
+                            {{ $precuentaDeshabilitada ? 'disabled' : '' }}
                             class="flex flex-col items-center justify-center py-2 rounded-lg transition
-                                   {{ ($requiereComensales && $comensales < 1)
+                                   {{ $precuentaDeshabilitada
                                       ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
                                       : 'bg-purple-500 text-white hover:bg-purple-600' }}">
                         <i class="fa fa-file-invoice text-base mb-0.5"></i>
@@ -213,12 +219,11 @@
                 @endif
 
                 <!-- Botón Volver -->
-                <a href="{{ route('mozos.mesas') }}"
-                   wire:navigate
-                   class="flex flex-col items-center justify-center py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition">
+                <button wire:click="volverAMesas"
+                   class="flex flex-col items-center justify-center py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition w-full">
                     <i class="fa fa-arrow-left text-base mb-0.5"></i>
                     <span class="text-xs font-semibold">Volver</span>
-                </a>
+                </button>
             </div>
         </div>
 
@@ -269,7 +274,7 @@
                  x-transition:leave="transition ease-in duration-200"
                  x-transition:leave-start="opacity-100"
                  x-transition:leave-end="opacity-0"
-                 class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+                 class="fixed inset-0 z-50 flex items-start justify-center pt-4 px-2 bg-black bg-opacity-50 backdrop-blur-sm overflow-y-auto">
                 <div @click.away="$wire.mostrarBuscador()"
                      x-transition:enter="transition ease-out duration-300"
                      x-transition:enter-start="opacity-0 scale-90"
@@ -277,14 +282,14 @@
                      x-transition:leave="transition ease-in duration-200"
                      x-transition:leave-start="opacity-100 scale-100"
                      x-transition:leave-end="opacity-0 scale-90"
-                     class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] flex flex-col">
+                     class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
 
                     <!-- Header del modal -->
-                    <div class="flex justify-between items-center p-4 border-b">
-                        <h3 class="text-lg font-semibold text-gray-800">Buscar Producto</h3>
+                    <div class="flex justify-between items-center p-4 bg-[#FFAF22] rounded-t-lg">
+                        <h3 class="text-lg font-semibold text-white">Buscar Producto</h3>
                         <button wire:click="mostrarBuscador"
-                                class="text-gray-500 hover:text-gray-700">
-                            <i class="fa fa-times text-xl"></i>
+                                class="text-white hover:text-gray-200 text-2xl">
+                            <i class="fa fa-times"></i>
                         </button>
                     </div>
 
@@ -292,8 +297,9 @@
                     <div class="p-4 border-b">
                         <input type="text"
                                wire:model.live.debounce.300ms="busqueda"
-                               placeholder="Nombre o código..."
-                               class="w-full px-4 py-3 border-2 border-yellow-500 rounded-lg focus:ring-2 focus:ring-yellow-500 text-sm"
+                               placeholder="Buscar por nombre o código..."
+                               autofocus
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FFAF22] shadow-sm"
                                x-ref="buscadorInput">
                     </div>
 
@@ -303,7 +309,7 @@
                             <div class="space-y-2">
                                 @foreach($productos as $producto)
                                     <button wire:click="seleccionarProducto({{ $producto->codigo }})"
-                                            class="w-full text-left p-3 border rounded-lg hover:bg-gray-50 transition {{ $producto->agotado ? 'border-red-300 bg-red-50' : 'hover:border-yellow-500' }}">
+                                            class="w-full text-left p-3 border rounded-lg transition {{ $producto->agotado ? 'border-red-300 bg-red-50' : 'hover:bg-yellow-50 hover:border-[#FFAF22]' }}">
                                         <div class="flex justify-between items-center">
                                             <div class="flex-1 pr-2">
                                                 <div class="font-medium text-gray-800 text-sm flex items-center gap-2">

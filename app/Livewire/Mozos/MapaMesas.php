@@ -36,6 +36,27 @@ class MapaMesas extends Component
     {
         if ($this->salonActual) {
             $this->mesas = collect($this->mozosService->obtenerMesas($this->salonActual));
+            $this->verificarReservas();
+        }
+    }
+
+    private function verificarReservas()
+    {
+        $reservasActivas = $this->mozosService->obtenerReservasActivas();
+
+        foreach ($reservasActivas as $reserva) {
+            $mesa = $this->mesas->firstWhere('mesa', $reserva->mesa);
+            if ($mesa) {
+                $recursoActual = strtoupper($mesa->recurso);
+
+                if (str_contains($recursoActual, 'MESA2')) {
+                    $mesa->recurso = 'MESA22';
+                } elseif (str_contains($recursoActual, 'MESA4')) {
+                    $mesa->recurso = 'MESA42';
+                } elseif (str_contains($recursoActual, 'BANC')) {
+                    $mesa->recurso = 'BANC22';
+                }
+            }
         }
     }
 

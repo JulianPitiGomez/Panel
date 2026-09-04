@@ -6,7 +6,7 @@
     </div>
 
     <!-- Área scrolleable -->
-    <div class="flex-1 overflow-y-auto p-3 pb-28" style="padding-bottom: calc(7rem + env(safe-area-inset-bottom)); -webkit-overflow-scrolling: touch;">
+    <div class="flex-1 overflow-y-auto p-3 pb-28" style="padding-bottom: calc(7rem + env(safe-area-inset-bottom)); -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain;">
         @if(!$promoSeleccionada)
             <!-- Lista de Promociones -->
             @if(count($promociones) > 0)

@@ -31,7 +31,7 @@ class MozosService
 
     public function obtenerMesas($salon)
     {
-        $sql = "SELECT res.total, res.items, res.mesa, res.mozo, res.recurso, res.salon, res.estado FROM
+        $sql = "SELECT res.total, res.items, res.mesa, res.mozo, res.recurso, res.salon, res.estado, mz.nombre as nombre_mozo FROM
                   (SELECT SUM(d.total) as total, COUNT(d.renglon) AS items, d.mesa, m.mozo, m.recurso, m.salon, SUM(IF(d.estado=3,1,0)) as estado
                   FROM {$this->tablePrefix}detalle d LEFT JOIN {$this->tablePrefix}mesas m ON d.mesa = m.numero
                   GROUP BY d.mesa, m.mozo, m.recurso, m.salon
@@ -39,6 +39,7 @@ class MozosService
                   SELECT 0 as total, 0 as renglon, numero as mesa, mozo, recurso, salon, 0 as estado
                   FROM {$this->tablePrefix}mesas WHERE numero NOT IN (SELECT DISTINCT mesa FROM {$this->tablePrefix}detalle)
                 ) res
+                LEFT JOIN {$this->tablePrefix}mozos mz ON res.mozo = mz.codigo
                 WHERE res.salon = ?
                 ORDER BY res.mesa";
 
@@ -50,6 +51,34 @@ class MozosService
         return DB::connection('client_db')
                  ->table($this->tablePrefix . 'salones')
                  ->get();
+    }
+
+    public function obtenerReservasActivas()
+    {
+        $now = \Carbon\Carbon::now();
+        $fechaHoy = $now->format('Y-m-d');
+
+        try {
+            $reservas = DB::connection('client_db')
+                ->table($this->tablePrefix . 'reservas')
+                ->select('mesa', 'hora')
+                ->where('estado', 1)
+                ->where('fecha', $fechaHoy)
+                ->get();
+
+            return $reservas->filter(function($reserva) use ($now) {
+                try {
+                    $horaReserva = \Carbon\Carbon::createFromFormat('H:i:s', $reserva->hora);
+                    $diferenciaMinutos = $now->diffInMinutes($horaReserva, false);
+                    return $diferenciaMinutos >= -59 && $diferenciaMinutos <= 10;
+                } catch (\Exception $e) {
+                    return false;
+                }
+            });
+        } catch (\Exception $e) {
+            \Log::error('Error obteniendo reservas activas: ' . $e->getMessage());
+            return collect();
+        }
     }
 
     public function obtenerDetalleMesa($numeroMesa)
@@ -70,6 +99,7 @@ class MozosService
                           'm.OCUPADA as ocupada', 'm.usando as usando',
                           'm.fechaaper as fechaaper', 'm.horaaper as horaaper',
                           'm.unificada as unificada', 'm.salon as salon',
+                          'm.estado as estado',
                           'mo.NOMBRE as nombre_mozo')
                  ->leftJoin($this->tablePrefix . 'mozos as mo', 'mo.codigo', '=', 'm.MOZO')
                  ->where('m.NUMERO', $numeroMesa)
@@ -219,7 +249,8 @@ class MozosService
               'ocupada' => true,
               'MOZO' => session('mozo_user_id'),
               'fechaaper' => DB::raw('CURDATE()'),
-              'horaaper' => DB::raw('CURTIME()')
+              'horaaper' => DB::raw('CURTIME()'),
+              'estado' => '',
           ]);
 
         $this->registrarAuditoria(1, 'APERTURA DE MESA ' . $numeroMesa . ' (W)', $numeroMesa);
@@ -387,7 +418,8 @@ class MozosService
               'usando' => 0,
               'lResumido' => false,
               'cResumido' => 'CENA',
-              'ocupada' => false
+              'ocupada' => false,
+              'estado' => '',
           ]);
 
         $this->registrarAuditoria(5, 'CANCELACION DE MESA ' . $numeroMesa . ' (W)', $numeroMesa);
@@ -406,6 +438,12 @@ class MozosService
 
     public function enviarPrecuenta($numeroMesa)
     {
+        // Marcar todos los artículos de la mesa como comandados (IMPRESA=true)
+        DB::connection('client_db')
+          ->table($this->tablePrefix . 'detalle')
+          ->where('mesa', $numeroMesa)
+          ->update(['IMPRESA' => true]);
+
         DB::connection('client_db')
           ->table($this->tablePrefix . 'mesas')
           ->where('NUMERO', $numeroMesa)
@@ -450,6 +488,7 @@ class MozosService
                           DB::raw('IF(precio_oferta > 0, precio_oferta, PRECIO) as precio'),
                           'agotado', 'stock', 'lstock')
                  ->where('lMesas', true)
+                 ->where('inactivo', false)
                  ->where(function($q) use ($busqueda) {
                      $q->where('NOMBRE', 'like', '%' . $busqueda . '%')
                        ->orWhere('CODIGO', 'like', '%' . $busqueda . '%');
@@ -466,6 +505,7 @@ class MozosService
                           DB::raw('IF(precio_oferta > 0, precio_oferta, PRECIO) as precio'),
                           'observa_web as observa', 'agotado', 'lstock', 'stock', 'solo_unitario')
                  ->where('CODIGO', $codigo)
+                 ->where('inactivo', false)
                  ->first();
     }
 

@@ -20,8 +20,8 @@
     <!-- Livewire Styles -->
     @livewireStyles
 </head>
-<body class="font-sans antialiased bg-gray-100 h-screen overflow-hidden">
-    <div class="h-screen flex flex-col">
+<body class="font-sans antialiased bg-gray-100 overflow-hidden overscroll-none" style="height: 100vh; height: 100dvh;">
+    <div class="h-full flex flex-col">
         <!-- Header compacto -->
         <div class="bg-[#1E1B35] shadow-sm flex-shrink-0">
             <div class="px-4 py-2">
@@ -61,7 +61,7 @@
                                     <span class="text-xs">Usuario: {{ session('mozo_user') }}</span>
                                 </div>
                                 <hr>
-                                <div>
+                                <!--div>
                                     <span class="font-semibold">Permisos:</span><br>
                                     <div class="text-xs space-y-1 mt-1">
                                         <div class="flex items-center">
@@ -81,7 +81,7 @@
                                             Borrar sin comanda
                                         </div>
                                     </div>
-                                </div>
+                                </div-->
                             </div>
                         </div>
                     </div>

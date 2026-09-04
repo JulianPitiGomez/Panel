@@ -18,7 +18,7 @@
     </div>
 
     <!-- Área scrolleable -->
-    <div class="flex-1 overflow-y-auto p-3 pb-44" style="padding-bottom: calc(11rem + env(safe-area-inset-bottom)); -webkit-overflow-scrolling: touch;">
+    <div class="flex-1 overflow-y-auto p-3 pb-44" style="padding-bottom: calc(11rem + env(safe-area-inset-bottom)); -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain;">
         <!-- Cantidad (si no es solo_unitario) -->
         @if(!$cambiar)
             <div class="bg-white rounded-lg shadow-sm p-3 mb-3">
