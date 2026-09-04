@@ -25,6 +25,9 @@ class DashboardVendedorEmpresa extends Component
     public $editandoFechaId = null;
     public $nuevaFecha = '';
 
+    public $mostrarModalImprimir = false;
+    public $pedidoAImprimir = null;
+
 
 
     public function mount()
@@ -138,6 +141,26 @@ class DashboardVendedorEmpresa extends Component
     public function eliminarPedido($id)
     {
         $this->setupClientDatabase();
+
+        $pedido = DB::connection('client_db')
+            ->table("ma_pedidos_encab")
+            ->where('id', $id)
+            ->first();
+
+        if ($pedido) {
+            DB::connection('client_db')
+                ->table($this->tablePrefix . 'auditoria')
+                ->insert([
+                    'TIPO' => 20,
+                    'DESCRIPCION' => 'BORRADO PEDIDO MANAGER Cliente: ' . $pedido->cliente,
+                    'FECHA' => DB::raw('CURDATE()'),
+                    'HORA' => DB::raw('CURTIME()'),
+                    'USUARIO' => session('vendedor_empresa_user') ?? session('vendedor_empresa_nombre'),
+                    'MESA' => 0,
+                    'PEDIDO' => $id,
+                ]);
+        }
+
         DB::connection('client_db')
             ->table("ma_pedidos_encab")
             ->where('id', $id)
@@ -220,10 +243,18 @@ class DashboardVendedorEmpresa extends Component
 
     public function imprimirPedido($id)
     {
-        // Solo emitir evento para abrir la ventana
+        $this->pedidoAImprimir = $id;
+        $this->mostrarModalImprimir = true;
+    }
+
+    public function confirmarImpresion($valorizado)
+    {
+        $this->mostrarModalImprimir = false;
+        $url = route('imprimir-pedido-empresa', $this->pedidoAImprimir) . ($valorizado ? '' : '?valorizado=0');
         $this->dispatch('abrir-impresion', [
-            'url' => route('imprimir-pedido-empresa', $id)
+            'url' => $url
         ]);
+        $this->pedidoAImprimir = null;
     }
 
     // Método para la ruta
@@ -232,8 +263,9 @@ class DashboardVendedorEmpresa extends Component
         $this->setupClientDatabase();
         $pedido = DB::connection('client_db')->table("ma_pedidos_encab")->find($id);
         $detalles = DB::connection('client_db')->table("ma_pedidos_det")->where('idpedido', $id)->get();
+        $valorizado = request('valorizado', '1') !== '0';
 
-        return view('vendedores-empresas.imprimir-pedido', compact('pedido', 'detalles'));
+        return view('vendedores-empresas.imprimir-pedido', compact('pedido', 'detalles', 'valorizado'));
     }
 
     #[Layout('layouts.vendedores-empresas')]

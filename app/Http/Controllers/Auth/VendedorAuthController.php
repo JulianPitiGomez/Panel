@@ -42,19 +42,22 @@ class VendedorAuthController extends Controller
         
         $vendedor = DB::connection('client_db')
                       ->table($tableName)
-                      ->select('codigo', 'pass','user','nombre')
-                      ->where('user', $request->usuario)
+                      ->select('CODIGO', 'PASS', 'USER', 'NOMBRE', 'PERMITEDESC', 'PERMITEALTA', 'LISTAPRE')
+                      ->where('USER', $request->usuario)
                       ->first();
 
-        if ($vendedor && $request->password == $vendedor->pass) {
+        if ($vendedor && $request->password == $vendedor->PASS) {
             session([
-                'vendedor_user_id' => $vendedor->codigo,
+                'vendedor_user_id' => $vendedor->CODIGO,
                 'client_id' => $cliente->id,
                 'active_module' => 'vendedores',
                 'client_table_prefix' => $cliente->getTablePrefix(),
-                'vendedor_nombre' => $vendedor->nombre,
-                'vendedor_user' => $vendedor->user,
+                'vendedor_nombre' => $vendedor->NOMBRE,
+                'vendedor_user' => $vendedor->USER,
                 'cliente_nombre' => $cliente->nombre,
+                'vendedor_permitedesc' => $vendedor->PERMITEDESC,
+                'vendedor_permitealta' => $vendedor->PERMITEALTA,
+                'vendedor_listapre' => $vendedor->LISTAPRE,
             ]);
 
             return redirect()->route('dashboard-vendedor');

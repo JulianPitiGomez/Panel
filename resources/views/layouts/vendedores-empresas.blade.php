@@ -19,17 +19,41 @@
     <!-- Livewire Styles -->
     @livewireStyles
 </head>
-<body class="font-sans antialiased">
+<body class="font-sans antialiased" x-data="{ mostrarConfirmacionSalir: false }">
+    <!-- Modal de confirmación para cerrar sesión -->
+    <div x-show="mostrarConfirmacionSalir"
+         x-transition.opacity
+         class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center px-4"
+         style="display: none;">
+        <div @click.away="mostrarConfirmacionSalir = false"
+             x-transition
+             class="bg-white rounded-lg shadow-2xl max-w-md w-full p-6">
+            <div class="flex items-center justify-center w-16 h-16 mx-auto bg-yellow-100 rounded-full mb-4">
+                <i class="fas fa-sign-out-alt text-[#FFAF22] text-2xl"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 text-center mb-2">¿Cerrar sesión?</h3>
+            <p class="text-gray-600 text-center mb-6">¿Estás seguro que deseas salir del panel de vendedores?</p>
+            <div class="flex gap-3">
+                <button @click="mostrarConfirmacionSalir = false"
+                        class="flex-1 px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition-colors">
+                    Cancelar
+                </button>
+                <a href="{{route('logout.vendedores-empresas')}}"
+                   class="flex-1 px-4 py-3  bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors text-center">
+                    Salir
+                </a>
+            </div>
+        </div>
+    </div>
+
     <div class="min-h-screen bg-gray-100">
         <!-- Page Content -->
         <main>
             <div class="bg-gray-200 min-h-screen overflow-y-auto">
                 <!-- Header superior -->
                 <div class="w-full bg-[#1E1B35] flex justify-between items-center px-4 py-2">
-                    <div class="flex items-center justify-center space-x-2">
-                        <i class="fa fa-shopping-bag text-yellow-400 text-xl"></i>
-                        <span class="font-bold text-yellow-400 text-xl mr-0">bcn</span>
-                        <span class="font-bold text-white text-xl ml-0">soft</span>
+                    <div class="flex items-center justify-center">
+                        <img src="{{ asset('images/logo.png') }}" alt="BCN Soft" class="h-8">
                     </div>
                     <!-- Botón de iniciales -->
                     <div x-data="{ showInfo: false }" class="relative">
@@ -74,37 +98,37 @@
                 {{ $slot }}
             </div>
             <!-- Footer -->
-            <div class="fixed bottom-0 left-0 w-full bg-white border-t shadow-inner flex justify-around py-2 text-xs text-gray-600" style="padding-bottom: env(safe-area-inset-bottom);">
-                <a href="{{route('dashboard-vendedor-empresa')}}" wire:navigate>
-                    <div class="flex flex-col items-center {{ request()->routeIs('dashboard-vendedor-empresa') ? 'text-yellow-500' : '' }}">
-                        <i class="fa fa-home text-lg"></i>
-                        <span class="text-[10px]">Inicio</span>
+            <div class="fixed bottom-0 left-0 w-full bg-white flex justify-around items-center py-4 text-sm text-gray-700" style="padding-bottom: calc(1rem + env(safe-area-inset-bottom)); box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.08);">
+                <a href="{{route('historial-empresa')}}" wire:navigate class="transition-colors duration-200">
+                    <div class="flex flex-col items-center {{ request()->routeIs('historial-empresa') ? 'text-[#FFAF22]' : 'hover:text-[#FFAF22]' }}">
+                        <i class="fa fa-history text-xl mb-1"></i>
+                        <span class="text-xs font-medium">Historial</span>
                     </div>
                 </a>
-                <a href="{{route('historial-empresa')}}" wire:navigate>
-                    <div class="flex flex-col items-center {{ request()->routeIs('historial-empresa') ? 'text-yellow-500' : '' }}">
-                        <i class="fa fa-history text-lg"></i>
-                        <span class="text-[10px]">Historial</span>
+                <a href="{{route('listas-precios-empresa')}}" wire:navigate class="transition-colors duration-200">
+                    <div class="flex flex-col items-center {{ request()->routeIs('listas-precios-empresa') ? 'text-[#FFAF22]' : 'hover:text-[#FFAF22]' }}">
+                        <i class="fa fa-list text-xl mb-1"></i>
+                        <span class="text-xs font-medium">Lista</span>
                     </div>
                 </a>
-                <a href="{{route('listas-precios-empresa')}}" wire:navigate>
-                    <div class="flex flex-col items-center {{ request()->routeIs('listas-precios-empresa') ? 'text-yellow-500' : '' }}">
-                        <i class="fa fa-list text-lg"></i>
-                        <span class="text-[10px]">Lista</span>
+                <a href="{{route('dashboard-vendedor-empresa')}}" wire:navigate class="transition-colors duration-200">
+                    <div class="flex flex-col items-center justify-center w-14 h-14 rounded-full bg-[#1E1B35] text-white">
+                        <i class="fa fa-home text-xl mb-1"></i>
+                        <span class="text-xs font-medium">Inicio</span>
                     </div>
                 </a>
-                <a href="{{route('deudas-empresa')}}" wire:navigate>
-                    <div class="flex flex-col items-center {{ request()->routeIs('deudas-empresa') ? 'text-yellow-500' : '' }}">
-                        <i class="fa fa-dollar-sign text-lg"></i>
-                        <span class="text-[10px]">A cobrar</span>
+                <a href="{{route('deudas-empresa')}}" wire:navigate class="transition-colors duration-200">
+                    <div class="flex flex-col items-center {{ request()->routeIs('deudas-empresa') ? 'text-[#FFAF22]' : 'hover:text-[#FFAF22]' }}">
+                        <i class="fa fa-dollar-sign text-xl mb-1"></i>
+                        <span class="text-xs font-medium">A cobrar</span>
                     </div>
                 </a>
-                <a href="{{route('logout.vendedores-empresas')}}" wire:navigate>
-                    <div class="flex flex-col items-center">
-                        <i class="fa fa-sign-out-alt text-lg"></i>
-                        <span class="text-[10px]">Salir</span>
+                <button @click="mostrarConfirmacionSalir = true" class="transition-colors duration-200">
+                    <div class="flex flex-col items-center hover:text-[#FFAF22]">
+                        <i class="fa fa-sign-out-alt text-xl mb-1"></i>
+                        <span class="text-xs font-medium">Salir</span>
                     </div>
-                </a>
+                </button>
             </div>
         </main>
     </div>

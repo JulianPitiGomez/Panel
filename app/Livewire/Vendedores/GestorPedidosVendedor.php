@@ -24,6 +24,10 @@ class GestorPedidosVendedor extends Component
     public $editandoFechaId = null;
     public $nuevaFecha = '';
 
+    public $mostrarModalBusqueda = false;
+    public $productoSeleccionado = null;
+    public $mostrarModalImprimir = false;
+
     public function mount($id)
     {
         $this->pedidoId = $id;
@@ -165,7 +169,34 @@ class GestorPedidosVendedor extends Component
                 'descup' => $descup,
             ]);
         $this->productos = [];
+        $this->busqueda = '';
         $this->cargarDetallePedido();
+
+        // Cerrar modal después de agregar
+        $this->cerrarModal();
+    }
+
+    public function seleccionarProducto($codigo)
+    {
+        $this->setupClientDatabase();
+
+        $this->productoSeleccionado = DB::connection('client_db')
+            ->table("{$this->tablePrefix}articu")
+            ->where('CODIGO', $codigo)
+            ->first();
+
+        // Inicializar cantidad si no existe
+        if (!isset($this->cantidades[$codigo])) {
+            $this->cantidades[$codigo] = '1.00';
+        }
+    }
+
+    public function cerrarModal()
+    {
+        $this->mostrarModalBusqueda = false;
+        $this->productoSeleccionado = null;
+        $this->busqueda = '';
+        $this->productos = [];
     }
 
     public function obtenerPrecioCliente($codigo)
@@ -255,6 +286,19 @@ class GestorPedidosVendedor extends Component
         $this->editandoFechaId = null;
     }
 
+    public function imprimirPedido()
+    {
+        $this->mostrarModalImprimir = true;
+    }
+
+    public function confirmarImpresion($valorizado)
+    {
+        $this->mostrarModalImprimir = false;
+        $url = route('imprimir-pedido', $this->pedidoId) . ($valorizado ? '' : '?valorizado=0');
+        $this->dispatch('abrir-impresion', [
+            'url' => $url
+        ]);
+    }
 
     #[Layout('layouts.vendedores')]
     public function render()

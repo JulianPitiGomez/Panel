@@ -18,12 +18,23 @@ class DashboardVendedor extends Component
     public $buscandoCliente = false;
     public $busqueda = '';
     public $clientesFiltrados = [];
+    public $modoBusqueda = 'pedido'; // pedido | visita
+
+    public $visitaCliente = null;
+    public $visitaMotivo = '';
+    public $visitaError = null;
+    public $mensajeVisita = null;
+
+    const TEXTO_VISITA = 'Visita al cliente sin compra';
 
     public $editandoObservacionId = null;
     public $nuevaObservacion = '';
 
     public $editandoFechaId = null;
     public $nuevaFecha = '';
+
+    public $mostrarModalImprimir = false;
+    public $pedidoAImprimir = null;
 
 
 
@@ -67,13 +78,24 @@ class DashboardVendedor extends Component
 
     public function iniciarNuevoPedido()
     {
+        $this->abrirBuscadorCliente('pedido');
+    }
+
+    public function iniciarVisitaSinCompra()
+    {
+        $this->abrirBuscadorCliente('visita');
+    }
+
+    private function abrirBuscadorCliente($modo)
+    {
+        $this->modoBusqueda = $modo;
         $this->buscandoCliente = true;
         $this->busqueda = '';
+        $this->mensajeVisita = null;
         $this->setupClientDatabase();
         $this->clientesFiltrados = DB::connection('client_db')
             ->table("{$this->tablePrefix}clientes")
-            ->where('VENDEDOR', $this->vendedorCodigo)            
-            ->where('ZONA', '!=','2')
+            ->where('VENDEDOR', $this->vendedorCodigo)
             ->orderBy('NOMBRE')
             ->limit(10)
             ->get();
@@ -90,7 +112,6 @@ class DashboardVendedor extends Component
                 ->orWhere('DIRECCION', 'like', '%' . $this->busqueda . '%')
                 ->orWhere('CODIGO', 'like', '%' . $this->busqueda . '%');
             })
-            ->where('ZONA', '!=','2')
             ->orderBy('NOMBRE')
             ->limit(10)
             ->get();
@@ -107,6 +128,17 @@ class DashboardVendedor extends Component
 
         if (!$cliente) return;
 
+        if ($this->modoBusqueda === 'visita') {
+            $this->visitaCliente = [
+                'codigo' => $cliente->CODIGO,
+                'nombre' => $cliente->NOMBRE,
+            ];
+            $this->visitaMotivo = '';
+            $this->visitaError = null;
+            $this->buscandoCliente = false;
+            return;
+        }
+
         $id = DB::connection('client_db')
             ->table("{$this->tablePrefix}pedidos_encab")
             ->insertGetId([
@@ -121,6 +153,59 @@ class DashboardVendedor extends Component
             ]);
 
         return redirect('vendedores/pedido/editar/'.$id);
+    }
+
+    public function updatedVisitaMotivo()
+    {
+        $this->visitaError = null;
+    }
+
+    public function cancelarVisita()
+    {
+        $this->visitaCliente = null;
+        $this->visitaMotivo = '';
+        $this->visitaError = null;
+    }
+
+    public function registrarVisita()
+    {
+        if (!$this->visitaCliente) return;
+
+        $motivo = trim($this->visitaMotivo);
+
+        if ($motivo === '') {
+            $this->visitaError = 'Indicá el motivo por el que no compró.';
+            return;
+        }
+
+        $this->setupClientDatabase();
+
+        $tabla = "{$this->tablePrefix}cliobs";
+        $prefijo = self::TEXTO_VISITA . ' - Vendedor: ' . session('vendedor_nombre');
+
+        // La tabla no tiene ID ni hora: evitamos cargar dos veces la misma visita en el día
+        $yaRegistrada = DB::connection('client_db')
+            ->table($tabla)
+            ->where('CODCLI', $this->visitaCliente['codigo'])
+            ->whereDate('FECHA', now()->toDateString())
+            ->where('OBSERVA', 'like', $prefijo . '%')
+            ->exists();
+
+        if ($yaRegistrada) {
+            $this->visitaError = 'Ya registraste hoy una visita sin compra a este cliente.';
+            return;
+        }
+
+        DB::connection('client_db')
+            ->table($tabla)
+            ->insert([
+                'CODCLI'  => $this->visitaCliente['codigo'],
+                'FECHA'   => DB::raw('CURDATE()'),
+                'OBSERVA' => $prefijo . ' - Motivo: ' . mb_substr($motivo, 0, 200),
+            ]);
+
+        $this->mensajeVisita = 'Visita registrada en ' . $this->visitaCliente['nombre'] . '.';
+        $this->cancelarVisita();
     }
 
     public function modificarPedido($id)
@@ -221,10 +306,18 @@ class DashboardVendedor extends Component
 
     public function imprimirPedido($id)
     {
-        // Solo emitir evento para abrir la ventana
+        $this->pedidoAImprimir = $id;
+        $this->mostrarModalImprimir = true;
+    }
+
+    public function confirmarImpresion($valorizado)
+    {
+        $this->mostrarModalImprimir = false;
+        $url = route('imprimir-pedido', $this->pedidoAImprimir) . ($valorizado ? '' : '?valorizado=0');
         $this->dispatch('abrir-impresion', [
-            'url' => route('imprimir-pedido', $id)
+            'url' => $url
         ]);
+        $this->pedidoAImprimir = null;
     }
 
     // Método para la ruta
@@ -233,8 +326,9 @@ class DashboardVendedor extends Component
         $this->setupClientDatabase();
         $pedido = DB::connection('client_db')->table("{$this->tablePrefix}pedidos_encab")->find($id);
         $detalles = DB::connection('client_db')->table("{$this->tablePrefix}pedidos_det")->where('idpedido', $id)->get();
-        
-        return view('vendedores.imprimir-pedido', compact('pedido', 'detalles'));
+        $valorizado = request('valorizado', '1') !== '0';
+
+        return view('vendedores.imprimir-pedido', compact('pedido', 'detalles', 'valorizado'));
     }
 
     #[Layout('layouts.vendedores')]

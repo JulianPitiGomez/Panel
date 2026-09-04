@@ -16,6 +16,10 @@ class Historial extends Component
     public $pedidoExpandido = null;
     public $detalle = [];
 
+    public $mostrarModalImprimir = false;
+    public $pedidoAImprimir = null;
+    public $mostrarModalDuplicar = false;
+    public $pedidoADuplicar = null;
     public $buscandoCliente = false;
     public $busqueda = '';
     public $desdefecha;
@@ -46,12 +50,32 @@ class Historial extends Component
         }
     }
 
+    /**
+     * Pedidos propios del vendedor (codven) mas los que carga administracion
+     * desde el sistema de gestion a su nombre (codven = 0 + nombre coincidente).
+     */
+    private function filtroPedidosDelVendedor($query)
+    {
+        $query->where('codven', $this->vendedorCodigo);
+
+        $nombre = trim((string) session('vendedor_nombre'));
+
+        if ($nombre !== '') {
+            $query->orWhere(function ($q) use ($nombre) {
+                $q->where('codven', 0)
+                  ->whereRaw('TRIM(vendedor) = ?', [$nombre]);
+            });
+        }
+
+        return $query;
+    }
+
     public function cargarPedidos()
     {
         $this->setupClientDatabase();
         $this->pedidos = DB::connection('client_db')
             ->table("{$this->tablePrefix}pedidos_encab")
-            ->where('codven', $this->vendedorCodigo)
+            ->where(fn ($q) => $this->filtroPedidosDelVendedor($q))
             ->where('cliente', 'like', '%' . $this->busqueda . '%')
             ->whereBetween('fecha', [$this->desdefecha, $this->hastafecha])
             ->orderByDesc('fecha')            
@@ -105,10 +129,145 @@ class Historial extends Component
 
     public function imprimirPedido($id)
     {
-        // Solo emitir evento para abrir la ventana
+        $this->pedidoAImprimir = $id;
+        $this->mostrarModalImprimir = true;
+    }
+
+    public function pedirDuplicar($id)
+    {
+        $this->pedidoADuplicar = $id;
+        $this->mostrarModalDuplicar = true;
+    }
+
+    public function confirmarDuplicacion()
+    {
+        $id = $this->pedidoADuplicar;
+        $this->mostrarModalDuplicar = false;
+        $this->pedidoADuplicar = null;
+        return $this->duplicarPedido($id);
+    }
+
+    public function duplicarPedido($id)
+    {
+        $this->setupClientDatabase();
+
+        $original = DB::connection('client_db')
+            ->table("{$this->tablePrefix}pedidos_encab")
+            ->where('id', $id)
+            ->where(fn ($q) => $this->filtroPedidosDelVendedor($q))
+            ->first();
+
+        if (!$original) {
+            session()->flash('error', 'No se encontró el pedido a duplicar.');
+            return;
+        }
+
+        $cliente = DB::connection('client_db')
+            ->table("{$this->tablePrefix}clientes")
+            ->where('CODIGO', $original->codcli)
+            ->first();
+
+        if (!$cliente) {
+            session()->flash('error', 'El cliente del pedido original ya no existe en el sistema.');
+            return;
+        }
+
+        $detalleOriginal = DB::connection('client_db')
+            ->table("{$this->tablePrefix}pedidos_det")
+            ->where('idpedido', $id)
+            ->get();
+
+        if ($detalleOriginal->isEmpty()) {
+            session()->flash('error', 'El pedido original no tiene artículos para duplicar.');
+            return;
+        }
+
+        $lispreesp = $cliente->lispreesp ?? $cliente->LISPREESP ?? null;
+        $lispre = $cliente->LISPRE ?? $cliente->lispre ?? null;
+        $descup = floatval($cliente->DESCUENTO ?? 0);
+
+        $nuevasLineas = [];
+        $omitidos = [];
+
+        foreach ($detalleOriginal as $item) {
+            $articulo = DB::connection('client_db')
+                ->table("{$this->tablePrefix}articu")
+                ->where('CODIGO', $item->codart)
+                ->first();
+
+            if (!$articulo || ($articulo->NOSALE ?? 0) == 1) {
+                $omitidos[] = trim($item->codart . ' - ' . $item->detart, ' -');
+                continue;
+            }
+
+            $precio = null;
+            if ($lispreesp) {
+                $precio = DB::connection('client_db')
+                    ->table("{$this->tablePrefix}lispredet")
+                    ->where('CODLIS', $lispreesp)
+                    ->where('CODART', $item->codart)
+                    ->value('PRECIO');
+            }
+            if ($precio === null) {
+                $precio = $lispre == 2 ? $articulo->REVENTA : $articulo->PRECIOVEN;
+            }
+
+            $descu = round($precio * $descup / 100, 2);
+
+            $nuevasLineas[] = [
+                'codart' => $articulo->CODIGO,
+                'detart' => $articulo->NOMBRE,
+                'cantidad' => $item->cantidad,
+                'cantidadreal' => $item->cantidad,
+                'punitario' => $precio,
+                'descu' => $descu,
+                'descup' => $descup,
+            ];
+        }
+
+        if (empty($nuevasLineas)) {
+            session()->flash('error', 'Ninguno de los artículos del pedido original está disponible actualmente.');
+            return;
+        }
+
+        $nuevoId = DB::connection('client_db')
+            ->table("{$this->tablePrefix}pedidos_encab")
+            ->insertGetId([
+                'codcli' => $cliente->CODIGO,
+                'cliente' => $cliente->NOMBRE,
+                'codven' => $this->vendedorCodigo,
+                'vendedor' => session('vendedor_nombre'),
+                'fecha' => DB::raw('CURDATE()'),
+                'parafecha' => DB::raw('CURDATE()'),
+                'estado' => 'A',
+                'nuevo' => true,
+            ]);
+
+        foreach ($nuevasLineas as $linea) {
+            $linea['idpedido'] = $nuevoId;
+            DB::connection('client_db')
+                ->table("{$this->tablePrefix}pedidos_det")
+                ->insert($linea);
+        }
+
+        if (!empty($omitidos)) {
+            session()->flash(
+                'aviso_duplicado',
+                'Se omitieron ' . count($omitidos) . ' artículo(s) que ya no están disponibles: ' . implode(', ', $omitidos)
+            );
+        }
+
+        return redirect('vendedores/pedido/editar/' . $nuevoId);
+    }
+
+    public function confirmarImpresion($valorizado)
+    {
+        $this->mostrarModalImprimir = false;
+        $url = route('imprimir-pedido', $this->pedidoAImprimir) . ($valorizado ? '' : '?valorizado=0');
         $this->dispatch('abrir-impresion', [
-            'url' => route('imprimir-pedido', $id)
+            'url' => $url
         ]);
+        $this->pedidoAImprimir = null;
     }
 
     // Método para la ruta
@@ -117,8 +276,9 @@ class Historial extends Component
         $this->setupClientDatabase();
         $pedido = DB::connection('client_db')->table("{$this->tablePrefix}pedidos_encab")->find($id);
         $detalles = DB::connection('client_db')->table("{$this->tablePrefix}pedidos_det")->where('idpedido', $id)->get();
-        
-        return view('vendedores.imprimir-pedido', compact('pedido', 'detalles'));
+        $valorizado = request('valorizado', '1') !== '0';
+
+        return view('vendedores.imprimir-pedido', compact('pedido', 'detalles', 'valorizado'));
     }
 
     #[Layout('layouts.vendedores')]

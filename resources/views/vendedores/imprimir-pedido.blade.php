@@ -151,34 +151,39 @@
             <thead>
                 <tr>
                     <th style="width: 10%">Código</th>
-                    <th style="width: 40%">Descripción</th>
+                    <th style="width: {{ $valorizado ? '40%' : '70%' }}">Descripción</th>
                     <th style="width: 10%" class="text-center">Cantidad</th>
-                    <th style="width: 15%" class="text-right">Precio Unit.</th>
-                    <th style="width: 10%" class="text-right">Desc. %</th>
-                    <th style="width: 15%" class="text-right">Subtotal</th>
+                    @if($valorizado)
+                        <th style="width: 15%" class="text-right">Precio Unit.</th>
+                        <th style="width: 10%" class="text-right">Desc. %</th>
+                        <th style="width: 15%" class="text-right">Subtotal</th>
+                    @endif
                 </tr>
             </thead>
             <tbody>
                 @php $total = 0; @endphp
                 @foreach($detalles as $detalle)
                     @php
-                        $subtotal = $detalle->cantidad * $detalle->punitario ;
+                        $subtotal = $detalle->cantidad * $detalle->punitario;
                         $total += $subtotal;
                     @endphp
                     <tr>
                         <td>{{ $detalle->codart }}</td>
                         <td>{{ $detalle->detart }}</td>
                         <td class="text-center">{{ number_format($detalle->cantidad, 2) }}</td>
-                        <td class="text-right">${{ number_format($detalle->punitario, 2) }}</td>
-                        <td class="text-right">{{ number_format($detalle->descup ?? 0, 2) }}%</td>
-                        <td class="text-right">${{ number_format($subtotal, 2) }}</td>
+                        @if($valorizado)
+                            <td class="text-right">${{ number_format($detalle->punitario, 2) }}</td>
+                            <td class="text-right">{{ number_format($detalle->descup ?? 0, 2) }}%</td>
+                            <td class="text-right">${{ number_format($subtotal, 2) }}</td>
+                        @endif
                     </tr>
                 @endforeach
             </tbody>
         </table>
     </div>
-    
+
     <!-- Totales -->
+    @if($valorizado)
     <div class="totals">
         <table>
             <tr class="total-final">
@@ -187,6 +192,7 @@
             </tr>
         </table>
     </div>
+    @endif
     
     <!-- Observaciones -->
     @if($pedido->observa)
