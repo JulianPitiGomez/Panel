@@ -5,13 +5,15 @@ namespace App\Livewire;
 use Livewire\Component;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Layout;
+use App\Services\MercadoPagoService;
 
 class KioscoRestaurant extends Component
 {
     public $clientId;
     public $tablePrefix;
-    public $currentView = 'menu'; // menu, product, cart, checkout, success
+    public $currentView = 'welcome'; // welcome, menu, product, cart, checkout, sugerencias, pago-mp, success
     public $departamentos = [];
     public $articulos = [];
     public $productosDestacados = [];
@@ -27,6 +29,35 @@ class KioscoRestaurant extends Component
     public $finalOrderItems = [];
     public $finalOrderTotal = 0;
 
+    // Sugerencias
+    public $sugerencias = [];
+    public $mostrarSugerencias = false;
+
+    // Personalización
+    public $kioscoColores = [];
+    public $kioscoTituloDestacados = 'Productos Destacados';
+    public $kioscoPideNombre = true;
+    public $kioscoPideTelefono = true;
+    public $kioscoImprimeTicket = true;
+
+    // Búsqueda
+    public $busqueda = '';
+
+    // Mercado Pago
+    public $mpAccessToken = null;
+    public $mpInitPoint = null;
+    public $mpExternalReference = null;
+    public $mpPreferenceId = null;
+    public $mpPagoEstado = null;
+    public $mpClientId = null;
+    public $mpTipoIntegracion = 'qr_presencial';
+    public $mpUserId = null;
+    public $mpStoreExternalId = null;
+    public $mpPosExternalId = null;
+    public $mpPosQrImage = null;
+    public $mpPointDeviceId = null;
+    public $mpPaymentIntentId = null;
+
     public function mount()
     {
         $this->setupClientDatabase();
@@ -38,16 +69,21 @@ class KioscoRestaurant extends Component
 
     private function setupClientDatabase()
     {
-        $clientId = session('client_id');
+        // Soportar acceso desde panel (client_id) o desde kiosco público (kiosco_client_id)
+        $clientId = session('kiosco_client_id') ?: session('client_id');
         if ($clientId) {
             $cliente = \App\Models\Cliente::find($clientId);
-            
+
             if ($cliente) {
                 \Illuminate\Support\Facades\Config::set('database.connections.client_db.database', $cliente->base);
                 DB::purge('client_db');
                 session(['client_table_prefix' => $cliente->getTablePrefix()]);
                 $this->tablePrefix = $cliente->getTablePrefix();
                 $this->clientId = str_pad($clientId, 6, '0', STR_PAD_LEFT);
+                // Asegurar que client_id exista en sesión para otros componentes
+                if (!session('client_id')) {
+                    session(['client_id' => $clientId]);
+                }
             }
         }
     }
@@ -83,35 +119,84 @@ class KioscoRestaurant extends Component
             ->get()
             ->toArray();
 
-        // Cargar artículos visibles, activos y de mostrador
+        // Cargar artículos visibles, activos, de mostrador y no agotados
         $this->articulos = DB::connection('client_db')
             ->table($this->tablePrefix . 'articu')
             ->where('lMostrador', 1)
             ->where('inactivo', 0)
+            ->where('agotado', 0)
             ->whereRaw('precio_m > 0 OR preciom_oferta > 0')
             ->orderBy('DEPTO')
             ->orderBy('orden')
             ->get()
             ->toArray();
 
-        // Cargar productos destacados
+        // Cargar productos destacados (no agotados)
         $this->productosDestacados = DB::connection('client_db')
             ->table($this->tablePrefix . 'articu')
             ->where('lMostrador', 1)
             ->where('inactivo', 0)
+            ->where('agotado', 0)
             ->where('destacado', 1)
             ->whereRaw('precio_m > 0 OR preciom_oferta > 0')
             ->orderBy('orden')
             ->get()
             ->toArray();
 
-        // Cargar formas de pago
-        $this->formasPago = DB::connection('client_db')
+        // Cargar config desde config_clientes_web
+        $clientId = session('kiosco_client_id') ?: session('client_id');
+        $this->mpClientId = $clientId;
+        $configWeb = DB::connection('config')
+            ->table('config_clientes_web')
+            ->where('cliente_id', $clientId)
+            ->first();
+
+        $kioscoFormasPago = [];
+        if ($configWeb && $configWeb->configuracion) {
+            $config = json_decode($configWeb->configuracion, true);
+            $this->mpAccessToken = $config['mp_access_token'] ?? null;
+            $this->mpTipoIntegracion = $config['mp_tipo_integracion'] ?? 'checkout_pro';
+            $this->mpUserId = $config['mp_user_id'] ?? null;
+            $this->mpStoreExternalId = $config['mp_store_external_id'] ?? null;
+            $this->mpPosExternalId = $config['mp_pos_external_id'] ?? null;
+            $this->mpPosQrImage = $config['mp_pos_qr_image'] ?? null;
+            $this->mpPointDeviceId = $config['mp_point_device_id'] ?? null;
+            $kioscoFormasPago = $config['kiosco_formas_pago'] ?? [];
+
+            // Personalización
+            $this->kioscoTituloDestacados = $config['kiosco_titulo_destacados'] ?? 'Productos Destacados';
+            $this->kioscoPideNombre = $config['kiosco_pide_nombre'] ?? true;
+            $this->kioscoPideTelefono = $config['kiosco_pide_telefono'] ?? true;
+            $this->kioscoImprimeTicket = $config['kiosco_imprime_ticket'] ?? true;
+            $this->kioscoColores = [
+                'fondo' => $config['kiosco_color_fondo'] ?? '#FFFFFF',
+                'letra' => $config['kiosco_color_letra'] ?? '#1F2937',
+                'boton' => $config['kiosco_color_boton'] ?? '#F97316',
+                'texto_boton' => $config['kiosco_color_texto_boton'] ?? '#FFFFFF',
+                'precio' => $config['kiosco_color_precio'] ?? '#16A34A',
+            ];
+        } else {
+            $this->kioscoColores = [
+                'fondo' => '#FFFFFF',
+                'letra' => '#1F2937',
+                'boton' => '#F97316',
+                'texto_boton' => '#FFFFFF',
+                'precio' => '#16A34A',
+            ];
+        }
+
+        // Cargar formas de pago (solo las habilitadas para tactil/kiosco)
+        $query = DB::connection('client_db')
             ->table($this->tablePrefix . 'forpag')
-            ->where('tactil', 1)
-            ->where('tipo', '!=', 3) // Excluir "Cuenta corriente"
-            ->get()
-            ->toArray();
+            ->where('TACTIL', 1)
+            ->where('TIPO', '!=', 3); // Excluir "Cuenta corriente"
+
+        // Filtrar por las seleccionadas en config (si hay alguna)
+        if (!empty($kioscoFormasPago)) {
+            $query->whereIn('CODIGO', $kioscoFormasPago);
+        }
+
+        $this->formasPago = $query->get()->toArray();
     }
 
     private function createTempTablesIfNotExist()
@@ -127,11 +212,28 @@ class KioscoRestaurant extends Component
                 subtotal DECIMAL(10,2) DEFAULT 0,
                 total DECIMAL(10,2) DEFAULT 0,
                 estado ENUM('carrito', 'finalizado', 'cancelado') DEFAULT 'carrito',
+                mp_external_reference VARCHAR(100) NULL,
+                mp_preference_id VARCHAR(100) NULL,
+                mp_payment_id VARCHAR(100) NULL,
+                mp_status VARCHAR(30) NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 INDEX idx_session_estado (session_id, estado)
             )
         ");
+
+        // Agregar columnas MP si la tabla ya existe pero no las tiene
+        try {
+            DB::connection('client_db')->statement("
+                ALTER TABLE pedidosm_temp
+                ADD COLUMN IF NOT EXISTS mp_external_reference VARCHAR(100) NULL,
+                ADD COLUMN IF NOT EXISTS mp_preference_id VARCHAR(100) NULL,
+                ADD COLUMN IF NOT EXISTS mp_payment_id VARCHAR(100) NULL,
+                ADD COLUMN IF NOT EXISTS mp_status VARCHAR(30) NULL
+            ");
+        } catch (\Exception $e) {
+            // Las columnas ya existen, ignorar
+        }
 
         // Crear tabla pedidosm_det_temp si no existe
         DB::connection('client_db')->statement("
@@ -372,9 +474,21 @@ class KioscoRestaurant extends Component
 
         $this->cart[] = $cartItem;
         $this->selectedOptionals = [];
-        $this->currentView = 'menu';
-        $this->changeView('menu');
-        
+
+        // Notificar al frontend (animación + sonido)
+        $this->dispatch('product-added');
+
+        // Cargar sugerencias basadas en el departamento del producto agregado
+        $this->cargarSugerencias($product->DEPTO);
+
+        if ($this->mostrarSugerencias) {
+            $this->currentView = 'sugerencias';
+            $this->changeView('sugerencias');
+        } else {
+            $this->currentView = 'menu';
+            $this->changeView('menu');
+        }
+
         session()->flash('success', 'Producto agregado al carrito');
     }
 
@@ -601,53 +715,443 @@ class KioscoRestaurant extends Component
 
     public function finalizeOrder()
     {
-        $this->validate([
-            'customerData.nombre' => 'required|min:2',
-            'customerData.telefono' => 'required|min:8',
-            'selectedPayment' => 'required'
-        ]);
+        $rules = ['selectedPayment' => 'required'];
+        $messages = ['selectedPayment.required' => 'Seleccioná una forma de pago.'];
+
+        if ($this->kioscoPideNombre) {
+            $rules['customerData.nombre'] = 'required|min:2';
+            $messages['customerData.nombre.required'] = 'Ingresá tu nombre para continuar.';
+            $messages['customerData.nombre.min'] = 'El nombre debe tener al menos 2 caracteres.';
+        }
+        if ($this->kioscoPideTelefono) {
+            $rules['customerData.telefono'] = 'required|min:8';
+            $messages['customerData.telefono.required'] = 'Ingresá tu teléfono para que podamos contactarte.';
+            $messages['customerData.telefono.min'] = 'El teléfono debe tener al menos 8 dígitos.';
+        }
+
+        $this->validate($rules, $messages);
 
         $this->setupClientDatabase();
-        
+
         // Actualizar datos del cliente
         $this->updateTempOrderCustomerData();
-        
+
         $pedidoTemp = DB::connection('client_db')
             ->table('pedidosm_temp')
             ->where('session_id', $this->sessionId)
             ->where('estado', 'carrito')
             ->first();
 
-        if ($pedidoTemp && count($this->cart) > 0) {
-            // Guardar datos finales del pedido para mostrar en success
-            $this->finalOrderItems = $this->cart;
-            $this->finalOrderTotal = $this->getCartTotal();
-            
-            // Marcar como finalizado
+        if (!$pedidoTemp || count($this->cart) === 0) {
+            session()->flash('error', 'No se encontró el pedido. Por favor, volvé al menú e intentá nuevamente.');
+            return;
+        }
+
+        // Verificar si es pago con Mercado Pago (TIPO = 5,7,8)
+        $formaPago = collect($this->formasPago)
+            ->map(fn($fp) => is_array($fp) ? (object) $fp : $fp)
+            ->firstWhere('CODIGO', $this->selectedPayment);
+
+        \Log::info('Kiosco finalizeOrder', [
+            'selectedPayment' => $this->selectedPayment,
+            'formaPago' => $formaPago,
+            'mpAccessToken' => $this->mpAccessToken ? 'SET' : 'NULL',
+            'tipo' => $formaPago ? $formaPago->TIPO : 'N/A',
+        ]);
+
+        $esMercadoPago = $formaPago && in_array($formaPago->TIPO, [5, 7, 8]) && $this->mpAccessToken;
+
+        if ($esMercadoPago) {
+            $this->iniciarPagoMercadoPago($pedidoTemp);
+            return;
+        }
+
+        // Flujo normal (sin MP)
+        $this->finalizarPedidoDirecto($pedidoTemp);
+    }
+
+    private function finalizarPedidoDirecto($pedidoTemp)
+    {
+        // Guardar datos finales del pedido para mostrar en success
+        $this->finalOrderItems = $this->cart;
+        $this->finalOrderTotal = $this->getCartTotal();
+
+        // Marcar como finalizado
+        DB::connection('client_db')
+            ->table('pedidosm_temp')
+            ->where('id', $pedidoTemp->id)
+            ->update([
+                'estado' => 'finalizado',
+                'updated_at' => now()
+            ]);
+
+        // Generar número de pedido
+        $this->orderNumber = str_pad($pedidoTemp->id, 7, '0', STR_PAD_LEFT);
+
+        $this->currentView = 'success';
+        $this->changeView('success');
+        $this->dispatch('order-confirmed');
+
+        // Limpiar datos de carrito pero mantener los datos finales
+        $this->cart = [];
+
+        // Generar nueva sesión para el próximo pedido
+        session()->forget('kiosco_session_id');
+    }
+
+    private function iniciarPagoMercadoPago($pedidoTemp)
+    {
+        $mp = new MercadoPagoService($this->mpAccessToken);
+        $externalReference = 'KIOSCO-' . $pedidoTemp->id . '-' . time();
+        $this->mpExternalReference = $externalReference;
+
+        // Preparar items para MP
+        $items = [];
+        foreach ($this->cart as $item) {
+            $items[] = [
+                'title' => $item['nombre'],
+                'quantity' => (int) $item['quantity'],
+                'unit_price' => (float) $item['precio'],
+                'currency_id' => 'ARS',
+            ];
+        }
+
+        $total = (float) $this->getCartTotal();
+
+        // Solo enviar notification_url si es una URL pública (no localhost)
+        $notificationUrl = route('mp.webhook', ['clientId' => $this->mpClientId]);
+        $parsedHost = parse_url($notificationUrl, PHP_URL_HOST);
+        if (in_array($parsedHost, ['localhost', '127.0.0.1', '::1']) || str_ends_with($parsedHost, '.local')) {
+            $notificationUrl = null;
+        }
+
+        switch ($this->mpTipoIntegracion) {
+            case 'qr_presencial':
+                $this->iniciarPagoQRPresencial($mp, $pedidoTemp, $items, $total, $externalReference, $notificationUrl);
+                break;
+
+            case 'point':
+                $this->iniciarPagoPoint($mp, $pedidoTemp, $total, $externalReference);
+                break;
+
+            case 'checkout_pro':
+            default:
+                $this->iniciarPagoCheckoutPro($mp, $pedidoTemp, $items, $externalReference, $notificationUrl);
+                break;
+        }
+    }
+
+    private function iniciarPagoQRPresencial($mp, $pedidoTemp, array $items, float $total, string $externalReference, ?string $notificationUrl)
+    {
+        if (!$this->mpUserId || !$this->mpStoreExternalId || !$this->mpPosExternalId) {
+            Log::error('Kiosco MP QR: Config incompleta', [
+                'mpUserId' => $this->mpUserId,
+                'mpStoreExternalId' => $this->mpStoreExternalId,
+                'mpPosExternalId' => $this->mpPosExternalId,
+            ]);
+            session()->flash('error', 'Ha ocurrido un error con el pago. Avise al comercio: QR Presencial no disponible.');
+            return;
+        }
+
+        // Formatear items para QR presencial (formato diferente a Checkout Pro)
+        $qrItems = [];
+        foreach ($items as $item) {
+            $qrItems[] = [
+                'sku_number' => 'KIOSCO',
+                'category' => 'marketplace',
+                'title' => $item['title'],
+                'quantity' => $item['quantity'],
+                'unit_measure' => 'unit',
+                'unit_price' => $item['unit_price'],
+                'total_amount' => $item['unit_price'] * $item['quantity'],
+            ];
+        }
+
+        $resultado = $mp->crearOrdenQR($this->mpUserId, $this->mpStoreExternalId, $this->mpPosExternalId, [
+            'external_reference' => $externalReference,
+            'title' => 'Pedido Kiosco #' . $pedidoTemp->id,
+            'description' => 'Pedido desde kiosco autoservicio',
+            'total_amount' => $total,
+            'items' => $qrItems,
+            'notification_url' => $notificationUrl,
+        ]);
+
+        if (!$resultado) {
+            Log::error('Kiosco MP QR: crearOrdenQR falló', ['externalReference' => $externalReference]);
+            session()->flash('error', 'Ha ocurrido un error al procesar el pago. Por favor intente nuevamente o avise al comercio.');
+            return;
+        }
+
+        DB::connection('client_db')
+            ->table('pedidosm_temp')
+            ->where('id', $pedidoTemp->id)
+            ->update([
+                'mp_external_reference' => $externalReference,
+                'mp_status' => 'pending',
+                'updated_at' => now(),
+            ]);
+
+        $this->mpPagoEstado = 'pending';
+        $this->currentView = 'pago-mp';
+        $this->changeView('pago-mp');
+    }
+
+    private function iniciarPagoPoint($mp, $pedidoTemp, float $total, string $externalReference)
+    {
+        if (!$this->mpPointDeviceId) {
+            Log::error('Kiosco MP Point: Device no configurado');
+            session()->flash('error', 'Ha ocurrido un error con el pago. Avise al comercio: Lector Point no disponible.');
+            return;
+        }
+
+        $intent = $mp->crearIntencionPago($this->mpPointDeviceId, [
+            'amount' => $total,
+            'description' => 'Pedido Kiosco #' . $pedidoTemp->id,
+            'external_reference' => $externalReference,
+        ]);
+
+        if (!$intent) {
+            Log::error('Kiosco MP Point: crearIntencionPago falló', ['externalReference' => $externalReference]);
+            session()->flash('error', 'Ha ocurrido un error al procesar el pago. Por favor intente nuevamente o avise al comercio.');
+            return;
+        }
+
+        $this->mpPaymentIntentId = $intent['id'];
+
+        DB::connection('client_db')
+            ->table('pedidosm_temp')
+            ->where('id', $pedidoTemp->id)
+            ->update([
+                'mp_external_reference' => $externalReference,
+                'mp_preference_id' => $intent['id'], // Reusamos campo para el intent ID
+                'mp_status' => 'pending',
+                'updated_at' => now(),
+            ]);
+
+        $this->mpPagoEstado = 'pending';
+        $this->currentView = 'pago-mp';
+        $this->changeView('pago-mp');
+    }
+
+    private function iniciarPagoCheckoutPro($mp, $pedidoTemp, array $items, string $externalReference, ?string $notificationUrl)
+    {
+        $preferencia = $mp->crearPreferencia($items, $externalReference, $notificationUrl);
+
+        if (!$preferencia) {
+            Log::error('Kiosco MP: crearPreferencia devolvió null', [
+                'items' => $items,
+                'externalReference' => $externalReference,
+            ]);
+            session()->flash('error', 'Error al crear el pago en Mercado Pago. Intente nuevamente.');
+            return;
+        }
+
+        DB::connection('client_db')
+            ->table('pedidosm_temp')
+            ->where('id', $pedidoTemp->id)
+            ->update([
+                'mp_external_reference' => $externalReference,
+                'mp_preference_id' => $preferencia['id'],
+                'mp_status' => 'pending',
+                'updated_at' => now(),
+            ]);
+
+        $this->mpPreferenceId = $preferencia['id'];
+        $this->mpInitPoint = $preferencia['init_point'];
+        $this->mpPagoEstado = 'pending';
+
+        $this->currentView = 'pago-mp';
+        $this->changeView('pago-mp');
+    }
+
+    public function regenerarQR()
+    {
+        $this->setupClientDatabase();
+
+        $pedidoTemp = DB::connection('client_db')
+            ->table('pedidosm_temp')
+            ->where('session_id', $this->sessionId)
+            ->where('estado', 'carrito')
+            ->first();
+
+        if (!$pedidoTemp) {
+            $this->cancelarPagoMP();
+            return;
+        }
+
+        $mp = new MercadoPagoService($this->mpAccessToken);
+
+        $items = [];
+        foreach ($this->cart as $item) {
+            $items[] = [
+                'title' => $item['nombre'],
+                'quantity' => (int) $item['quantity'],
+                'unit_price' => (float) $item['precio'],
+                'currency_id' => 'ARS',
+            ];
+        }
+
+        $externalReference = 'KIOSCO-' . $pedidoTemp->id . '-' . time();
+        $this->mpExternalReference = $externalReference;
+        $notificationUrl = route('mp.webhook', ['clientId' => $this->mpClientId]);
+
+        if ($this->mpTipoIntegracion === 'qr_presencial') {
+            // Re-push order al QR presencial
+            $total = (float) $this->getCartTotal();
+            $qrItems = [];
+            foreach ($items as $item) {
+                $qrItems[] = [
+                    'sku_number' => 'KIOSCO',
+                    'category' => 'marketplace',
+                    'title' => $item['title'],
+                    'quantity' => $item['quantity'],
+                    'unit_measure' => 'unit',
+                    'unit_price' => $item['unit_price'],
+                    'total_amount' => $item['unit_price'] * $item['quantity'],
+                ];
+            }
+
+            $resultado = $mp->crearOrdenQR($this->mpUserId, $this->mpStoreExternalId, $this->mpPosExternalId, [
+                'external_reference' => $externalReference,
+                'title' => 'Pedido Kiosco #' . $pedidoTemp->id,
+                'total_amount' => $total,
+                'items' => $qrItems,
+                'notification_url' => $notificationUrl,
+            ]);
+
+            if (!$resultado) {
+                $this->dispatch('qr-error');
+                return;
+            }
+
             DB::connection('client_db')
                 ->table('pedidosm_temp')
                 ->where('id', $pedidoTemp->id)
                 ->update([
-                    'estado' => 'finalizado',
-                    'updated_at' => now()
+                    'mp_external_reference' => $externalReference,
+                    'mp_status' => 'pending',
+                    'updated_at' => now(),
                 ]);
 
-            // Generar número de pedido
-            $this->orderNumber = str_pad($pedidoTemp->id, 7, '0', STR_PAD_LEFT);
-            
-            // Aquí podrías mover los datos a las tablas definitivas (mostrador, mostrador_det)
-            // $this->moveToFinalTables($pedidoTemp->id);
-            //$this->printTicket();
-            
-            $this->currentView = 'success';
-            $this->changeView('success');
-            
-            // Limpiar datos de carrito pero mantener los datos finales
-            $this->cart = [];
-            
-            // Generar nueva sesión para el próximo pedido
-            session()->forget('kiosco_session_id');
+            $this->mpPagoEstado = 'pending';
+            $this->dispatch('qr-regenerado');
+        } else {
+            // Checkout Pro - regenerar preferencia
+            $preferencia = $mp->crearPreferencia($items, $externalReference, $notificationUrl);
+
+            if (!$preferencia) {
+                $this->dispatch('qr-error');
+                return;
+            }
+
+            DB::connection('client_db')
+                ->table('pedidosm_temp')
+                ->where('id', $pedidoTemp->id)
+                ->update([
+                    'mp_external_reference' => $externalReference,
+                    'mp_preference_id' => $preferencia['id'],
+                    'mp_status' => 'pending',
+                    'updated_at' => now(),
+                ]);
+
+            $this->mpPreferenceId = $preferencia['id'];
+            $this->mpInitPoint = $preferencia['init_point'];
+            $this->mpPagoEstado = 'pending';
+
+            $this->dispatch('qr-regenerado');
         }
+    }
+
+    public function verificarPagoMP()
+    {
+        if (!$this->mpExternalReference || !$this->mpAccessToken) {
+            return;
+        }
+
+        $this->setupClientDatabase();
+
+        $mp = new MercadoPagoService($this->mpAccessToken);
+        $resultado = $mp->consultarPago($this->mpExternalReference);
+
+        if ($resultado && $resultado['status'] === 'approved') {
+            $this->mpPagoEstado = 'approved';
+
+            // Actualizar DB
+            DB::connection('client_db')
+                ->table('pedidosm_temp')
+                ->where('mp_external_reference', $this->mpExternalReference)
+                ->update([
+                    'mp_status' => 'approved',
+                    'mp_payment_id' => $resultado['payment_id'] ? (string) $resultado['payment_id'] : null,
+                    'updated_at' => now(),
+                ]);
+
+            // Obtener pedido temp y finalizar
+            $pedidoTemp = DB::connection('client_db')
+                ->table('pedidosm_temp')
+                ->where('mp_external_reference', $this->mpExternalReference)
+                ->first();
+
+            if ($pedidoTemp) {
+                $this->finalizarPedidoDirecto($pedidoTemp);
+            }
+        } elseif ($resultado && in_array($resultado['status'], ['rejected', 'cancelled'])) {
+            $this->mpPagoEstado = $resultado['status'];
+        }
+    }
+
+    public function simularPagoAprobado()
+    {
+        if (!config('app.debug') || !$this->mpExternalReference) {
+            return;
+        }
+
+        $this->setupClientDatabase();
+
+        // Marcar como aprobado en la DB
+        DB::connection('client_db')
+            ->table('pedidosm_temp')
+            ->where('mp_external_reference', $this->mpExternalReference)
+            ->update([
+                'mp_status' => 'approved',
+                'mp_payment_id' => 'TEST-' . time(),
+                'updated_at' => now(),
+            ]);
+
+        $this->mpPagoEstado = 'approved';
+
+        // Finalizar el pedido
+        $pedidoTemp = DB::connection('client_db')
+            ->table('pedidosm_temp')
+            ->where('mp_external_reference', $this->mpExternalReference)
+            ->first();
+
+        if ($pedidoTemp) {
+            $this->finalizarPedidoDirecto($pedidoTemp);
+        }
+    }
+
+    public function cancelarPagoMP()
+    {
+        // Cancelar según tipo de integración
+        if ($this->mpAccessToken) {
+            $mp = new MercadoPagoService($this->mpAccessToken);
+
+            if ($this->mpTipoIntegracion === 'qr_presencial' && $this->mpUserId && $this->mpStoreExternalId && $this->mpPosExternalId) {
+                $mp->eliminarOrdenQR($this->mpUserId, $this->mpStoreExternalId, $this->mpPosExternalId);
+            } elseif ($this->mpTipoIntegracion === 'point' && $this->mpPointDeviceId && $this->mpPaymentIntentId) {
+                $mp->cancelarIntencionPago($this->mpPointDeviceId, $this->mpPaymentIntentId);
+            }
+        }
+
+        $this->mpInitPoint = null;
+        $this->mpExternalReference = null;
+        $this->mpPreferenceId = null;
+        $this->mpPagoEstado = null;
+        $this->mpPaymentIntentId = null;
+
+        $this->currentView = 'checkout';
+        $this->changeView('checkout');
     }
 
     public function startNewOrder()
@@ -655,16 +1159,130 @@ class KioscoRestaurant extends Component
         $this->currentView = 'menu';
         $this->changeView('menu');
         $this->orderNumber = null;
-        
+
         // Limpiar datos del pedido finalizado
         $this->finalOrderItems = [];
         $this->finalOrderTotal = 0;
         $this->customerData = ['nombre' => '', 'telefono' => ''];
         $this->selectedPayment = null;
-        
+
         // Generar nueva sesión
         session()->forget('kiosco_session_id');
         $this->initializeSession();
+    }
+
+    public function resetKiosco()
+    {
+        // Limpiar carrito de la DB
+        $this->clearCart();
+
+        // Limpiar todo
+        $this->orderNumber = null;
+        $this->finalOrderItems = [];
+        $this->finalOrderTotal = 0;
+        $this->customerData = ['nombre' => '', 'telefono' => ''];
+        $this->selectedPayment = null;
+        $this->selectedProduct = null;
+        $this->selectedOptionals = [];
+        $this->sugerencias = [];
+        $this->mostrarSugerencias = false;
+        $this->mpInitPoint = null;
+        $this->mpExternalReference = null;
+        $this->mpPreferenceId = null;
+        $this->mpPagoEstado = null;
+        $this->mpPaymentIntentId = null;
+
+        // Nueva sesión
+        session()->forget('kiosco_session_id');
+        $this->initializeSession();
+
+        $this->currentView = 'welcome';
+    }
+
+    // Sugerencias
+    private function cargarSugerencias($deptoId)
+    {
+        $this->sugerencias = [];
+        $this->mostrarSugerencias = false;
+
+        // Leer config de sugerencias
+        $clientId = session('kiosco_client_id') ?: session('client_id');
+        $configWeb = DB::connection('config')
+            ->table('config_clientes_web')
+            ->where('cliente_id', $clientId)
+            ->first();
+
+        if (!$configWeb || !$configWeb->configuracion) {
+            return;
+        }
+
+        $config = json_decode($configWeb->configuracion, true);
+        $sugerenciasConfig = $config['kiosco_sugerencias'] ?? [];
+        $cantidad = $config['kiosco_sugerencias_cantidad'] ?? 4;
+
+        $deptosSugeridos = $sugerenciasConfig[(string) $deptoId] ?? [];
+        if (empty($deptosSugeridos)) {
+            return;
+        }
+
+        // IDs de productos ya en el carrito (para no sugerir lo que ya tiene)
+        $idsEnCarrito = collect($this->cart)->pluck('product_id')->toArray();
+
+        // Agrupar candidatos por departamento
+        $porDepto = [];
+        foreach ($this->articulos as $a) {
+            if (in_array($a->DEPTO, $deptosSugeridos) && !$a->agotado && !in_array($a->CODIGO, $idsEnCarrito)) {
+                $porDepto[$a->DEPTO][] = $a;
+            }
+        }
+
+        if (empty($porDepto)) {
+            return;
+        }
+
+        // Mezclar productos dentro de cada departamento
+        foreach ($porDepto as $depto => $productos) {
+            shuffle($porDepto[$depto]);
+        }
+
+        // Distribuir equitativamente: round-robin entre departamentos
+        $seleccionados = [];
+        $deptosKeys = array_keys($porDepto);
+        shuffle($deptosKeys); // orden aleatorio de departamentos
+        $idx = 0;
+
+        while (count($seleccionados) < $cantidad) {
+            $agregado = false;
+            foreach ($deptosKeys as $depto) {
+                if (count($seleccionados) >= $cantidad) {
+                    break;
+                }
+                if (!empty($porDepto[$depto])) {
+                    $seleccionados[] = array_shift($porDepto[$depto]);
+                    $agregado = true;
+                }
+            }
+            if (!$agregado) {
+                break; // no quedan más productos
+            }
+        }
+
+        if (empty($seleccionados)) {
+            return;
+        }
+
+        // Mezclar el resultado final para que no queden agrupados por depto
+        shuffle($seleccionados);
+        $this->sugerencias = $seleccionados;
+        $this->mostrarSugerencias = true;
+    }
+
+    public function descartarSugerencias()
+    {
+        $this->sugerencias = [];
+        $this->mostrarSugerencias = false;
+        $this->currentView = 'menu';
+        $this->changeView('menu');
     }
 
     // Métodos auxiliares
@@ -743,10 +1361,12 @@ class KioscoRestaurant extends Component
 
     public function getAvailablePaymentMethods()
     {
+        // Asegurar objetos (Livewire hydration convierte stdClass a arrays)
+        $all = collect($this->formasPago)->map(fn($fp) => is_array($fp) ? (object) $fp : $fp);
         if ($this->hasOnlyEffectiveProducts()) {
-            return collect($this->formasPago)->where('codigo', 1); // Solo efectivo
+            return $all->where('TIPO', 1); // Solo efectivo
         }
-        return collect($this->formasPago);
+        return $all;
     }
 
     public function getProductImageUrl($codigo, $small = true)
@@ -799,11 +1419,19 @@ class KioscoRestaurant extends Component
         $oldView = $this->currentView;
         $this->currentView = $view;
         if($view === 'menu' ) {
+            $this->busqueda = '';
             $this->dispatch('view-changed');
         }
         if($view === 'menu' && $oldView !== 'menu') {
             $this->dispatch('scrollToTop');
-        }        
+        }
+        // Auto-seleccionar forma de pago si solo hay una disponible
+        if ($view === 'checkout') {
+            $available = $this->getAvailablePaymentMethods();
+            if ($available->count() === 1) {
+                $this->selectedPayment = $available->first()->CODIGO;
+            }
+        }
     }
 
     public function scrollToSection($departmentId)

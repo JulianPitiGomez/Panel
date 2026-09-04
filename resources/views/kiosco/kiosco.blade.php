@@ -1,5 +1,13 @@
 <div class="h-screen bg-gray-50 flex flex-col">
     <style>
+        :root {
+            --kiosco-fondo: {{ $kioscoColores['fondo'] ?? '#FFFFFF' }};
+            --kiosco-letra: {{ $kioscoColores['letra'] ?? '#1F2937' }};
+            --kiosco-boton: {{ $kioscoColores['boton'] ?? '#F97316' }};
+            --kiosco-texto-boton: {{ $kioscoColores['texto_boton'] ?? '#FFFFFF' }};
+            --kiosco-precio: {{ $kioscoColores['precio'] ?? '#16A34A' }};
+        }
+
         /* Scroll horizontal para navegación de departamentos */
         .scrollbar-hide {
             -ms-overflow-style: none;  /* IE and Edge */
@@ -26,28 +34,36 @@
             transform: translateY(-100%);
         }
 
-        /* Grid para productos */
+        /* Grid interno de cada card de producto - base angosto */
         .product-card-grid {
             display: grid;
-            grid-template-columns: 1fr 2fr;
-            grid-template-rows: 1fr 1fr;
-            height: 200px;
-            gap: 1rem;
+            grid-template-columns: 65px 1fr;
+            grid-template-rows: 1fr auto;
+            height: 180px;
+            gap: 0.3rem 0.5rem;
+            overflow: hidden;
         }
 
         .product-image {
-            grid-row: 1 ;
-            grid-column: 1 / 2;
+            grid-row: 1;
+            grid-column: 1;
+            min-height: 0;
+            overflow: hidden;
+            aspect-ratio: 1;
+            align-self: center;
+            border-radius: 0.5rem;
         }
 
         .product-description {
             grid-row: 1;
             grid-column: 2;
+            min-height: 0;
+            overflow: hidden;
         }
 
         .product-price {
             grid-row: 2;
-            grid-column: 1 / 2;
+            grid-column: 1;
             align-self: end;
         }
 
@@ -55,6 +71,37 @@
             grid-row: 2;
             grid-column: 2;
             align-self: end;
+        }
+
+        .product-name { font-size: 0.8rem; }
+        .product-obs { font-size: 0.65rem; }
+        .product-btn { font-size: 0.7rem; padding: 0.3rem 0.6rem; }
+        .product-price-text { font-size: 0.85rem; }
+
+        /* Pantallas medianas */
+        @media (min-width: 768px) {
+            .product-card-grid {
+                grid-template-columns: 120px 1fr;
+                height: 220px;
+                gap: 0.5rem 0.8rem;
+            }
+            .product-name { font-size: 0.95rem; }
+            .product-obs { font-size: 0.75rem; }
+            .product-btn { font-size: 0.85rem; padding: 0.4rem 0.8rem; }
+            .product-price-text { font-size: 1rem; }
+        }
+
+        /* Pantallas grandes */
+        @media (min-width: 1280px) {
+            .product-card-grid {
+                grid-template-columns: 1fr 2fr;
+                height: 250px;
+                gap: 0.5rem 1rem;
+            }
+            .product-name { font-size: 1.1rem; }
+            .product-obs { font-size: 0.85rem; }
+            .product-btn { font-size: 0.9rem; padding: 0.5rem 1rem; }
+            .product-price-text { font-size: 1.1rem; }
         }
 
         /* Productos destacados */
@@ -67,52 +114,28 @@
             scrollbar-width: none;
         }
 
-        /* Optimizaciones para pantalla táctil vertical */
-        @media (orientation: portrait) {
-            .kiosco-container {
-                max-width: 100vw;
-                padding: 0.5rem;
+        /* Landscape compacto (monitores chicos horizontales) */
+        @media (orientation: landscape) and (max-height: 700px) {
+            .product-card-grid {
+                height: 190px;
+                gap: 0.3rem 0.5rem;
             }
-            
-            .kiosco-header {
-                padding: 1rem 0.5rem;
-            }
-            
-            .product-grid {
-                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-                gap: 1rem;
-            }
-            
-            .product-card {
-                min-height: 400px;
-            }
-            
-            .department-nav {
-                flex-wrap: wrap;
-                gap: 0.5rem;
-            }
-            
-            .department-nav button {
-                font-size: 1.1rem;
-                padding: 0.75rem 1.5rem;
-                min-width: 150px;
-            }
-        }
 
-        /* Optimizaciones para pantalla horizontal */
-        @media (orientation: landscape) {
-            .product-grid {
-                grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-                gap: 1.5rem;
+            .kiosco-header-inner {
+                padding-top: 0.5rem;
+                padding-bottom: 0.5rem;
             }
-            
-            .kiosco-header {
-                padding: 1.5rem;
+
+            .kiosco-header-inner .kiosco-logo {
+                height: 2.5rem;
             }
-            
-            .department-nav button {
-                font-size: 1.2rem;
-                padding: 1rem 2rem;
+
+            .kiosco-header-inner .kiosco-titulo {
+                font-size: 1.125rem;
+            }
+
+            .kiosco-header-inner .kiosco-subtexto {
+                display: none;
             }
         }
 
@@ -204,6 +227,20 @@
             opacity: 0.7;
         }
 
+        /* Cart bounce animation */
+        .cart-bounce {
+            animation: cartBounce 0.6s ease;
+        }
+
+        @keyframes cartBounce {
+            0% { transform: scale(1); }
+            20% { transform: scale(1.25); }
+            40% { transform: scale(0.9); }
+            60% { transform: scale(1.1); }
+            80% { transform: scale(0.97); }
+            100% { transform: scale(1); }
+        }
+
         /* Mejoras para formularios */
         .form-input-large {
             font-size: 1.2rem;
@@ -260,41 +297,92 @@
 
         #dept-scroll-left:hover,
         #dept-scroll-right:hover {
-            background-color: rgba(249, 115, 22, 0.9);
+            opacity: 0.9;
         }
     </style>
 
     <!-- Header con información del comercio y Carrito -->
-    <header class="bg-white/95 backdrop-blur-sm shadow-lg z-50 flex-shrink-0" style="background-image: url('{{ asset('img/' . $clientId . '/fondo.jpg') }}'); background-size: cover; background-position: center;">
+    <header class="bg-white/95 backdrop-blur-sm shadow-lg z-50 flex-shrink-0 {{ $currentView === 'welcome' ? 'hidden' : '' }}" style="background-image: url('{{ asset('img/' . $clientId . '/fondo.jpg') }}'); background-size: cover; background-position: center;">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center py-4">
+            <div class="kiosco-header-inner flex justify-between items-center py-4">
                 <!-- Información del comercio -->
-                <div class="flex items-center space-x-4">
-                    <img src="{{ asset('img/' . $clientId . '/logo.jpg') }}" alt="Logo" class="h-16 w-auto">
+                <div class="flex items-center space-x-3">
+                    <img src="{{ asset('img/' . $clientId . '/logo.jpg') }}" alt="Logo" class="kiosco-logo h-14 w-auto">
                     <div class="text-left">
                         @if($comercioData)
-                            <h1 class="text-2xl font-bold text-white">{{ $comercioData->nombre ?? 'Restaurante' }}</h1>
+                            <h1 class="kiosco-titulo text-xl font-bold text-white">{{ $comercioData->nombre ?? 'Restaurante' }}</h1>
                             @if($comercioData->direccion)
-                                <p class="text-sm text-white/90"> <i class="fa fa-map-marker" aria-hidden="true"></i> {{ $comercioData->direccion }}</p>
+                                <p class="kiosco-subtexto text-sm text-white/90"> <i class="fa fa-map-marker" aria-hidden="true"></i> {{ $comercioData->direccion }}</p>
                             @endif
                             @if($comercioData->slogan)
-                                <p class="text-sm font-medium text-orange-200">{{ $comercioData->slogan }}</p>
+                                <p class="kiosco-subtexto text-sm font-medium text-orange-200">{{ $comercioData->slogan }}</p>
                             @endif
                             @if($comercioData->texto_extra)
-                                <p class="text-xs text-white/80">{{ $comercioData->texto_extra }}</p>
+                                <p class="kiosco-subtexto text-xs text-white/80">{{ $comercioData->texto_extra }}</p>
                             @endif
                         @else
-                            <h1 class="text-2xl font-bold text-white">Restaurante</h1>
+                            <h1 class="kiosco-titulo text-xl font-bold text-white">Restaurante</h1>
                         @endif
-                        <h1 class="text-2xl font-bold text-white items-center justify-center">KIOSCO AUTOGESTIÓN</h1>
+                        <h1 class="kiosco-titulo text-lg font-bold text-white">KIOSCO AUTOGESTIÓN</h1>
                     </div>
                 </div>
                 
                 <!-- Botones de navegación y Carrito -->
                 <div class="flex items-center space-x-4">
+                    @if(session('kiosco_authenticated'))
+                        <div x-data="{ showLogout: false, logoutPass: '', logoutError: '' }">
+                            <button @click="showLogout = true; logoutPass = ''; logoutError = ''"
+                                    class="bg-red-500/80 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm transition-colors flex items-center"
+                                    title="Cerrar sesión">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </button>
+
+                            <!-- Modal contraseña -->
+                            <div x-show="showLogout" x-transition
+                                 class="fixed inset-0 bg-black/60 z-[999] flex items-center justify-center p-4"
+                                 @click.self="showLogout = false">
+                                <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-xs" @click.stop>
+                                    <h3 class="text-lg font-bold text-gray-800 mb-3 text-center">
+                                        <i class="fas fa-lock text-red-500 mr-1"></i> Cerrar Kiosco
+                                    </h3>
+                                    <p class="text-sm text-gray-500 mb-3 text-center">Ingresá la contraseña para salir</p>
+                                    <input type="password" x-model="logoutPass"
+                                           @keydown.enter="
+                                               fetch('{{ route('kiosco.logout') }}?password=' + encodeURIComponent(logoutPass))
+                                               .then(r => r.json())
+                                               .then(d => {
+                                                   if (d.ok) { window.location.href = '{{ route('kiosco.login') }}'; }
+                                                   else { logoutError = d.error; }
+                                               })
+                                           "
+                                           placeholder="Contraseña"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-400 focus:border-transparent mb-2">
+                                    <p x-show="logoutError" x-text="logoutError" class="text-red-500 text-xs mb-2"></p>
+                                    <div class="flex gap-2">
+                                        <button @click="showLogout = false"
+                                                class="flex-1 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition">
+                                            Cancelar
+                                        </button>
+                                        <button @click="
+                                                fetch('{{ route('kiosco.logout') }}?password=' + encodeURIComponent(logoutPass))
+                                                .then(r => r.json())
+                                                .then(d => {
+                                                    if (d.ok) { window.location.href = '{{ route('kiosco.login') }}'; }
+                                                    else { logoutError = d.error; }
+                                                })
+                                            "
+                                                class="flex-1 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition">
+                                            Salir
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
                     @if($currentView !== 'menu')
-                        <button wire:click="changeView('menu')" 
-                                class="bg-orange-500 hover:bg-orange-600 text-white px-3 sm:px-6 py-3 rounded-lg font-medium transition-colors flex items-center">
+                        <button wire:click="changeView('menu')"
+                                class="hover:opacity-90 px-3 sm:px-6 py-3 rounded-lg font-medium transition-colors flex items-center"
+                                style="background-color: var(--kiosco-boton); color: var(--kiosco-texto-boton);">
                             <svg class="w-5 h-5 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                             </svg>
@@ -302,8 +390,10 @@
                         </button>
                     @endif
                     
-                    <button wire:click="changeView('cart')" 
-                            class="bg-orange-500 hover:bg-orange-600 text-white px-3 sm:px-6 py-3 rounded-lg font-medium transition-colors flex items-center relative">
+                    <button wire:click="changeView('cart')"
+                            id="cart-button"
+                            class="hover:opacity-90 px-3 sm:px-6 py-3 rounded-lg font-medium transition-colors flex items-center relative"
+                            style="background-color: var(--kiosco-boton); color: var(--kiosco-texto-boton);">
                         <svg class="w-6 h-6 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 2.5M7 13l2.5 2.5m6-2.5a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"></path>
                         </svg>
@@ -324,14 +414,14 @@
                 <div class="max-w-7xl mx-auto px-4">
                     <div class="relative">
                         <!-- Indicador de scroll izquierdo -->
-                        <div class="absolute left-0 top-1/2 transform -translate-y-1/2 z-50 bg-orange-500 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg cursor-pointer" id="dept-scroll-left" style="display: none;">
+                        <div class="absolute left-0 top-1/2 transform -translate-y-1/2 z-50 rounded-full w-8 h-8 flex items-center justify-center shadow-lg cursor-pointer" id="dept-scroll-left" style="display: none; background-color: var(--kiosco-boton); color: var(--kiosco-texto-boton);">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                             </svg>
                         </div>
                         
                         <!-- Indicador de scroll derecho -->
-                        <div class="absolute right-0 top-1/2 transform -translate-y-1/2 z-50 bg-orange-500 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg cursor-pointer" id="dept-scroll-right">
+                        <div class="absolute right-0 top-1/2 transform -translate-y-1/2 z-50 rounded-full w-8 h-8 flex items-center justify-center shadow-lg cursor-pointer" id="dept-scroll-right" style="background-color: var(--kiosco-boton); color: var(--kiosco-texto-boton);">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                             </svg>
@@ -340,8 +430,13 @@
                         <div class="overflow-x-auto scrollbar-hide py-3" id="departamentos-container">
                             <div class="flex gap-3" style="width: max-content;">
                                 @foreach($departamentos as $depto)
+                                    @php
+                                        $tieneProductos = collect($articulos)->contains(fn($a) => $a->DEPTO == $depto->CODIGO && !$a->agotado);
+                                    @endphp
+                                    @if($tieneProductos)
                                     <button wire:click="scrollToSection({{ $depto->CODIGO }})"
-                                            class="bg-orange-500/80 hover:bg-orange-600 text-white px-4 py-2 rounded-full font-medium transition-all transform hover:scale-105 flex items-center whitespace-nowrap flex-shrink-0 backdrop-blur-sm">
+                                            class="hover:opacity-90 px-4 py-2 rounded-full font-medium transition-all transform hover:scale-105 flex items-center whitespace-nowrap flex-shrink-0 backdrop-blur-sm"
+                                            style="background-color: var(--kiosco-boton); color: var(--kiosco-texto-boton);">
                                         {{ $depto->NOMBRE }}
                                         @if($depto->cantidad_iconos > 0)
                                             <div class="ml-2 flex space-x-1">
@@ -372,6 +467,7 @@
                                             </div>
                                         @endif
                                     </button>
+                                    @endif
                                 @endforeach
                             </div>
                         </div>
@@ -384,15 +480,21 @@
     
 
     <!-- Contenido Principal -->
-    <main class="h-full flex flex-col bg-white/90 backdrop-blur-sm overflow-y-auto">
-            @if($currentView === 'menu')
-                @include('kiosco.menu')            
+    <main class="h-full flex flex-col backdrop-blur-sm overflow-y-auto" style="background-color: var(--kiosco-fondo);">
+            @if($currentView === 'welcome')
+                @include('kiosco.welcome')
+            @elseif($currentView === 'menu')
+                @include('kiosco.menu')
             @elseif($currentView === 'product')
                 @include('kiosco.detalle')
             @elseif($currentView === 'cart')
                 @include('kiosco.carrito')
             @elseif($currentView === 'checkout')
                 @include('kiosco.checkout')
+            @elseif($currentView === 'sugerencias')
+                @include('kiosco.sugerencias')
+            @elseif($currentView === 'pago-mp')
+                @include('kiosco.pago-mp')
             @elseif($currentView === 'success')
                 @include('kiosco.success')
             @endif
@@ -486,6 +588,81 @@
             scrollRight.addEventListener('click', function() {
                 container.scrollBy({ left: 200, behavior: 'smooth' });
             });
+        }
+    }
+
+    // ===== INACTIVITY TIMEOUT =====
+    const INACTIVITY_TIMEOUT = 120000; // 2 minutos
+    let inactivityTimer = null;
+
+    function resetInactivityTimer() {
+        clearTimeout(inactivityTimer);
+        inactivityTimer = setTimeout(() => {
+            // No resetear si estamos en welcome o pago-mp
+            const currentView = @this.get('currentView');
+            if (currentView === 'welcome' || currentView === 'pago-mp') {
+                resetInactivityTimer();
+                return;
+            }
+            @this.call('resetKiosco');
+        }, INACTIVITY_TIMEOUT);
+    }
+
+    // Escuchar cualquier interacción
+    ['click', 'touchstart', 'scroll', 'keydown'].forEach(evt => {
+        document.addEventListener(evt, resetInactivityTimer, { passive: true });
+    });
+
+    resetInactivityTimer();
+
+    // ===== CART ANIMATION =====
+    Livewire.on('product-added', () => {
+        const cartBtn = document.getElementById('cart-button');
+        if (cartBtn) {
+            cartBtn.classList.add('cart-bounce');
+            setTimeout(() => cartBtn.classList.remove('cart-bounce'), 600);
+        }
+        playSound('add');
+    });
+
+    // ===== ORDER CONFIRMED SOUND =====
+    Livewire.on('order-confirmed', () => {
+        playSound('success');
+    });
+
+    // ===== SOUND SYSTEM =====
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playSound(type) {
+        try {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'add') {
+                // Beep corto y agudo
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(1100, audioCtx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.2);
+            } else if (type === 'success') {
+                // Melodía de éxito (3 notas ascendentes)
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523, audioCtx.currentTime);       // C5
+                osc.frequency.setValueAtTime(659, audioCtx.currentTime + 0.15); // E5
+                osc.frequency.setValueAtTime(784, audioCtx.currentTime + 0.3);  // G5
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.5);
+            }
+        } catch (e) {
+            // Silenciar errores de audio
         }
     }
 </script>

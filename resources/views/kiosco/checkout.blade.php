@@ -1,209 +1,251 @@
 {{-- CHECKOUT VIEW --}}
-<div class="h-full flex flex-col bg-white/90 backdrop-blur-sm overflow-y-auto" id="main"> 
-    <!-- Header del checkout -->
-    <div class="bg-gradient-to-r from-orange-500 to-orange-600 px-8 py-6">
-        <h1 class="text-3xl font-bold text-white flex items-center">
-            <svg class="w-8 h-8 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
-            </svg>
+<div class="h-full flex flex-col overflow-y-auto" id="main">
+    <!-- Header compacto -->
+    <div class="px-6 py-3" style="background-color: var(--kiosco-boton);">
+        <h1 class="text-xl font-bold flex items-center" style="color: var(--kiosco-texto-boton);">
+            <i class="fas fa-cash-register mr-2"></i>
             Finalizar Pedido
         </h1>
     </div>
 
-    <div class="p-8">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div class="p-4 lg:p-6">
+        @if(session('error'))
+            <div class="bg-red-50 border border-red-300 rounded-lg p-3 mb-4">
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
+                    <span class="text-red-700 text-sm font-medium">{{ session('error') }}</span>
+                </div>
+            </div>
+        @endif
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
             <!-- Formulario de datos del cliente -->
-            <div class="space-y-6">
+            <div class="space-y-4">
+                @if($kioscoPideNombre || $kioscoPideTelefono)
                 <div>
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                        <span class="w-3 h-3 bg-orange-500 rounded-full mr-3"></span>
+                    <h2 class="text-lg font-bold text-gray-800 mb-3 flex items-center">
+                        <span class="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
                         Datos del Cliente
                     </h2>
-                    
-                    <div class="space-y-4">
+
+                    <div class="space-y-3">
+                        @if($kioscoPideNombre)
                         <div>
-                            <label for="nombre" class="block text-lg font-medium text-gray-700 mb-2">
-                                Nombre Completo *
-                            </label>
-                            <input type="text" 
+                            <label for="nombre" class="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                            <input type="text"
                                     id="nombre"
                                     wire:model="customerData.nombre"
-                                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-orange-500 focus:border-orange-500 text-lg transition-all duration-300"
-                                    placeholder="Ingresa tu nombre completo">
-                            @error('customerData.nombre') 
-                                <span class="text-red-500 text-sm mt-1">{{ $message }}</span> 
+                                    autocomplete="off"
+                                    class="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-orange-500 focus:border-orange-500 text-base"
+                                    placeholder="Ingresá tu nombre">
+                            @error('customerData.nombre')
+                                <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                             @enderror
                         </div>
+                        @endif
 
+                        @if($kioscoPideTelefono)
                         <div>
-                            <label for="telefono" class="block text-lg font-medium text-gray-700 mb-2">
-                                Teléfono *
-                            </label>
-                            <input type="tel" 
+                            <label for="telefono" class="block text-sm font-medium text-gray-700 mb-1">Teléfono *</label>
+                            <input type="tel"
                                     id="telefono"
                                     wire:model="customerData.telefono"
-                                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-orange-500 focus:border-orange-500 text-lg transition-all duration-300"
+                                    autocomplete="off"
+                                    class="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:ring-orange-500 focus:border-orange-500 text-base"
                                     placeholder="Ej: 011-1234-5678">
-                            @error('customerData.telefono') 
-                                <span class="text-red-500 text-sm mt-1">{{ $message }}</span> 
+                            @error('customerData.telefono')
+                                <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                             @enderror
                         </div>
+                        @endif
                     </div>
                 </div>
+                @endif
 
                 <!-- Forma de pago -->
                 <div>
-                    <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                        <span class="w-3 h-3 bg-orange-500 rounded-full mr-3"></span>
+                    <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center">
+                        <span class="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
                         Forma de Pago
                     </h3>
-                    
+
                     @if($this->hasOnlyEffectiveProducts())
-                        <div class="bg-amber-100 border border-amber-300 rounded-lg p-4 mb-4">
+                        <div class="bg-amber-100 border border-amber-300 rounded-lg p-3 mb-3">
                             <div class="flex items-center">
-                                <svg class="w-5 h-5 text-amber-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                                </svg>
-                                <span class="text-amber-800 font-medium">Solo puedes pagar en efectivo por los productos seleccionados</span>
+                                <i class="fas fa-exclamation-triangle text-amber-600 mr-2"></i>
+                                <span class="text-amber-800 font-medium text-sm">Solo podés pagar en efectivo por los productos seleccionados</span>
                             </div>
                         </div>
                     @endif
 
-                    <div class="space-y-3">
+                    <div class="space-y-2">
                         @foreach($this->getAvailablePaymentMethods() as $formaPago)
-                            <label class="flex items-center p-4 bg-gradient-to-r from-orange-50 to-orange-100/50 rounded-lg border-2 cursor-pointer transition-all hover:from-orange-100 hover:to-orange-200/50 hover:shadow-md {{ $selectedPayment == $formaPago->CODIGO ? 'border-orange-500 bg-gradient-to-r from-orange-100 to-orange-200 shadow-lg' : 'border-orange-200' }}">
-                                <input type="radio" 
+                            <label class="flex items-center p-3 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md {{ $selectedPayment == $formaPago->CODIGO ? 'border-orange-500 bg-orange-50 shadow-md' : 'border-gray-200 bg-white hover:border-orange-300' }}">
+                                <input type="radio"
                                         name="payment_method"
                                         value="{{ $formaPago->CODIGO }}"
                                         wire:model="selectedPayment"
-                                        class="w-5 h-5 text-orange-600">
-                                <span class="ml-3 text-lg font-medium text-gray-800">{{ $formaPago->NOMBRE }}</span>
-                                
+                                        class="w-4 h-4 text-orange-600">
+                                <span class="ml-2 text-base font-medium text-gray-800">{{ $formaPago->NOMBRE }}</span>
+
                                 @if($formaPago->TIPO == 1)
-                                    <svg class="w-6 h-6 ml-auto text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                                    </svg>
+                                    <i class="fas fa-money-bill-wave ml-auto text-green-600"></i>
                                 @elseif($formaPago->TIPO == 4)
-                                    <svg class="w-6 h-6 ml-auto text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                                    </svg>
+                                    <i class="fas fa-credit-card ml-auto text-blue-600"></i>
                                 @elseif($formaPago->TIPO == 2)
-                                    <svg class="w-6 h-6 ml-auto text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
-                                    </svg>
-                                @elseif(in_array($formaPago->TIPO,[5,7,8])) 
-                                    <svg class="w-6 h-6 ml-auto text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                                    </svg>
+                                    <i class="fas fa-exchange-alt ml-auto text-purple-600"></i>
+                                @elseif(in_array($formaPago->TIPO,[5,7,8]))
+                                    <i class="fas fa-qrcode ml-auto text-[#009ee3]"></i>
                                 @endif
                             </label>
                         @endforeach
                     </div>
-                    
-                    @error('selectedPayment') 
-                        <span class="text-red-500 text-sm mt-1">{{ $message }}</span> 
+
+                    @error('selectedPayment')
+                        <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                     @enderror
                 </div>
             </div>
 
             <!-- Resumen del pedido -->
-            <div class="bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-xl p-6 border border-orange-200">
-                <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                    <svg class="w-7 h-7 mr-3 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                    </svg>
+            <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center">
+                    <i class="fas fa-receipt mr-2 text-orange-500"></i>
                     Resumen del Pedido
                 </h3>
-                
-                <div class="space-y-4 mb-6">
+
+                <div class="space-y-2 mb-4 max-h-48 overflow-y-auto">
                     @foreach($cart as $item)
-                        <div class="flex justify-between items-start py-3 border-b border-orange-200 bg-white rounded-lg p-3">
+                        <div class="flex justify-between items-start py-2 border-b border-gray-200">
                             <div class="flex-1">
-                                <h4 class="font-semibold text-gray-800 flex items-center">
-                                    <span class="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
-                                    {{ $item['nombre'] }}
-                                </h4>
-                                
+                                <h4 class="font-semibold text-gray-800 text-sm">{{ $item['nombre'] }}</h4>
+
                                 @if(count($item['opcionales']) > 0)
-                                    <div class="text-sm text-gray-600 mt-1 ml-4">
+                                    <div class="text-xs text-gray-500 mt-0.5">
                                         @foreach($item['opcionales'] as $opcional)
-                                            <div class="flex items-center">
-                                                <span class="w-1 h-1 bg-orange-400 rounded-full mr-2"></span>
-                                                {{ $opcional['nombre'] }}
-                                                @if($opcional['quantity']>0) 
-                                                    (${{ number_format($opcional['precio'], 2) }}x {{$opcional['quantity']}})
-                                                    <span class="text-green-600 font-semibold ml-auto">(+${{ number_format($opcional['precio']*$opcional['quantity'], 2) }})</span>
-                                                @else
-                                                    @if($opcional['precio'] > 0)
-                                                        <span class="text-green-600 font-semibold ml-auto">(+${{ number_format($opcional['precio'], 2) }})</span>
-                                                    @endif
-                                                @endif
-                                            </div>
+                                            <span>+ {{ $opcional['nombre'] }}
+                                                @if($opcional['quantity']>0) x{{$opcional['quantity']}} @endif
+                                                @if($opcional['precio'] > 0) (${{ number_format($opcional['precio'] * max($opcional['quantity'],1), 2) }}) @endif
+                                            </span>
                                         @endforeach
                                     </div>
                                 @endif
-                                
-                                <div class="text-sm text-orange-600 font-medium mt-1 ml-4">
-                                    Cantidad: {{ $item['quantity'] }}
-                                </div>
+
+                                <span class="text-xs text-gray-500">Cant: {{ $item['quantity'] }}</span>
                             </div>
-                            
-                            <div class="text-right bg-orange-100 rounded-lg px-3 py-1">
-                                <span class="font-bold text-gray-800">${{ number_format($item['total'], 2) }}</span>
-                            </div>
+
+                            <span class="font-bold text-gray-800 text-sm ml-2">${{ number_format($item['total'], 2) }}</span>
                         </div>
                     @endforeach
                 </div>
 
                 <!-- Total -->
-                <div class="border-t-2 border-orange-300 pt-4 bg-white rounded-lg p-4">
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-lg font-medium text-gray-700">Subtotal:</span>
-                        <span class="text-lg font-medium text-gray-700">${{ number_format($this->getCartTotal(), 2) }}</span>
-                    </div>
-                    
+                <div class="border-t-2 border-orange-300 pt-3">
                     <div class="flex justify-between items-center">
-                        <span class="text-2xl font-bold text-gray-800">Total:</span>
-                        <span class="text-3xl font-bold text-green-600">${{ number_format($this->getCartTotal(), 2) }}</span>
+                        <span class="text-xl font-bold text-gray-800">Total:</span>
+                        <span class="text-2xl font-bold" style="color: var(--kiosco-precio);">${{ number_format($this->getCartTotal(), 2) }}</span>
                     </div>
                 </div>
 
-                <!-- Información adicional -->
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
-                    <div class="flex items-start">
-                        <svg class="w-5 h-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <div class="text-blue-800 text-sm">
-                            <p class="font-medium mb-1">Instrucciones importantes:</p>
-                            <ul class="list-disc list-inside space-y-1">
-                                <li>Recibirás un número de pedido para retirar en mostrador</li>
-                                <li>El tiempo de preparación puede variar según la cantidad de pedidos</li>
-                                <li>Conserva tu número de pedido hasta el retiro</li>
-                            </ul>
-                        </div>
-                    </div>
+                <!-- Info breve -->
+                <div class="bg-blue-50 rounded-lg p-3 mt-3">
+                    <p class="text-blue-800 text-xs">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Recibirás un número de pedido para retirar en mostrador.
+                    </p>
                 </div>
             </div>
         </div>
 
         <!-- Botones de acción -->
-        <div class="flex space-x-4 mt-8 pt-6 border-t border-orange-200">
-            <button wire:click="changeView('cart')" 
-                    class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-bold py-4 px-6 rounded-lg transition-all duration-300 hover:shadow-lg flex items-center justify-center">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                </svg>
-                Volver al Carrito
-            </button>
-            
-            <button wire:click="finalizeOrder" 
-                    class="flex-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-4 px-8 rounded-lg transition-all duration-300 hover:shadow-lg transform hover:scale-105 flex items-center justify-center">
-                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                Confirmar Pedido
-            </button>
+        <div x-data="{ showConfirmModal: false }">
+            <div class="flex gap-3 mt-4 pt-4 border-t border-gray-200">
+                <button wire:click="changeView('cart')"
+                        class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-lg transition-all flex items-center justify-center">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Volver
+                </button>
+
+                <button @click="showConfirmModal = true"
+                        class="flex-[2] hover:opacity-90 font-bold py-3 px-6 rounded-lg transition-all hover:shadow-lg flex items-center justify-center"
+                        style="background-color: var(--kiosco-boton); color: var(--kiosco-texto-boton);">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    Confirmar Pedido
+                </button>
+            </div>
+
+            <!-- Modal de Confirmación -->
+            <div x-show="showConfirmModal"
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 bg-black/60 z-[999] flex items-center justify-center p-4"
+                 @click.self="showConfirmModal = false"
+                 style="display: none;">
+                <div x-show="showConfirmModal"
+                     x-transition:enter="transition ease-out duration-200"
+                     x-transition:enter-start="opacity-0 scale-90"
+                     x-transition:enter-end="opacity-100 scale-100"
+                     x-transition:leave="transition ease-in duration-150"
+                     x-transition:leave-start="opacity-100 scale-100"
+                     x-transition:leave-end="opacity-0 scale-90"
+                     class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+                     @click.stop>
+
+                    <!-- Header del modal -->
+                    <div class="px-6 py-4 text-center" style="background-color: var(--kiosco-boton);">
+                        <i class="fas fa-clipboard-check text-3xl mb-1" style="color: var(--kiosco-texto-boton);"></i>
+                        <h3 class="text-xl font-bold" style="color: var(--kiosco-texto-boton);">
+                            Confirmar tu pedido
+                        </h3>
+                    </div>
+
+                    <!-- Resumen compacto -->
+                    <div class="px-6 py-4">
+                        <div class="space-y-2 max-h-40 overflow-y-auto mb-3">
+                            @foreach($cart as $item)
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-gray-700">{{ $item['quantity'] }}x {{ $item['nombre'] }}</span>
+                                    <span class="font-semibold text-gray-800">${{ number_format($item['total'], 2) }}</span>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        <div class="border-t-2 border-gray-200 pt-3 mb-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-lg font-bold text-gray-800">Total a pagar:</span>
+                                <span class="text-2xl font-bold" style="color: var(--kiosco-precio);">
+                                    ${{ number_format($this->getCartTotal(), 2) }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <p class="text-center text-gray-500 text-sm mb-4">
+                            Una vez confirmado, tu pedido será enviado a la cocina.
+                        </p>
+
+                        <!-- Botones del modal -->
+                        <div class="flex gap-3">
+                            <button @click="showConfirmModal = false"
+                                    class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-center">
+                                <i class="fas fa-times mr-2"></i>
+                                Revisar
+                            </button>
+
+                            <button @click="showConfirmModal = false"
+                                    wire:click="finalizeOrder"
+                                    class="flex-[2] hover:opacity-90 font-bold py-3 px-4 rounded-xl transition-all shadow-lg flex items-center justify-center"
+                                    style="background-color: var(--kiosco-boton); color: var(--kiosco-texto-boton);">
+                                <i class="fas fa-check mr-2"></i>
+                                Confirmar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>            
+    </div>
 </div>

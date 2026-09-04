@@ -1,28 +1,27 @@
 <!-- resources/views/kiosco/menu.blade.php -->
-<div class="h-full flex flex-col bg-white/90 backdrop-blur-sm overflow-y-auto" id="main">
-    
+<div class="h-full flex flex-col overflow-y-auto" id="main">
     <!-- Productos Destacados -->
-    @if(count($productosDestacados) > 0)
+    @if(count($productosDestacados) > 0 && empty($busqueda))
         <div class="bg-gradient-to-r from-orange-50 to-orange-100 py-6 px-4 flex-shrink-0">
             <div class="max-w-7xl mx-auto">
-                <h2 class="text-2xl font-bold text-orange-800 mb-4 flex items-center">
+                <h2 class="text-2xl font-bold mb-4 flex items-center" style="color: var(--kiosco-letra);">
                     <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                     </svg>
-                    Productos Destacados
+                    {{ $kioscoTituloDestacados }}
                 </h2>
                 
                 <!-- Contenedor con indicador de scroll -->
                 <div class="relative">
                     <!-- Indicador de scroll izquierdo -->
-                    <div class="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-orange-500/80 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg cursor-pointer" id="scroll-left" style="display: none;">
+                    <div class="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 rounded-full w-8 h-8 flex items-center justify-center shadow-lg cursor-pointer" id="scroll-left" style="display: none; background-color: var(--kiosco-boton); color: var(--kiosco-texto-boton);">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                         </svg>
                     </div>
                     
                     <!-- Indicador de scroll derecho -->
-                    <div class="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-orange-500/80 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg cursor-pointer" id="scroll-right">
+                    <div class="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 rounded-full w-8 h-8 flex items-center justify-center shadow-lg cursor-pointer" id="scroll-right" style="background-color: var(--kiosco-boton); color: var(--kiosco-texto-boton);">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                         </svg>
@@ -31,21 +30,15 @@
                     <div class="overflow-x-auto" id="destacados-container" style="scrollbar-width: none; -ms-overflow-style: none;">
                         <div class="flex gap-4 pb-4" style="width: max-content;">
                             @foreach($productosDestacados as $destacado)
-                                <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:scale-105 {{ $destacado->agotado ? 'opacity-60' : '' }}" style="width: 200px; flex-shrink: 0;">
+                                @if(!$destacado->agotado)
+                                <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:scale-105" style="width: 200px; flex-shrink: 0;">
                                     <!-- Imagen del producto -->
                                     <div class="relative h-20 overflow-hidden">
-                                        <img src="{{ $this->getProductImageUrl($destacado->CODIGO, true) }}" 
+                                        <img src="{{ $this->getProductImageUrl($destacado->CODIGO, true) }}"
                                              alt="{{ $destacado->NOMBRE }}"
                                              class="w-full h-full object-cover"
                                              onerror="this.src='{{ asset('img/nofoto1.jpg') }}'">
-                                        
-                                        @if($destacado->agotado)
-                                            <div class="absolute inset-0 bg-red-600/80 flex items-center justify-center">
-                                                <span class="text-white text-sm font-bold">AGOTADO</span>
-                                            </div>
-                                        @endif
 
-                                        <!-- Indicador de precio especial -->
                                         @if($destacado->preciom_oferta > 0)
                                             <div class="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
                                                 OFERTA
@@ -56,36 +49,33 @@
                                     <!-- Contenido del producto -->
                                     <div class="p-4 text-center">
                                         <div class="mb-3 h-18 flex flex-col justify-center">
-                                            <h3 class="font-bold text-orange-500 mb-2 text-sm">{{ $destacado->NOMBRE }}</h3>
+                                            <h3 class="font-bold mb-2 text-sm" style="color: var(--kiosco-letra);">{{ $destacado->NOMBRE }}</h3>
                                         </div>
-                                        
+
                                         <!-- Precio -->
                                         <div class="mb-3 h-16 flex flex-col justify-center">
                                             @if($destacado->preciom_oferta > 0)
-                                                <div class="text-lg font-bold text-green-600">${{ number_format($destacado->preciom_oferta, 0, ',', '.') }}</div>
+                                                <div class="text-lg font-bold" style="color: var(--kiosco-precio);">${{ number_format($destacado->preciom_oferta, 0, ',', '.') }}</div>
                                                 <div class="h-5 flex items-center justify-center">
                                                     @if($destacado->precio_m > 0 && $destacado->precio_m > $destacado->preciom_oferta)
                                                         <span class="text-sm text-gray-400 line-through">${{ number_format($destacado->precio_m, 0, ',', '.') }}</span>
                                                     @endif
                                                 </div>
                                             @else
-                                                <div class="text-lg font-bold text-gray-700">${{ number_format($destacado->precio_m, 0, ',', '.') }}</div>
+                                                <div class="text-lg font-bold" style="color: var(--kiosco-precio);">${{ number_format($destacado->precio_m, 0, ',', '.') }}</div>
                                                 <div class="h-5"></div>
                                             @endif
                                         </div>
 
                                         <!-- Botón agregar -->
                                         <button wire:click="selectProduct({{ $destacado->CODIGO }})"
-                                                @disabled($destacado->agotado)
-                                                class="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-2 px-3 rounded-lg transition-colors text-sm">
-                                            @if($destacado->agotado)
-                                                No Disponible
-                                            @else
-                                                Agregar
-                                            @endif
+                                                class="w-full hover:opacity-90 font-bold py-2 px-3 rounded-lg transition-colors text-sm"
+                                                style="background-color: var(--kiosco-boton); color: var(--kiosco-texto-boton);">
+                                            Agregar
                                         </button>
                                     </div>
                                 </div>
+                                @endif
                             @endforeach
                         </div>
                     </div>
@@ -94,20 +84,73 @@
         </div>
     @endif
 
+    <!-- Barra de búsqueda -->
+    <div class="sticky top-0 z-40 px-4 pt-4 pb-2" style="background-color: var(--kiosco-fondo);">
+        <div class="max-w-7xl mx-auto">
+            <div class="relative">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                <input type="text"
+                       wire:model.live.debounce.300ms="busqueda"
+                       autocomplete="off"
+                       class="w-full pl-10 pr-10 py-3 rounded-xl border-2 border-gray-200 focus:border-orange-400 focus:ring-orange-400 text-base shadow-sm"
+                       placeholder="Buscar producto...">
+                @if($busqueda)
+                    <button wire:click="$set('busqueda', '')"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                @endif
+            </div>
+        </div>
+    </div>
+
     <!-- Products by Department - Scrollable content -->
     <div class="flex-1 p-4">
         <div class="max-w-7xl mx-auto">
-            @foreach($departamentos as $depto)
+            @php
+                $busquedaActiva = !empty($busqueda) && strlen($busqueda) >= 2;
+                $busquedaLower = $busquedaActiva ? mb_strtolower($busqueda) : '';
+            @endphp
+
+            {{-- Resultados de búsqueda --}}
+            @if($busquedaActiva)
                 @php
-                    $articulosDepto = array_filter($articulos, function($articulo) use ($depto) {
-                        return $articulo->DEPTO == $depto->CODIGO;
+                    $resultados = array_filter($articulos, function($a) use ($busquedaLower) {
+                        return !$a->agotado && (
+                            mb_strpos(mb_strtolower($a->NOMBRE), $busquedaLower) !== false ||
+                            ($a->observa_web && mb_strpos(mb_strtolower($a->observa_web), $busquedaLower) !== false)
+                        );
                     });
                 @endphp
-                
+
+                @if(count($resultados) > 0)
+                    <div class="mb-6">
+                        <h2 class="text-xl font-bold mb-4 flex items-center" style="color: var(--kiosco-letra);">
+                            <i class="fas fa-search mr-2 opacity-50"></i>
+                            {{ count($resultados) }} resultado{{ count($resultados) > 1 ? 's' : '' }} para "{{ $busqueda }}"
+                        </h2>
+                        <div class="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 lg:gap-6">
+            @endif
+            @endif
+
+            @foreach($departamentos as $depto)
+                @php
+                    if ($busquedaActiva) {
+                        $articulosDepto = array_filter($resultados ?? [], function($articulo) use ($depto) {
+                            return $articulo->DEPTO == $depto->CODIGO;
+                        });
+                    } else {
+                        $articulosDepto = array_filter($articulos, function($articulo) use ($depto) {
+                            return $articulo->DEPTO == $depto->CODIGO && !$articulo->agotado;
+                        });
+                    }
+                @endphp
+
                 @if(count($articulosDepto) > 0)
+                    @if(!$busquedaActiva)
                     <section id="depto-{{ $depto->CODIGO }}" class="mb-12">
                         <div class="mb-6">
-                            <h2 class="text-3xl font-bold text-gray-800 mb-2 flex items-center">
+                            <h2 class="text-2xl lg:text-3xl font-bold mb-2 flex items-center" style="color: var(--kiosco-letra);">
                                 {{ $depto->NOMBRE }}
                                 @if($depto->cantidad_iconos > 0)
                                     <div class="ml-4 flex space-x-2">
@@ -138,29 +181,24 @@
                                     </div>
                                 @endif
                             </h2>
-                            <div class="h-1 bg-gradient-to-r from-orange-500 to-orange-300 rounded w-32"></div>
+                            <div class="h-1 rounded w-32" style="background-color: var(--kiosco-boton);"></div>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        <div class="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 lg:gap-6">
+                    @endif
                             @foreach($articulosDepto as $articulo)
-                                <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 {{ $articulo->agotado ? 'opacity-60' : '' }}">
+                                @if(!$articulo->agotado)
+                                <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300">
                                     <!-- Card con layout de 4 secciones -->
-                                    <div class="product-card-grid p-4">
+                                    <div class="product-card-grid p-3 lg:p-4">
                                         <!-- Imagen del producto (izquierda) -->
                                         <div class="product-image relative">
-                                            <img src="{{ $this->getProductImageUrl($articulo->CODIGO, true) }}" 
+                                            <img src="{{ $this->getProductImageUrl($articulo->CODIGO, true) }}"
                                                 alt="{{ $articulo->NOMBRE }}"
                                                 class="w-full h-full object-cover rounded-lg"
                                                 onerror="this.src='{{ asset('img/nofoto1.jpg') }}'">
-                                            
-                                            @if($articulo->agotado)
-                                                <div class="absolute inset-0 bg-red-600/80 flex items-center justify-center rounded-lg">
-                                                    <span class="text-white text-xs font-bold">AGOTADO</span>
-                                                </div>
-                                            @endif
 
-                                            <!-- Indicador de precio especial -->
-                                            @if($articulo->preciom_oferta > 0 )
+                                            @if($articulo->preciom_oferta > 0)
                                                 <div class="absolute -top-2 -right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
                                                     OFERTA
                                                 </div>
@@ -168,11 +206,11 @@
                                         </div>
 
                                         <!-- Descripción del producto (derecha arriba) -->
-                                        <div class="product-description">
-                                            <h3 class="text-lg font-bold text-gray-800 mb-2">{{ $articulo->NOMBRE }}</h3>
-                                            
+                                        <div class="product-description overflow-hidden">
+                                            <h3 class="product-name font-bold mb-1 line-clamp-3" style="color: var(--kiosco-letra);">{{ $articulo->NOMBRE }}</h3>
+
                                             @if($articulo->observa_web)
-                                                <p class="text-gray-600 text-sm mb-2">{{ Str::limit($articulo->observa_web, 60) }}</p>
+                                                <p class="product-obs mb-1 line-clamp-2" style="color: var(--kiosco-letra); opacity: 0.7;">{{ $articulo->observa_web }}</p>
                                             @endif
 
                                             <!-- Iconos de características -->
@@ -212,40 +250,49 @@
                                         <!-- Precio (abajo izquierda, debajo de la imagen) -->
                                         <div class="product-price flex flex-col justify-end">
                                             @if($articulo->preciom_oferta > 0)
-                                                <div class="text-lg font-bold text-green-600">${{ number_format($articulo->preciom_oferta, 0, ',', '.') }}</div>
+                                                <div class="product-price-text font-bold" style="color: var(--kiosco-precio);">${{ number_format($articulo->preciom_oferta, 0, ',', '.') }}</div>
                                                 @if($articulo->precio_m > 0 && $articulo->precio_m > $articulo->preciom_oferta)
-                                                    <div class="text-sm text-gray-400 line-through">${{ number_format($articulo->precio_m, 0, ',', '.') }}</div>
+                                                    <div class="text-xs text-gray-400 line-through">${{ number_format($articulo->precio_m, 0, ',', '.') }}</div>
                                                 @endif
                                             @else
-                                                <div class="text-lg font-bold text-gray-800">${{ number_format($articulo->precio_m, 0, ',', '.') }}</div>
+                                                <div class="product-price-text font-bold" style="color: var(--kiosco-precio);">${{ number_format($articulo->precio_m, 0, ',', '.') }}</div>
                                             @endif
                                         </div>
 
                                         <!-- Botón agregar (abajo derecha) -->
                                         <div class="product-button flex items-end justify-end">
                                             <button wire:click="selectProduct({{ $articulo->CODIGO }})"
-                                                    @disabled($articulo->agotado)
-                                                    class="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center">
-                                                @if($articulo->agotado)
-                                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                                    </svg>
-                                                    No Disponible
-                                                @else
-                                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                                    </svg>
-                                                    Agregar
-                                                @endif
+                                                    class="product-btn hover:opacity-90 font-bold rounded-lg transition-colors flex items-center"
+                                                    style="background-color: var(--kiosco-boton); color: var(--kiosco-texto-boton);">
+                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                                </svg>
+                                                Agregar
                                             </button>
                                         </div>
                                     </div>
                                 </div>
+                                @endif
                             @endforeach
+                        @if(!$busquedaActiva)
                         </div>
                     </section>
+                        @endif
                 @endif
             @endforeach
+
+            {{-- Cerrar wrapper de búsqueda --}}
+            @if($busquedaActiva)
+                @if(isset($resultados) && count($resultados) > 0)
+                        </div>
+                    </div>
+                @else
+                    <div class="text-center py-12">
+                        <i class="fas fa-search text-gray-300 text-5xl mb-4"></i>
+                        <p class="text-gray-400 text-lg">No se encontraron productos para "{{ $busqueda }}"</p>
+                    </div>
+                @endif
+            @endif
         </div>
     </div>
 </div>

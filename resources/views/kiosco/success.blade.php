@@ -1,193 +1,201 @@
-{{-- resources/views/livewire/kiosco/success.blade.php --}}
-<div class="h-full flex flex-col bg-white/90 backdrop-blur-sm overflow-y-auto" id="main">        
-    <!-- Header de éxito -->
-    <div class="bg-gradient-to-r from-orange-500 to-orange-600 px-8 py-2 items-center text-center">
-        <div class="flex justify-center mb-4">
-            <div class="bg-white rounded-full p-4 shadow-lg">
-                <svg class="w-16 h-16 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
+{{-- SUCCESS VIEW --}}
+<div class="h-full flex flex-col overflow-y-auto" id="main"
+     x-data="{
+        init() {
+            @if($kioscoImprimeTicket)
+            setTimeout(() => {
+                this.imprimirTicket();
+            }, 1000);
+            @endif
+        },
+        imprimirTicket() {
+            window.print();
+        }
+     }">
+
+    <!-- Contenido visible en pantalla -->
+    <div class="no-print">
+        <!-- Header compacto -->
+        <div class="bg-gradient-to-r from-green-500 to-green-600 px-6 py-3 text-center">
+            <div class="flex items-center justify-center gap-3">
+                <div class="bg-white rounded-full p-2">
+                    <i class="fas fa-check text-green-600 text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-white">Pedido Confirmado</h1>
+                    <p class="text-green-100 text-xs">Tu pedido ha sido recibido</p>
+                </div>
             </div>
         </div>
-        <h1 class="text-4xl font-bold text-white mb-2">¡Pedido Confirmado!</h1>
-        <p class="text-orange-100 text-lg">Tu pedido ha sido recibido correctamente</p>
-    </div>
 
-    <div class="p-8  items-center text-center">
-        <!-- Número de pedido -->
-        <div class="bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-xl p-8 mb-8 border border-orange-200">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center justify-center">
-                <svg class="w-8 h-8 mr-3 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
-                </svg>
-                Tu número de pedido es:
-            </h2>
-            
-            <div class="bg-white border-4 border-orange-500 rounded-lg p-6 mb-6 shadow-lg">
-                <span class="text-5xl font-bold text-orange-600 tracking-wider">{{ $orderNumber ?? 'PED-000' }}</span>
+        <div class="p-4 text-center max-w-lg mx-auto">
+            <!-- Número de pedido -->
+            <div class="bg-orange-50 rounded-xl p-4 mb-4 border border-orange-200">
+                <p class="text-sm text-gray-600 mb-1">Tu número de pedido:</p>
+                <div class="bg-white border-3 border-orange-500 rounded-lg p-3 shadow-md">
+                    <span class="text-4xl font-bold text-orange-600 tracking-wider">{{ $orderNumber ?? 'PED-000' }}</span>
+                </div>
+                <p class="text-gray-500 text-xs mt-2">Conservá este número para retirar en mostrador</p>
             </div>
-            
-            <p class="text-gray-600 text-lg">
-                Por favor, conserva este número para retirar tu pedido en mostrador
-            </p>
-        </div>
 
-        <!-- Información del cliente -->
-        <div class="bg-blue-50 rounded-xl p-6 mb-8 text-left border border-blue-200">
-            <h3 class="text-xl font-bold text-gray-800 mb-4 text-center flex items-center justify-center">
-                <svg class="w-6 h-6 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-                Datos del Pedido
-            </h3>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-white rounded-lg p-3">
-                    <span class="block text-sm font-medium text-gray-600 mb-1">Cliente:</span>
-                    <span class="text-lg text-gray-800">{{ $customerData['nombre'] ?? 'Sin datos' }}</span>
-                </div>
-                
-                <div class="bg-white rounded-lg p-3">
-                    <span class="block text-sm font-medium text-gray-600 mb-1">Teléfono:</span>
-                    <span class="text-lg text-gray-800">{{ $customerData['telefono'] ?? 'Sin datos' }}</span>
-                </div>
-                
-                <div class="bg-white rounded-lg p-3">
-                    <span class="block text-sm font-medium text-gray-600 mb-1">Forma de Pago:</span>
-                    <span class="text-lg text-gray-800">
-                        @php
-                            $formaPagoSeleccionada = 'No seleccionada';
-                            if ($selectedPayment && is_array($formasPago)) {
-                                foreach($formasPago as $formaPago) {
-                                    $codigo = is_object($formaPago) ? $formaPago->CODIGO : $formaPago['CODIGO'] ?? null;
-                                    if ($codigo == $selectedPayment) {
-                                        $formaPagoSeleccionada = is_object($formaPago) ? $formaPago->NOMBRE : $formaPago['NOMBRE'] ?? 'Desconocida';
-                                        break;
+            <!-- Resumen compacto -->
+            <div class="bg-gray-50 rounded-xl p-4 mb-4 border border-gray-200 text-left">
+                <div class="grid grid-cols-2 gap-2 text-sm">
+                    @if($kioscoPideNombre)
+                    <div>
+                        <span class="text-gray-500 text-xs">Cliente:</span>
+                        <p class="font-medium text-gray-800">{{ $customerData['nombre'] ?? '-' }}</p>
+                    </div>
+                    @endif
+                    @if($kioscoPideTelefono)
+                    <div>
+                        <span class="text-gray-500 text-xs">Teléfono:</span>
+                        <p class="font-medium text-gray-800">{{ $customerData['telefono'] ?? '-' }}</p>
+                    </div>
+                    @endif
+                    <div>
+                        <span class="text-gray-500 text-xs">Forma de pago:</span>
+                        <p class="font-medium text-gray-800">
+                            @php
+                                $fpNombre = 'No seleccionada';
+                                if ($selectedPayment && is_array($formasPago)) {
+                                    foreach($formasPago as $fp) {
+                                        $cod = is_object($fp) ? $fp->CODIGO : ($fp['CODIGO'] ?? null);
+                                        if ($cod == $selectedPayment) {
+                                            $fpNombre = is_object($fp) ? $fp->NOMBRE : ($fp['NOMBRE'] ?? '');
+                                            break;
+                                        }
                                     }
                                 }
-                            }
-                        @endphp
-                        {{ $formaPagoSeleccionada }}
-                    </span>
-                </div>
-                
-                <div class="bg-white rounded-lg p-3">
-                    <span class="block text-sm font-medium text-gray-600 mb-1">Total:</span>
-                    <span class="text-xl font-bold text-green-600">${{ number_format($finalOrderTotal ?? 0, 2) }}</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Resumen de productos -->
-        @if(isset($finalOrderItems) && count($finalOrderItems) > 0)
-        <div class="bg-gray-50 rounded-xl p-6 mb-8 border border-gray-200">
-            <h3 class="text-xl font-bold text-gray-800 mb-4 text-center flex items-center justify-center">
-                <svg class="w-6 h-6 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                </svg>
-                Productos Solicitados
-            </h3>
-            
-            <div class="space-y-3 max-h-60 overflow-y-auto">
-                @foreach($finalOrderItems as $item)
-                <div class="bg-white rounded-lg p-3 border border-gray-200">
-                    <div class="flex justify-between items-start">
-                        <div class="flex-1">
-                            <h4 class="font-semibold text-gray-800 flex items-center">
-                                <span class="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
-                                {{ $item['nombre'] ?? 'Producto' }}
-                            </h4>
-                            
-                            @if(isset($item['opcionales']) && is_array($item['opcionales']) && count($item['opcionales']) > 0)
-                                <div class="text-sm text-gray-600 mt-1 ml-4">
-                                    @foreach($item['opcionales'] as $opcional)
-                                        <div class="flex items-center">
-                                            <span class="w-1 h-1 bg-orange-400 rounded-full mr-2"></span>
-                                            {{ $opcional['nombre'] ?? 'Opcional' }}
-                                            @if($opcional['quantity'] > 0)
-                                                <span class="text-gray-500 ml-2">x{{ $opcional['quantity'] }}</span>
-                                            @endif
-                                            @if(isset($opcional['precio']) && $opcional['precio'] > 0)
-                                                <span class="text-green-600 font-semibold ml-auto">(+${{ number_format($opcional['precio'], 2) }})</span>
-                                            @endif
-                                        </div>
-                                    @endforeach
-                                </div>
-                            @endif
-                            
-                            <div class="text-sm text-orange-600 font-medium mt-1 ml-4">
-                                Cantidad: {{ $item['quantity'] ?? 1 }}
-                            </div>
-                        </div>
-                        
-                        <div class="text-right bg-orange-100 rounded-lg px-3 py-1">
-                            <span class="font-bold text-gray-800">${{ number_format($item['total'] ?? 0, 2) }}</span>
-                        </div>
+                            @endphp
+                            {{ $fpNombre }}
+                        </p>
+                    </div>
+                    <div>
+                        <span class="text-gray-500 text-xs">Total:</span>
+                        <p class="font-bold text-lg" style="color: var(--kiosco-precio);">${{ number_format($finalOrderTotal ?? 0, 2) }}</p>
                     </div>
                 </div>
+            </div>
+
+            <!-- Productos -->
+            @if(isset($finalOrderItems) && count($finalOrderItems) > 0)
+            <div class="bg-gray-50 rounded-xl p-4 mb-4 border border-gray-200 text-left">
+                <h3 class="text-sm font-bold text-gray-700 mb-2">
+                    <i class="fas fa-utensils mr-1 text-orange-500"></i> Productos
+                </h3>
+                <div class="space-y-1.5 max-h-40 overflow-y-auto">
+                    @foreach($finalOrderItems as $item)
+                    <div class="flex justify-between items-center text-sm">
+                        <div class="flex-1">
+                            <span class="text-gray-800">{{ $item['quantity'] }}x {{ $item['nombre'] ?? 'Producto' }}</span>
+                            @if(isset($item['opcionales']) && count($item['opcionales']) > 0)
+                                <span class="text-xs text-gray-500 block pl-4">
+                                    @foreach($item['opcionales'] as $op)
+                                        + {{ $op['nombre'] }}@if(!$loop->last), @endif
+                                    @endforeach
+                                </span>
+                            @endif
+                        </div>
+                        <span class="font-semibold text-gray-800 ml-2">${{ number_format($item['total'] ?? 0, 2) }}</span>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+
+            <!-- Botones -->
+            <div class="space-y-2">
+                @if($kioscoImprimeTicket)
+                <button @click="imprimirTicket()"
+                        class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg transition-all flex items-center justify-center">
+                    <i class="fas fa-print mr-2"></i>
+                    Reimprimir Ticket
+                </button>
+                @endif
+
+                <button wire:click="startNewOrder"
+                        class="w-full hover:opacity-90 font-bold py-3 px-6 rounded-lg transition-all flex items-center justify-center"
+                        style="background-color: var(--kiosco-boton); color: var(--kiosco-texto-boton);">
+                    <i class="fas fa-plus mr-2"></i>
+                    Nuevo Pedido
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ticket para impresión (solo visible al imprimir) -->
+    <div class="print-only" id="ticket-print">
+        <div style="width: 280px; font-family: 'Courier New', monospace; font-size: 12px; padding: 8px;">
+            <!-- Encabezado -->
+            <div style="text-align: center; border-bottom: 1px dashed #000; padding-bottom: 8px; margin-bottom: 8px;">
+                @if($comercioData)
+                    <div style="font-size: 16px; font-weight: bold;">{{ $comercioData->nombre ?? 'Restaurante' }}</div>
+                    @if($comercioData->direccion)
+                        <div style="font-size: 10px;">{{ $comercioData->direccion }}</div>
+                    @endif
+                @endif
+                <div style="font-size: 10px; margin-top: 4px;">{{ date('d/m/Y H:i') }}</div>
+            </div>
+
+            <!-- Número de pedido -->
+            <div style="text-align: center; margin-bottom: 8px;">
+                <div style="font-size: 11px;">PEDIDO N°</div>
+                <div style="font-size: 28px; font-weight: bold; letter-spacing: 2px;">{{ $orderNumber ?? '000' }}</div>
+            </div>
+
+            <div style="border-bottom: 1px dashed #000; margin-bottom: 8px;"></div>
+
+            <!-- Cliente -->
+            @if($kioscoPideNombre || $kioscoPideTelefono)
+            <div style="margin-bottom: 8px;">
+                @if($kioscoPideNombre)
+                <div>Cliente: {{ $customerData['nombre'] ?? '-' }}</div>
+                @endif
+                @if($kioscoPideTelefono)
+                <div>Tel: {{ $customerData['telefono'] ?? '-' }}</div>
+                @endif
+            </div>
+
+            <div style="border-bottom: 1px dashed #000; margin-bottom: 8px;"></div>
+            @endif
+
+            <!-- Productos -->
+            @if(isset($finalOrderItems) && count($finalOrderItems) > 0)
+                @foreach($finalOrderItems as $item)
+                    <div style="margin-bottom: 4px;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>{{ $item['quantity'] }}x {{ $item['nombre'] ?? '' }}</span>
+                            <span style="font-weight: bold;">${{ number_format($item['total'] ?? 0, 2) }}</span>
+                        </div>
+                        @if(isset($item['opcionales']) && count($item['opcionales']) > 0)
+                            @foreach($item['opcionales'] as $op)
+                                <div style="padding-left: 12px; font-size: 10px;">+ {{ $op['nombre'] }}</div>
+                            @endforeach
+                        @endif
+                    </div>
                 @endforeach
-            </div>
-        </div>
-        @endif
+            @endif
 
-        <!-- Instrucciones -->
-        <div class="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-8">
-            <div class="flex items-start">
-                <svg class="w-6 h-6 text-amber-600 mr-3 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <div class="text-left">
-                    <h4 class="text-lg font-bold text-amber-800 mb-2">Instrucciones para el retiro:</h4>
-                    <ul class="text-amber-700 space-y-2">
-                        <li class="flex items-start">
-                            <span class="inline-block w-2 h-2 bg-amber-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                            Dirígete al mostrador con tu número de pedido
-                        </li>
-                        <li class="flex items-start">
-                            <span class="inline-block w-2 h-2 bg-amber-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                            Ten listo el pago en la forma seleccionada
-                        </li>
-                        <li class="flex items-start">
-                            <span class="inline-block w-2 h-2 bg-amber-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                            El tiempo de preparación puede variar según la demanda
-                        </li>
-                        <li class="flex items-start">
-                            <span class="inline-block w-2 h-2 bg-amber-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                            Si tienes alguna consulta, menciona tu número de pedido
-                        </li>
-                    </ul>
+            <div style="border-top: 1px dashed #000; margin-top: 8px; padding-top: 8px;">
+                <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: bold;">
+                    <span>TOTAL</span>
+                    <span>${{ number_format($finalOrderTotal ?? 0, 2) }}</span>
                 </div>
             </div>
-        </div>
 
-        <!-- Tiempo estimado -->
-        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 mb-8 border border-blue-200">
-            <div class="flex items-center justify-center">
-                <svg class="w-8 h-8 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <div class="text-center">
-                    <p class="text-lg font-semibold text-blue-800">Tiempo estimado de preparación</p>
-                    <p class="text-3xl font-bold text-blue-600">15 - 25 minutos</p>
-                </div>
+            <div style="border-bottom: 1px dashed #000; margin: 8px 0;"></div>
+
+            <!-- Forma de pago -->
+            <div style="text-align: center; font-size: 11px;">
+                Pago: {{ $fpNombre ?? 'No seleccionada' }}
             </div>
-        </div>
 
-        <!-- Botón para nuevo pedido -->
-        <button wire:click="startNewOrder" 
-                class="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-4 px-8 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg flex items-center justify-center text-lg">
-            <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-            </svg>
-            Realizar Nuevo Pedido
-        </button>
-
-        <!-- Mensaje de agradecimiento -->
-        <div class="mt-8 text-center">
-            <p class="text-gray-600 text-lg">
-                ¡Gracias por tu preferencia! 
-                <span class="text-xl">😊🍽️</span>
-            </p>
+            <!-- Pie -->
+            <div style="text-align: center; margin-top: 12px; font-size: 10px;">
+                <div>Gracias por tu compra</div>
+                <div>Retirá tu pedido en mostrador</div>
+            </div>
         </div>
     </div>
 </div>
