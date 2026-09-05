@@ -47,6 +47,12 @@
                                             <i class="fas fa-file-invoice mr-1"></i> Factura #{{ $pedido['facturanro'] }}
                                         </p>
                                     @endif
+                                    @if($pedido['web'] && $pedido['pago_medio'])
+                                        @php $pg = $this->etiquetaPago($pedido); @endphp
+                                        <p class="text-xs font-medium" style="color: {{ $pg['color'] }}">
+                                            <i class="fas fa-wallet mr-1"></i> {{ $pg['texto'] }}
+                                        </p>
+                                    @endif
                                 </div>
                             </div>
                             <div class="flex items-center gap-3">
@@ -87,12 +93,74 @@
                                     @endforeach
                                 </tbody>
                                 <tfoot>
+                                    @if($pedido['envio_importe'] > 0)
+                                        <tr class="border-t border-gray-200">
+                                            <td colspan="3" class="pt-2 text-right text-gray-500">Envío:</td>
+                                            <td class="pt-2 text-right text-gray-600">${{ number_format($pedido['envio_importe'], 2, ',', '.') }}</td>
+                                        </tr>
+                                    @endif
                                     <tr class="border-t-2 border-gray-200">
                                         <td colspan="3" class="pt-3 text-right font-bold" style="color: {{ $colores['texto'] }}">Total:</td>
-                                        <td class="pt-3 text-right font-bold" style="color: {{ $colores['precio'] }}">${{ number_format($totalPedido, 2, ',', '.') }}</td>
+                                        <td class="pt-3 text-right font-bold" style="color: {{ $colores['precio'] }}">${{ number_format($totalPedido + $pedido['envio_importe'], 2, ',', '.') }}</td>
                                     </tr>
                                 </tfoot>
                             </table>
+
+                            @if($pedido['web'])
+                                <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                    <div class="bg-white rounded-lg p-3">
+                                        <p class="text-gray-400 uppercase text-[10px] mb-1">Entrega</p>
+                                        <p class="text-gray-700">
+                                            {{ ['retiro' => 'Retiro en el local', 'flota' => 'Envío a domicilio', 'correo' => 'Correo', 'a_convenir' => 'A convenir'][$pedido['entrega_modo']] ?? $pedido['entrega_modo'] }}
+                                            @if($pedido['entrega_direccion'])<br><span class="text-gray-500">{{ $pedido['entrega_direccion'] }}</span>@endif
+                                        </p>
+                                    </div>
+                                    <div class="bg-white rounded-lg p-3">
+                                        <p class="text-gray-400 uppercase text-[10px] mb-1">Pago</p>
+                                        @php $pg = $this->etiquetaPago($pedido); @endphp
+                                        <p class="font-medium" style="color: {{ $pg['color'] }}">{{ $pg['texto'] }}</p>
+
+                                        @if($pedido['pago_medio'] === 'transferencia' && $pedido['pago_estado'] !== 'aprobado')
+                                            <p class="text-gray-500 mt-1">Importe a transferir: <strong>${{ number_format($pedido['pago_importe_unico'], 2, ',', '.') }}</strong></p>
+                                            @php $tr = $this->datosTransferencia(); @endphp
+                                            @if($tr['cbu'] || $tr['alias'])
+                                                <p class="text-gray-500 font-mono">{{ $tr['alias'] ?: $tr['cbu'] }}</p>
+                                            @endif
+                                            @if($pedido['pago_comprobante'])
+                                                <a href="{{ $pedido['pago_comprobante'] }}" target="_blank" class="underline text-gray-600 block mt-1"><i class="fas fa-paperclip mr-1"></i>Ver comprobante enviado</a>
+                                            @endif
+                                            @if($comprobantePedidoId === $pedido['id'])
+                                                <div class="mt-2 space-y-2">
+                                                    <input type="file" wire:model="comprobante" accept="image/*,.pdf" class="block w-full text-xs">
+                                                    @error('comprobante') <p class="text-red-500">{{ $message }}</p> @enderror
+                                                    <div wire:loading wire:target="comprobante" class="text-gray-400">Cargando archivo…</div>
+                                                    <button wire:click="subirComprobante" wire:loading.attr="disabled" class="px-3 py-1.5 text-white rounded-lg" style="background-color: {{ $colores['boton'] }}">Enviar comprobante</button>
+                                                </div>
+                                            @else
+                                                <button wire:click="abrirComprobante({{ $pedido['id'] }})" class="mt-2 px-3 py-1.5 text-white rounded-lg" style="background-color: {{ $colores['boton'] }}">
+                                                    <i class="fas fa-upload mr-1"></i> {{ $pedido['pago_comprobante'] ? 'Subir otro comprobante' : 'Subir comprobante' }}
+                                                </button>
+                                            @endif
+                                        @elseif($pedido['pago_medio'] === 'mercadopago' && $pedido['pago_estado'] !== 'aprobado')
+                                            <a href="{{ route('tienda.pago', ['tienda' => $tiendaSlug, 'pedido' => $pedido['id'], 'reintentar' => 1]) }}" class="inline-block mt-2 px-3 py-1.5 text-white rounded-lg" style="background-color: {{ $colores['boton'] }}">
+                                                <i class="fas fa-credit-card mr-1"></i> Pagar con Mercado Pago
+                                            </a>
+                                        @endif
+                                        @if($mensajePago && $comprobantePedidoId === null)
+                                            <p class="text-green-600 mt-2">{{ $mensajePago }}</p>
+                                        @endif
+                                    </div>
+                                </div>
+
+                                @if(count($detalleEventos))
+                                    <div class="mt-3 bg-white rounded-lg p-3 text-xs">
+                                        <p class="text-gray-400 uppercase text-[10px] mb-1">Seguimiento</p>
+                                        @foreach($detalleEventos as $ev)
+                                            <p class="text-gray-600"><span class="text-gray-400">{{ \Carbon\Carbon::parse($ev['fecha'])->format('d/m H:i') }}</span> · {{ $ev['detalle'] }}</p>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            @endif
 
                             <div class="mt-3 text-right">
                                 <button wire:click="cerrarDetalle" class="text-xs text-gray-400 hover:text-gray-600">

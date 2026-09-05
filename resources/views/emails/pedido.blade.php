@@ -113,6 +113,20 @@
                                     <strong>Entrega:</strong> {{ $entrega }}
                                 </p>
                             @endif
+                            @if(!empty($pago))
+                                <div style="margin: 10px 0 0; font-size: 13px; color: #374151; background: #f9fafb; padding: 10px 12px; border-radius: 8px;">
+                                    <strong>Pago:</strong> {{ $pago['etiqueta'] }}
+                                    @if($pago['medio'] === 'transferencia' && !empty($pago['importe_unico']))
+                                        <br>Importe exacto a transferir: <strong>${{ number_format($pago['importe_unico'], 2, ',', '.') }}</strong> (los centavos identifican el pedido)
+                                        @foreach([['Titular', $pago['transferencia']['titular'] ?? null], ['Banco', $pago['transferencia']['banco'] ?? null], ['CBU', $pago['transferencia']['cbu'] ?? null], ['Alias', $pago['transferencia']['alias'] ?? null]] as [$et, $val])
+                                            @if($val)<br>{{ $et }}: {{ $val }}@endif
+                                        @endforeach
+                                        @if(!empty($pago['transferencia']['texto']))<br><em>{{ $pago['transferencia']['texto'] }}</em>@endif
+                                    @elseif($pago['medio'] === 'mercadopago')
+                                        <br>{{ $esComerciante ? 'El estado del pago se ve en el panel, en Catálogo › Pedidos web.' : 'Si no completaste el pago, podés hacerlo desde Mis pedidos.' }}
+                                    @endif
+                                </div>
+                            @endif
                         </td>
                     </tr>
 

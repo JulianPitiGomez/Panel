@@ -17,7 +17,8 @@
 --
 -- Historial:
 --  v1  2026-09-04  tienda_compradores, tienda_direcciones, tienda_pedidos, tienda_eventos,
---                  tienda_envios_config, tienda_zonas (F2 checkout y zonas)
+--                  tienda_envios_config, tienda_zonas (F2 checkout y zonas),
+--                  tienda_pagos_config, tienda_integraciones (F2 pagos)
 --                  (F1 agrego comision_saldo a tienda_pedidos y tienda_eventos; v1 todavia no salio a produccion,
 --                   por eso se edita en lugar de crear v2)
 -- =====================================================================
@@ -154,4 +155,38 @@ CREATE TABLE IF NOT EXISTS `{p}tienda_zonas` (
   `orden`           INT          NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   KEY `idx_{p}tienda_zonas_activa` (`activa`, `orden`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Medios de pago que ofrece el comercio en el checkout (una fila por comercio).
+-- Las credenciales de terceros (Mercado Pago, correo...) NO van aca: tienda_integraciones.
+CREATE TABLE IF NOT EXISTS `{p}tienda_pagos_config` (
+  `id`                      INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `transferencia_activa`    TINYINT(1)   NOT NULL DEFAULT 1,
+  `transferencia_titular`   VARCHAR(100) DEFAULT NULL,
+  `transferencia_banco`     VARCHAR(60)  DEFAULT NULL,
+  `transferencia_cbu`       VARCHAR(30)  DEFAULT NULL,
+  `transferencia_alias`     VARCHAR(40)  DEFAULT NULL,
+  `transferencia_texto`     VARCHAR(200) DEFAULT NULL,           -- "Mandanos el comprobante por WhatsApp"
+  `cuenta_corriente_activa` TINYINT(1)   NOT NULL DEFAULT 0,     -- solo compradores enlazados a clientes con LIMITE
+  `mercadopago_activa`      TINYINT(1)   NOT NULL DEFAULT 0,     -- requiere tienda_integraciones.mercadopago
+  `a_convenir_activa`       TINYINT(1)   NOT NULL DEFAULT 1,     -- "pago al recibir / lo arreglamos"
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Las cuentas del comercio en servicios de terceros: Mercado Pago, correo, WhatsApp, IA.
+-- credenciales va CIFRADO (Laravel Crypt), nunca en logs. Una fila por servicio.
+CREATE TABLE IF NOT EXISTS `{p}tienda_integraciones` (
+  `id`               INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `servicio`         VARCHAR(20)  NOT NULL,                       -- mercadopago | correo | whatsapp | ia
+  `proveedor`        VARCHAR(30)  DEFAULT NULL,                   -- andreani, correo_argentino, meta, openai...
+  `credenciales`     TEXT         DEFAULT NULL,                   -- JSON cifrado
+  `modelo`           VARCHAR(40)  DEFAULT NULL,
+  `activa`           TINYINT(1)   NOT NULL DEFAULT 0,
+  `verificada`       TINYINT(1)   NOT NULL DEFAULT 0,
+  `verificada_fecha` DATETIME     DEFAULT NULL,
+  `verificada_dato`  VARCHAR(120) DEFAULT NULL,                   -- ej. nombre de la cuenta MP que respondio
+  `ultimo_error`     VARCHAR(255) DEFAULT NULL,
+  `creado`           DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_{p}tienda_integraciones_servicio` (`servicio`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

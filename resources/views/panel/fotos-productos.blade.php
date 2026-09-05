@@ -29,11 +29,33 @@
             <i class="fas fa-truck"></i>
             <span>Envíos</span>
         </button>
+        <button wire:click="$set('tabActivo', 'pagos')"
+                class="flex-1 flex items-center justify-center gap-2 px-2 sm:px-4 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-semibold transition-all
+                {{ $tabActivo === 'pagos' ? 'bg-[#1E1B35] text-white shadow' : 'text-gray-600 hover:bg-gray-100' }}">
+            <i class="fas fa-wallet"></i>
+            <span>Pagos</span>
+        </button>
+        <button wire:click="$set('tabActivo', 'pedidos')"
+                class="flex-1 flex items-center justify-center gap-2 px-2 sm:px-4 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-semibold transition-all
+                {{ $tabActivo === 'pedidos' ? 'bg-[#1E1B35] text-white shadow' : 'text-gray-600 hover:bg-gray-100' }}">
+            <i class="fas fa-clipboard-list"></i>
+            <span>Pedidos web</span>
+        </button>
     </div>
 
     {{-- ==================== TAB ENVÍOS ==================== --}}
     @if($tabActivo === 'envios')
         @livewire('panel.configurar-envios', [], key('configurar-envios'))
+    @endif
+
+    {{-- ==================== TAB PAGOS ==================== --}}
+    @if($tabActivo === 'pagos')
+        @livewire('panel.configurar-pagos', [], key('configurar-pagos'))
+    @endif
+
+    {{-- ==================== TAB PEDIDOS WEB ==================== --}}
+    @if($tabActivo === 'pedidos')
+        @livewire('panel.pedidos-web', [], key('pedidos-web'))
     @endif
 
     {{-- ==================== TAB CONFIGURACIÓN ==================== --}}

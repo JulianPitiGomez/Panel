@@ -42,19 +42,26 @@ class MercadoPagoController extends Controller
         Config::set('database.connections.client_db.database', $cliente->base);
         DB::purge('client_db');
 
-        // Obtener access_token del comercio
+        // Obtener access_token del comercio: kiosco resto (JSON de config web) o tienda PyMEs (tienda_integraciones)
+        $accessToken = null;
         $configWeb = DB::connection('config')
             ->table('config_clientes_web')
             ->where('cliente_id', $clientId)
             ->first();
-
-        if (!$configWeb || !$configWeb->configuracion) {
-            return response()->json(['error' => 'Config no encontrada'], 404);
+        if ($configWeb && $configWeb->configuracion) {
+            $config = json_decode($configWeb->configuracion, true);
+            $accessToken = $config['mp_access_token'] ?? null;
         }
 
-        $config = json_decode($configWeb->configuracion, true);
-        $accessToken = $config['mp_access_token'] ?? null;
+        $prefijoTienda = $cliente->getTablePrefix();
+        $tokenTienda = null;
+        try {
+            $tokenTienda = (new \App\Services\TiendaIntegracionService($prefijoTienda))->mercadoPagoToken();
+        } catch (\Throwable $e) {
+            // el cliente puede no tener las tablas de la tienda
+        }
 
+        $accessToken = $accessToken ?: $tokenTienda;
         if (!$accessToken) {
             return response()->json(['error' => 'Token MP no configurado'], 400);
         }
@@ -63,15 +70,27 @@ class MercadoPagoController extends Controller
         $mp = new MercadoPagoService($accessToken);
 
         try {
-            $response = \Illuminate\Support\Facades\Http::withToken($accessToken)
+            // Un pago de la tienda PyMEs se consulta con el token de la tienda
+            $refTienda = null;
+            $tokenConsulta = $accessToken;
+            $response = \Illuminate\Support\Facades\Http::withToken($tokenConsulta)
                 ->get("https://api.mercadopago.com/v1/payments/{$paymentId}");
+            if (!$response->successful() && $tokenTienda && $tokenTienda !== $accessToken) {
+                $tokenConsulta = $tokenTienda;
+                $response = \Illuminate\Support\Facades\Http::withToken($tokenConsulta)
+                    ->get("https://api.mercadopago.com/v1/payments/{$paymentId}");
+            }
 
             if ($response->successful()) {
                 $pago = $response->json();
                 $externalRef = $pago['external_reference'] ?? null;
                 $status = $pago['status'] ?? 'pending';
 
-                if ($externalRef) {
+                $refTienda = \App\Services\TiendaPagoService::parsearReferenciaMp($externalRef);
+                if ($refTienda) {
+                    (new \App\Services\TiendaPagoService($prefijoTienda))
+                        ->actualizarDesdeMercadoPago($refTienda['pedido_id'], $status, (string) $paymentId);
+                } elseif ($externalRef) {
                     DB::connection('client_db')
                         ->table('pedidosm_temp')
                         ->where('mp_external_reference', $externalRef)
@@ -87,6 +106,32 @@ class MercadoPagoController extends Controller
         }
 
         return response()->json(['ok' => true]);
+    }
+
+    /**
+     * Estado del pago de un pedido de la TIENDA PyMEs (polling desde la pagina de retorno).
+     * Solo responde para el comprador dueño del pedido (sesion de la tienda).
+     */
+    public function consultarEstadoTienda($clientId, $pedido)
+    {
+        $cliente = Cliente::find($clientId);
+        if (!$cliente || (int) session('tienda_config_id') !== (int) $clientId) {
+            return response()->json(['status' => 'error'], 403);
+        }
+
+        Config::set('database.connections.client_db.database', $cliente->base);
+        DB::purge('client_db');
+        $prefijo = $cliente->getTablePrefix();
+
+        $sat = DB::connection('client_db')->table($prefijo . 'tienda_pedidos')
+            ->where('idpedido', (int) $pedido)->first(['comprador_id', 'pago_estado']);
+        if (!$sat || (int) $sat->comprador_id !== (int) session('tienda_comprador_web_id')) {
+            return response()->json(['status' => 'not_found'], 404);
+        }
+
+        $estado = (new \App\Services\TiendaPagoService($prefijo))->consultarMercadoPago((int) $pedido, (int) $clientId);
+
+        return response()->json(['status' => $estado]);
     }
 
     /**

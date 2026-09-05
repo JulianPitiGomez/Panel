@@ -40,6 +40,12 @@ class Carrito extends Component
     public $envioImporte = 0;
     public $entregaError = '';
 
+    // Pago (F2): medio elegido y opciones (ver TiendaPagoService)
+    public $pagoMedio = '';
+    public $opcionesPago = [];
+    public $pagoError = '';
+    public $pagoInfo = [];   // para la pantalla de exito: medio, importe unico, datos de transferencia, aviso MP
+
     public $colores = [];
 
     public function mount($tienda)
@@ -103,6 +109,26 @@ class Carrito extends Component
         }
 
         $this->envioImporte = $this->entregaModo ? (float) $this->opcionesEntrega[$this->entregaModo]['importe'] : 0.0;
+
+        $this->cotizarPago();
+    }
+
+    /** Medios de pago disponibles para el total actual (con envio) y el comprador logueado. */
+    private function cotizarPago()
+    {
+        $codcli = session('tienda_comprador_web_id') ? (session('tienda_comprador_id') ? (int) session('tienda_comprador_id') : null) : null;
+        $this->opcionesPago = (new \App\Services\TiendaPagoService($this->tablePrefix))
+            ->opciones((float) $this->getTotal() + (float) $this->envioImporte, $codcli);
+
+        if (!isset($this->opcionesPago[$this->pagoMedio]) || !$this->opcionesPago[$this->pagoMedio]['disponible']) {
+            $this->pagoMedio = '';
+            foreach ($this->opcionesPago as $medio => $op) {
+                if ($op['disponible']) {
+                    $this->pagoMedio = $medio;
+                    break;
+                }
+            }
+        }
     }
 
     /** Hay zonas por radio o poligono y una direccion escrita sin coordenadas? */
@@ -447,6 +473,15 @@ class Carrito extends Component
             $entregaResumen .= ' ($' . number_format($this->envioImporte, 2, ',', '.') . ')';
         }
 
+        // Pago: el medio tiene que existir y estar disponible para este comprador y total
+        $this->pagoError = '';
+        if (!$this->pagoMedio || !isset($this->opcionesPago[$this->pagoMedio]) || !$this->opcionesPago[$this->pagoMedio]['disponible']) {
+            $this->pagoError = 'Elegí cómo vas a pagar.';
+            return;
+        }
+        $pagoMedio = $this->pagoMedio;
+        $totalConEnvio = round((float) $this->getTotal() + (float) $this->envioImporte, 2);
+
         $compradorId = session('tienda_comprador_id');
         $compradorNombre = session('tienda_comprador_nombre');
         $compradorVendedor = session('tienda_comprador_vendedor');
@@ -466,7 +501,8 @@ class Carrito extends Component
 
         // Encabezado, detalle y satelite en una sola transaccion: o entra todo o no entra nada.
         // Lo que va a pedidos_encab / pedidos_det es exactamente lo de siempre (regla del proyecto).
-        $pedidoId = DB::connection('client_db')->transaction(function () use ($compradorId, $compradorNombre, $compradorVendedor, $vendedorNombre, $compradorDescuento, $resumenIva, $opcion, $entregaResumen, $requiereDireccion) {
+        $pagoRegistrado = [];
+        $pedidoId = DB::connection('client_db')->transaction(function () use ($compradorId, $compradorNombre, $compradorVendedor, $vendedorNombre, $compradorDescuento, $resumenIva, $opcion, $entregaResumen, $requiereDireccion, $pagoMedio, $totalConEnvio, &$pagoRegistrado) {
 
         $pedidoId = DB::connection('client_db')
             ->table("{$this->tablePrefix}pedidos_encab")
@@ -517,11 +553,31 @@ class Carrito extends Component
             $this->guardarDireccionComprador();
         }
 
+        $pagoRegistrado = (new \App\Services\TiendaPagoService($this->tablePrefix))
+            ->registrarPagoInicial($pedidoId, $pagoMedio, $totalConEnvio, session('tienda_comprador_email'));
+
         return $pedidoId;
         });
 
         $entregaParaEmail = $entregaResumen;
         $envioParaEmail = $this->envioImporte;
+
+        // Datos de pago para la pantalla de exito y el mail
+        $pagos = new \App\Services\TiendaPagoService($this->tablePrefix);
+        $this->pagoInfo = [
+            'medio' => $pagoMedio,
+            'etiqueta' => \App\Services\TiendaPagoService::etiquetaMedio($pagoMedio),
+            'importe_unico' => $pagoRegistrado['pago_importe_unico'] ?? null,
+            'transferencia' => $pagoMedio === \App\Services\TiendaPagoService::MEDIO_TRANSFERENCIA ? $pagos->datosTransferencia() : null,
+            'total' => $totalConEnvio,
+            'mp_url' => null,
+        ];
+
+        // Mercado Pago: crear la preferencia y mandar al comprador a pagar
+        if ($pagoMedio === \App\Services\TiendaPagoService::MEDIO_MERCADOPAGO) {
+            $items = array_map(fn ($i) => ['nombre' => $i['nombre'], 'cantidad' => (float) $i['cantidad'], 'precio' => (float) $i['precio']], $this->carrito);
+            $this->pagoInfo['mp_url'] = $pagos->iniciarMercadoPago($pedidoId, (int) session('tienda_config_id'), $this->tiendaSlug, $items, (float) $this->envioImporte);
+        }
 
         // Preparar datos para email antes de limpiar
         $itemsParaEmail = $this->carrito;
@@ -535,10 +591,15 @@ class Carrito extends Component
         $this->carrito = [];
         $this->pedidoConfirmado = true;
         $this->numeroPedido = $pedidoId;
+
+        if (!empty($this->pagoInfo['mp_url'])) {
+            return $this->redirect($this->pagoInfo['mp_url']);
+        }
     }
 
     private function enviarEmails($pedidoId, $clienteNombre, $items, $total, $entrega = '', $envio = 0)
     {
+        $pago = $this->pagoInfo;
         try {
             $datos = session('tienda_datos', []);
             $emailComercio = $datos['email_comercio'] ?? null;
@@ -554,6 +615,7 @@ class Carrito extends Component
                 'subtotalProductos' => $total,
                 'envio' => $envio,
                 'entrega' => $entrega,
+                'pago' => $pago,
                 'fecha' => date('Y-m-d'),
                 'parafecha' => $this->parafecha,
                 'observaciones' => $this->observaciones,

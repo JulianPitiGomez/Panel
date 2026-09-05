@@ -8,7 +8,27 @@
                 </div>
                 <h2 class="text-2xl font-bold mb-2" style="color: {{ $colores['texto'] }}">Pedido confirmado</h2>
                 <p class="text-gray-500 mb-4">Tu pedido #{{ $numeroPedido }} fue registrado correctamente.</p>
-                <p class="text-sm text-gray-400 mb-8">Recibiras novedades sobre tu pedido.</p>
+
+                @if(!empty($pagoInfo))
+                    @if($pagoInfo['medio'] === 'transferencia')
+                        <div class="mb-6">
+                            @include('tienda.partials.datos-transferencia', ['transferencia' => $pagoInfo['transferencia'], 'importe' => $pagoInfo['importe_unico'], 'colores' => $colores])
+                        </div>
+                    @elseif($pagoInfo['medio'] === 'mercadopago')
+                        @if($pagoInfo['mp_url'])
+                            <p class="text-sm text-gray-500 mb-6">Te estamos llevando a Mercado Pago para completar el pago…
+                                <a href="{{ $pagoInfo['mp_url'] }}" class="underline" style="color: {{ $colores['boton'] }}">Si no pasa nada, hacé clic acá.</a></p>
+                        @else
+                            <p class="text-sm text-amber-700 bg-amber-50 rounded-lg p-3 mb-6">No pudimos iniciar el pago con Mercado Pago. Tu pedido quedó registrado: podés pagarlo desde <strong>Mis pedidos</strong>.</p>
+                        @endif
+                    @elseif($pagoInfo['medio'] === 'cuenta_corriente')
+                        <p class="text-sm text-gray-500 mb-6"><i class="fas fa-book mr-1"></i> El importe de ${{ number_format($pagoInfo['total'], 2, ',', '.') }} se suma a tu cuenta corriente con el comercio.</p>
+                    @else
+                        <p class="text-sm text-gray-500 mb-6"><i class="fas fa-handshake mr-1"></i> El pago lo coordinás con el comercio al recibir el pedido.</p>
+                    @endif
+                @else
+                    <p class="text-sm text-gray-400 mb-8">Recibiras novedades sobre tu pedido.</p>
+                @endif
 
                 <div class="flex flex-col sm:flex-row gap-3 justify-center">
                     <button wire:click="irAMisPedidos"
@@ -243,6 +263,27 @@
 
                         @if($entregaError)
                             <p class="text-sm text-red-500 mt-2">{{ $entregaError }}</p>
+                        @endif
+                    </div>
+                    @endif
+
+                    <!-- Pago: medio -->
+                    @if(count($opcionesPago))
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">¿Cómo pagás?</label>
+                        <div class="space-y-2">
+                            @foreach($opcionesPago as $op)
+                                <label class="flex items-start gap-2 p-2.5 rounded-lg border cursor-pointer {{ $pagoMedio === $op['medio'] ? 'border-gray-400 bg-gray-50' : 'border-gray-200' }} {{ !$op['disponible'] ? 'opacity-60 cursor-not-allowed' : '' }}">
+                                    <input type="radio" wire:model.live="pagoMedio" value="{{ $op['medio'] }}" @disabled(!$op['disponible']) class="mt-1">
+                                    <div class="flex-1 min-w-0">
+                                        <span class="text-sm font-medium" style="color: {{ $colores['texto'] }}">{{ $op['etiqueta'] }}</span>
+                                        <p class="text-xs text-gray-400 leading-snug">{{ $op['detalle'] }}</p>
+                                    </div>
+                                </label>
+                            @endforeach
+                        </div>
+                        @if($pagoError)
+                            <p class="text-sm text-red-500 mt-2">{{ $pagoError }}</p>
                         @endif
                     </div>
                     @endif

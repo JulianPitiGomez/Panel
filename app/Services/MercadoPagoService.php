@@ -67,6 +67,43 @@ class MercadoPagoService
     }
 
     /**
+     * Preferencia de Checkout Pro para la TIENDA WEB (PyMEs): a diferencia del kiosco,
+     * acepta todos los medios (tarjetas incluidas), no vence a los 10 minutos y vuelve
+     * a la tienda con back_urls. Devuelve ['id', 'init_point'] o null.
+     */
+    public function crearPreferenciaTienda(array $items, string $externalReference, ?string $notificationUrl, array $backUrls): ?array
+    {
+        try {
+            $body = [
+                'items' => $items,
+                'external_reference' => $externalReference,
+                'back_urls' => $backUrls,
+                'auto_return' => 'approved',
+                'statement_descriptor' => 'TIENDA WEB',
+            ];
+
+            if ($notificationUrl) {
+                $body['notification_url'] = $notificationUrl;
+            }
+
+            $response = Http::withToken($this->accessToken)
+                ->timeout(15)
+                ->post("{$this->baseUrl}/checkout/preferences", $body);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                return ['id' => $data['id'], 'init_point' => $data['init_point']];
+            }
+
+            Log::error('MP crearPreferenciaTienda error: ' . $response->body());
+            return null;
+        } catch (\Exception $e) {
+            Log::error('MP crearPreferenciaTienda exception: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
      * Consultar pagos por external_reference
      */
     public function consultarPago(string $externalReference): ?array

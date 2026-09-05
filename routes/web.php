@@ -112,6 +112,7 @@ Route::prefix('web')->middleware([\App\Http\Middleware\TiendaMiddleware::class])
     Route::get('/{tienda}/catalogo', \App\Livewire\Tienda\Catalogo::class)->name('tienda.catalogo');
     Route::get('/{tienda}/carrito', \App\Livewire\Tienda\Carrito::class)->name('tienda.carrito');
     Route::get('/{tienda}/mis-pedidos', \App\Livewire\Tienda\MisPedidos::class)->name('tienda.mis-pedidos');
+    Route::get('/{tienda}/pago/{pedido}', [TiendaController::class, 'pago'])->name('tienda.pago');
 });
 
 // Rutas de Kiosco público (sin middleware de panel)
@@ -153,6 +154,8 @@ Route::post('/mp/webhook/{clientId}', [MercadoPagoController::class, 'webhook'])
     ->name('mp.webhook');
 Route::get('/mp/status/{clientId}/{reference}', [MercadoPagoController::class, 'consultarEstado'])
     ->name('mp.status');
+Route::get('/mp/status-tienda/{clientId}/{pedido}', [MercadoPagoController::class, 'consultarEstadoTienda'])
+    ->name('mp.status-tienda');
 Route::get('/mp/point-status/{clientId}/{deviceId}/{intentId}', [MercadoPagoController::class, 'consultarEstadoPoint'])
     ->name('mp.point-status');
 
