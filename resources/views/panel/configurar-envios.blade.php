@@ -41,15 +41,15 @@
         </div>
     </div>
 
-    {{-- Ubicacion y zonas --}}
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6" x-show="$wire.config.flota_propia" x-transition>
-        <h3 class="font-primary font-semibold text-gray-800 mb-1"><i class="fas fa-map-marker-alt text-[#FFAF22] mr-2"></i>Ubicación del local y zonas de reparto</h3>
-        <p class="text-xs text-gray-400 mb-4">Arrastrá el marcador hasta tu local. Las zonas por radio se miden desde ahí.</p>
+    {{-- Ubicacion del local (siempre) y zonas de reparto (solo con reparto propio) --}}
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6">
+        <h3 class="font-primary font-semibold text-gray-800 mb-1"><i class="fas fa-map-marker-alt text-[#FFAF22] mr-2"></i>Ubicación del local</h3>
+        <p class="text-xs text-gray-400 mb-4">Buscá tu dirección o arrastrá el marcador hasta tu local. Es el punto de retiro y desde donde se miden las zonas de reparto.</p>
 
         <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
             <div class="lg:col-span-3" wire:ignore>
                 <div id="buscador_origen" class="mb-2"></div>
-                <div id="mapaEnvios" class="w-full h-[420px] rounded-xl border border-gray-200 bg-gray-100"></div>
+                <div id="mapaEnvios" class="w-full rounded-xl border border-gray-200 bg-gray-100" style="height: 420px; min-height: 420px;"></div>
                 <p class="text-[11px] text-gray-400 mt-1" x-show="dibujando">
                     <i class="fas fa-draw-polygon mr-1"></i> Hacé clic en el mapa para marcar cada vértice. Doble clic o clic en el primer punto para cerrar la zona.
                     <button type="button" @click="cancelarDibujo()" class="ml-2 text-red-500 hover:underline">Cancelar</button>
@@ -75,9 +75,9 @@
                     </div>
                 </div>
 
-                <div class="pt-2 border-t border-gray-100">
+                <div class="pt-2 border-t border-gray-100" x-show="$wire.config.flota_propia" x-transition>
                     <div class="flex items-center justify-between mb-2">
-                        <h4 class="text-sm font-semibold text-gray-700">Zonas</h4>
+                        <h4 class="text-sm font-semibold text-gray-700">Zonas de reparto</h4>
                         <div class="flex gap-1">
                             <button type="button" @click="agregarZona('radio')" class="px-2 py-1 text-xs rounded-lg bg-[#FFAF22]/15 text-[#B8860B] hover:bg-[#FFAF22]/30"><i class="fas fa-circle-notch mr-1"></i>Radio</button>
                             <button type="button" @click="agregarZona('cp')" class="px-2 py-1 text-xs rounded-lg bg-[#FFAF22]/15 text-[#B8860B] hover:bg-[#FFAF22]/30"><i class="fas fa-hashtag mr-1"></i>Cód. postal</button>
@@ -85,7 +85,7 @@
                         </div>
                     </div>
 
-                    <div wire:ignore class="space-y-3 max-h-[520px] overflow-y-auto pr-1">
+                    <div wire:ignore class="space-y-3 overflow-y-auto pr-1" style="max-height: 520px;">
                         <template x-if="zonas.length === 0">
                             <p class="text-xs text-gray-400 py-4 text-center">Todavía no definiste zonas. Agregá una por radio, por código postal o dibujala en el mapa.</p>
                         </template>
