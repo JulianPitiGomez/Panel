@@ -93,6 +93,27 @@
         </label>
     </div>
 
+    {{-- Equivalencia con las formas de pago de gestion --}}
+    @if(count($formasGestion))
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6">
+        <h3 class="font-primary font-semibold text-gray-800 mb-1"><i class="fas fa-link text-[#FFAF22] mr-2"></i>Equivalencia con tus formas de pago de gestión</h3>
+        <p class="text-xs text-gray-400 mb-4">Las promociones y los descuentos por forma de pago que cargás en gestión dependen de la forma de pago. Decinos a cuál corresponde cada medio de la tienda para que apliquen igual.</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            @foreach([['mercadopago', 'Mercado Pago'], ['transferencia', 'Transferencia'], ['cuenta_corriente', 'Cuenta corriente'], ['a_convenir', 'Pago al recibir / a convenir']] as [$medio, $etiqueta])
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ $etiqueta }}</label>
+                    <select wire:model="config.forpag_{{ $medio }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <option value="">Sin equivalencia (sin promos por forma de pago)</option>
+                        @foreach($formasGestion as $f)
+                            <option value="{{ $f['CODIGO'] }}">{{ $f['NOMBRE'] }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
     <div class="flex justify-end">
         <button type="button" wire:click="guardar" wire:loading.attr="disabled"
                 class="px-6 py-2.5 bg-[#1E1B35] text-white rounded-lg hover:bg-[#2d2952] transition font-semibold text-sm disabled:opacity-50">

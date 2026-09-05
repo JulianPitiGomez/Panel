@@ -87,6 +87,7 @@ class FotosProductos extends Component
         $this->cargarImagenesTienda();
         $this->cargarDatosComercio();
         $this->cargarDatosTienda();
+        $this->cargarDestacados();
     }
 
     private function setupClientDatabase()
@@ -313,7 +314,8 @@ class FotosProductos extends Component
                 'a.nombre',
                 'a.precioven',
                 'f.url as foto_url',
-                'ta.peso as peso'
+                'ta.peso as peso',
+                'ta.destacado as destacado'
             )
             ->where('a.NOSALE', 0);
 
@@ -352,6 +354,54 @@ class FotosProductos extends Component
             ->count();
 
         $this->totalSinFoto = $this->totalProductos - $this->totalConFoto;
+    }
+
+    // ------------------------------------------------ destacados (tienda_articu)
+
+    public $destacados = [];   // [codigo, nombre, foto_url, orden], en orden
+
+    private function cargarDestacados()
+    {
+        $this->setupClientDatabase();
+        $this->destacados = DB::connection('client_db')
+            ->table($this->tablePrefix . 'tienda_articu as ta')
+            ->join($this->tablePrefix . 'articu as a', 'a.codigo', '=', 'ta.codigo')
+            ->leftJoin($this->tablePrefix . 'articu_fotos as f', 'a.codigo', '=', 'f.codigo')
+            ->where('ta.destacado', 1)
+            ->orderBy('ta.orden')->orderBy('a.nombre')
+            ->get(['a.codigo', 'a.nombre', 'f.url as foto_url', 'ta.orden'])
+            ->map(fn ($d) => (array) $d)->all();
+    }
+
+    /** Marca o desmarca un articulo como destacado (los nuevos van al final). */
+    public function toggleDestacado($codigo)
+    {
+        $this->setupClientDatabase();
+        $actual = DB::connection('client_db')->table($this->tablePrefix . 'tienda_articu')->where('codigo', $codigo)->value('destacado');
+        if ($actual) {
+            $this->upsertTiendaArticu((string) $codigo, ['destacado' => 0]);
+        } else {
+            $max = (int) DB::connection('client_db')->table($this->tablePrefix . 'tienda_articu')->where('destacado', 1)->max('orden');
+            $this->upsertTiendaArticu((string) $codigo, ['destacado' => 1, 'orden' => $max + 1]);
+        }
+        $this->cargarDestacados();
+    }
+
+    /** Sube o baja un destacado en el orden de la portada. */
+    public function moverDestacado($codigo, $direccion)
+    {
+        $this->cargarDestacados();
+        $codigos = array_map(fn ($d) => (string) $d['codigo'], $this->destacados);
+        $i = array_search((string) $codigo, $codigos, true);
+        $j = $direccion === 'arriba' ? $i - 1 : $i + 1;
+        if ($i === false || $j < 0 || $j >= count($codigos)) {
+            return;
+        }
+        [$codigos[$i], $codigos[$j]] = [$codigos[$j], $codigos[$i]];
+        foreach ($codigos as $orden => $c) {
+            DB::connection('client_db')->table($this->tablePrefix . 'tienda_articu')->where('codigo', $c)->update(['orden' => $orden + 1]);
+        }
+        $this->cargarDestacados();
     }
 
     // ------------------------------------------------ peso y medidas (tienda_articu)

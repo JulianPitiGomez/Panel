@@ -33,7 +33,13 @@
                                 <span class="text-sm font-bold" style="color: {{ $colores['precio'] }}">
                                     ${{ number_format($this->obtenerPrecio($producto), 2, ',', '.') }}
                                 </span>
-                                @php $ivaCard = $this->ivaIncluido($producto); $sinStock = !$vendeSinStock && $this->disponibleDe($producto->CODIGO) <= 0; @endphp
+                                @php $ivaCard = $this->ivaIncluido($producto); $sinStock = !$vendeSinStock && $this->disponibleDe($producto->CODIGO) <= 0; $promosCard = $this->promosDe($producto->CODIGO); @endphp
+
+                                @foreach($promosCard as $pc)
+
+                                    <span class="inline-block text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 mb-0.5"><i class="fas fa-tag mr-0.5"></i>{{ $pc }}</span>
+
+                                @endforeach
                                 @if($ivaCard > 0)
                                     <span class="text-[9px] text-gray-400 block leading-tight">Incl. IVA ${{ number_format($ivaCard, 2, ",", ".") }}</span>
                                 @endif
@@ -80,7 +86,13 @@
                                 <span class="text-base font-bold block" style="color: {{ $colores['precio'] }}">
                                     ${{ number_format($this->obtenerPrecio($producto), 2, ',', '.') }}
                                 </span>
-                                @php $ivaCard = $this->ivaIncluido($producto); $sinStock = !$vendeSinStock && $this->disponibleDe($producto->CODIGO) <= 0; @endphp
+                                @php $ivaCard = $this->ivaIncluido($producto); $sinStock = !$vendeSinStock && $this->disponibleDe($producto->CODIGO) <= 0; $promosCard = $this->promosDe($producto->CODIGO); @endphp
+
+                                @foreach($promosCard as $pc)
+
+                                    <span class="inline-block text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 mb-0.5"><i class="fas fa-tag mr-0.5"></i>{{ $pc }}</span>
+
+                                @endforeach
                                 @if($ivaCard > 0)
                                     <span class="text-[9px] text-gray-400 block leading-tight">Incl. IVA ${{ number_format($ivaCard, 2, ",", ".") }}</span>
                                 @endif
@@ -119,7 +131,13 @@
                                 <span class="text-sm font-bold block" style="color: {{ $colores['precio'] }}">
                                     ${{ number_format($this->obtenerPrecio($producto), 2, ',', '.') }}
                                 </span>
-                                @php $ivaCard = $this->ivaIncluido($producto); $sinStock = !$vendeSinStock && $this->disponibleDe($producto->CODIGO) <= 0; @endphp
+                                @php $ivaCard = $this->ivaIncluido($producto); $sinStock = !$vendeSinStock && $this->disponibleDe($producto->CODIGO) <= 0; $promosCard = $this->promosDe($producto->CODIGO); @endphp
+
+                                @foreach($promosCard as $pc)
+
+                                    <span class="inline-block text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 mb-0.5"><i class="fas fa-tag mr-0.5"></i>{{ $pc }}</span>
+
+                                @endforeach
                                 @if($ivaCard > 0)
                                     <span class="text-[9px] text-gray-400 block leading-tight">Incl. IVA ${{ number_format($ivaCard, 2, ",", ".") }}</span>
                                 @endif

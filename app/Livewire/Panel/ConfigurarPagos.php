@@ -19,6 +19,7 @@ class ConfigurarPagos extends Component
     public $mpEstado = null;       // ['cargado' => bool, 'verificada' => bool, 'dato' => ?, 'fecha' => ?, 'error' => ?]
     public $mensaje = '';
     public $tipoMensaje = '';
+    public $formasGestion = [];    // forpag de gestion: [CODIGO, NOMBRE, TIPO]
 
     private $tablePrefix;
 
@@ -35,8 +36,10 @@ class ConfigurarPagos extends Component
 
     private function cargar()
     {
-        $cfg = (new TiendaPagoService($this->tablePrefix))->config();
+        $srvPagos = new TiendaPagoService($this->tablePrefix);
+        $cfg = $srvPagos->config();
         unset($cfg['id']);
+        $this->formasGestion = array_map(fn ($f) => ['CODIGO' => (int) $f->CODIGO, 'NOMBRE' => trim($f->NOMBRE), 'TIPO' => (int) $f->TIPO], $srvPagos->formasPagoGestion());
         foreach (['transferencia_activa', 'cuenta_corriente_activa', 'mercadopago_activa', 'a_convenir_activa'] as $b) {
             $cfg[$b] = (bool) $cfg[$b];
         }

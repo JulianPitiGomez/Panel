@@ -47,6 +47,11 @@ class Carrito extends Component
     public $loAntesPosible = false;
     public $agendaError = '';
 
+    // Promociones (F3): lineas negativas calculadas como en gestion (ver TiendaPromoService)
+    public $promoLineas = [];
+    public $promoDescuento = 0;
+    public $promoExcluido = false;
+
     // Pago (F2): medio elegido y opciones (ver TiendaPagoService)
     public $pagoMedio = '';
     public $opcionesPago = [];
@@ -181,9 +186,11 @@ class Carrito extends Component
     private function cotizarPago()
     {
         $codcli = session('tienda_comprador_web_id') ? (session('tienda_comprador_id') ? (int) session('tienda_comprador_id') : null) : null;
-        $this->opcionesPago = (new \App\Services\TiendaPagoService($this->tablePrefix))
-            ->opciones((float) $this->getTotal() + (float) $this->envioImporte, $codcli);
+        $pagos = new \App\Services\TiendaPagoService($this->tablePrefix);
 
+        // Las promos dependen de la forma de pago: primero se elige el medio con el total bruto,
+        // despues se recalculan las promos con ese medio y se vuelve a validar el total.
+        $this->opcionesPago = $pagos->opciones((float) $this->getTotal() + (float) $this->envioImporte, $codcli);
         if (!isset($this->opcionesPago[$this->pagoMedio]) || !$this->opcionesPago[$this->pagoMedio]['disponible']) {
             $this->pagoMedio = '';
             foreach ($this->opcionesPago as $medio => $op) {
@@ -193,6 +200,27 @@ class Carrito extends Component
                 }
             }
         }
+
+        $this->calcularPromos($pagos->forpagDe($this->pagoMedio ?: null), $codcli);
+
+        if ($this->promoDescuento > 0) {
+            $this->opcionesPago = $pagos->opciones($this->getTotalConPromos() + (float) $this->envioImporte, $codcli);
+        }
+    }
+
+    /** Promos de gestion para el carrito con la forma de pago elegida (linea negativa aparte, como gestion). */
+    private function calcularPromos(?object $forpag, ?int $codcli)
+    {
+        $r = (new \App\Services\TiendaPromoService($this->tablePrefix))->calcular($this->carrito, $forpag, $codcli);
+        $this->promoLineas = $r['lineas'];
+        $this->promoDescuento = $r['descuento'];
+        $this->promoExcluido = $r['excluido'];
+    }
+
+    /** Subtotal de productos menos las promos (sin envio). */
+    public function getTotalConPromos(): float
+    {
+        return round((float) $this->getTotal() - (float) $this->promoDescuento, 2);
     }
 
     /** Hay zonas por radio o poligono y una direccion escrita sin coordenadas? */
@@ -536,7 +564,7 @@ class Carrito extends Component
             }
         }
 
-        $resumenIva = \App\Services\TiendaPrecioService::resumenIva($this->carrito);
+        $resumenIva = \App\Services\TiendaPrecioService::resumenIva($this->carrito, $this->promoLineas);
 
         // Entrega: recotizar con el servidor como verdad (no confiar en lo que quedo en pantalla)
         $this->entregaError = '';
@@ -568,7 +596,9 @@ class Carrito extends Component
             return;
         }
         $pagoMedio = $this->pagoMedio;
-        $totalConEnvio = round((float) $this->getTotal() + (float) $this->envioImporte, 2);
+        $totalConEnvio = round($this->getTotalConPromos() + (float) $this->envioImporte, 2);
+        $promoLineas = $this->promoLineas;
+        $promoDescuento = (float) $this->promoDescuento;
 
         $compradorId = session('tienda_comprador_id');
         $compradorNombre = session('tienda_comprador_nombre');
@@ -590,7 +620,7 @@ class Carrito extends Component
         // Encabezado, detalle y satelite en una sola transaccion: o entra todo o no entra nada.
         // Lo que va a pedidos_encab / pedidos_det es exactamente lo de siempre (regla del proyecto).
         $pagoRegistrado = [];
-        $pedidoId = DB::connection('client_db')->transaction(function () use ($compradorId, $compradorNombre, $compradorVendedor, $vendedorNombre, $compradorDescuento, $resumenIva, $opcion, $entregaResumen, $requiereDireccion, $pagoMedio, $totalConEnvio, &$pagoRegistrado, $franjaTexto, $consumeCupo) {
+        $pedidoId = DB::connection('client_db')->transaction(function () use ($compradorId, $compradorNombre, $compradorVendedor, $vendedorNombre, $compradorDescuento, $resumenIva, $opcion, $entregaResumen, $requiereDireccion, $pagoMedio, $totalConEnvio, &$pagoRegistrado, $franjaTexto, $consumeCupo, $promoLineas, $promoDescuento) {
 
         $pedidoId = DB::connection('client_db')
             ->table("{$this->tablePrefix}pedidos_encab")
@@ -640,6 +670,8 @@ class Carrito extends Component
             'entrega_franja_id' => $this->agenda['activa'] && $this->entregaFranjaId ? (int) $this->entregaFranjaId : null,
             'entrega_franja'    => $franjaTexto ? mb_substr($franjaTexto, 0, 20) : null,
             'agenda_cupo'       => $consumeCupo ? 1 : 0,
+            'descuento_promos'  => $promoDescuento,
+            'promos_aplicadas'  => $promoLineas ? json_encode($promoLineas, JSON_UNESCAPED_UNICODE) : null,
         ]);
 
         if ($requiereDireccion) {
@@ -669,7 +701,7 @@ class Carrito extends Component
         // Mercado Pago: crear la preferencia y mandar al comprador a pagar
         if ($pagoMedio === \App\Services\TiendaPagoService::MEDIO_MERCADOPAGO) {
             $items = array_map(fn ($i) => ['nombre' => $i['nombre'], 'cantidad' => (float) $i['cantidad'], 'precio' => (float) $i['precio']], $this->carrito);
-            $this->pagoInfo['mp_url'] = $pagos->iniciarMercadoPago($pedidoId, (int) session('tienda_config_id'), $this->tiendaSlug, $items, (float) $this->envioImporte);
+            $this->pagoInfo['mp_url'] = $pagos->iniciarMercadoPago($pedidoId, (int) session('tienda_config_id'), $this->tiendaSlug, $items, (float) $this->envioImporte, $promoDescuento);
         }
 
         // Preparar datos para email antes de limpiar
@@ -701,11 +733,13 @@ class Carrito extends Component
             $colorBoton = $this->colores['boton'];
 
             $mailData = [
+                'promos' => $this->promoLineas,
                 'pedidoId' => $pedidoId,
                 'clienteNombre' => $clienteNombre,
                 'items' => $items,
-                'total' => $total + $envio,
+                'total' => $total - (float) $this->promoDescuento + $envio,
                 'subtotalProductos' => $total,
+                'descuentoPromos' => (float) $this->promoDescuento,
                 'envio' => $envio,
                 'entrega' => $entrega,
                 'pago' => $pago,
@@ -764,8 +798,8 @@ class Carrito extends Component
 
         return view('tienda.carrito', [
             'total' => $this->getTotal(),
-            'totalConEnvio' => $this->getTotal() + $this->envioImporte,
-            'resumenIva' => \App\Services\TiendaPrecioService::resumenIva($this->carrito),
+            'totalConEnvio' => $this->getTotalConPromos() + $this->envioImporte,
+            'resumenIva' => \App\Services\TiendaPrecioService::resumenIva($this->carrito, $this->promoLineas),
             'googleMapsApiKey' => config('app.google_maps_api_key'),
         ]);
     }

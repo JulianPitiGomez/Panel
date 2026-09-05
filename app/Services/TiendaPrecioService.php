@@ -60,7 +60,8 @@ class TiendaPrecioService
     {
         $tasa = (float) ($tasa ?? 0);
 
-        if ($tasa <= 0 || $precioFinal <= 0) {
+        // Los negativos (lineas de promo) se desglosan igual, con signo
+        if ($tasa <= 0 || $precioFinal == 0) {
             return ['neto' => round($precioFinal, 2), 'iva' => 0.0, 'tasa' => 0.0];
         }
 
@@ -84,13 +85,19 @@ class TiendaPrecioService
      *
      * @return array{total: float, neto: float, iva: float, por_tasa: array<string, array{tasa: float, neto: float, iva: float}>}
      */
-    public static function resumenIva(array $carrito): array
+    public static function resumenIva(array $carrito, array $lineasPromo = []): array
     {
         $porTasa = [];
         $total = 0.0;
         $iva = 0.0;
 
-        foreach ($carrito as $item) {
+        // Las lineas de promo (importe negativo, con su tasa) entran como un item mas de cantidad 1
+        $items = $carrito;
+        foreach ($lineasPromo as $l) {
+            $items[] = ['precio' => (float) $l['importe'], 'cantidad' => 1, 'tasa' => (float) ($l['tasa'] ?? 0)];
+        }
+
+        foreach ($items as $item) {
             $tasa = (float) ($item['tasa'] ?? 0);
             $precio = (float) $item['precio'];
             $cantidad = (float) $item['cantidad'];

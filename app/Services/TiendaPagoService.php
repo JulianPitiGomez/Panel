@@ -51,7 +51,48 @@ class TiendaPagoService
             'transferencia_activa' => 1, 'transferencia_titular' => null, 'transferencia_banco' => null,
             'transferencia_cbu' => null, 'transferencia_alias' => null, 'transferencia_texto' => null,
             'cuenta_corriente_activa' => 0, 'mercadopago_activa' => 0, 'a_convenir_activa' => 1,
+            'forpag_mercadopago' => null, 'forpag_transferencia' => null, 'forpag_cuenta_corriente' => null, 'forpag_a_convenir' => null,
         ];
+    }
+
+    /** Formas de pago de gestion (forpag), para mapear cada medio de la tienda. */
+    public function formasPagoGestion(): array
+    {
+        try {
+            return $this->tabla('forpag')->orderBy('CODIGO')->get(['CODIGO', 'NOMBRE', 'TIPO'])->all();
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    /** forpag de gestion equivalente a un medio de la tienda ({CODIGO, NOMBRE, TIPO}) o null si no esta mapeado. */
+    public function forpagDe(?string $medio): ?object
+    {
+        if (!$medio) {
+            return null;
+        }
+        $cfg = $this->config();
+        $codigo = $cfg['forpag_' . $medio] ?? null;
+        if (!$codigo) {
+            return null;
+        }
+        return $this->tabla('forpag')->where('CODIGO', (int) $codigo)->first(['CODIGO', 'NOMBRE', 'TIPO']);
+    }
+
+    /** Tipos forpag de todos los medios activos y mapeados: define que promos "valen para cualquier forma de pago". */
+    public function tiposFpActivos(): array
+    {
+        $cfg = $this->config();
+        $tipos = [];
+        foreach (['mercadopago', 'transferencia', 'cuenta_corriente', 'a_convenir'] as $m) {
+            if (!empty($cfg[$m . '_activa']) && !empty($cfg['forpag_' . $m])) {
+                $t = $this->tabla('forpag')->where('CODIGO', (int) $cfg['forpag_' . $m])->value('TIPO');
+                if ($t !== null) {
+                    $tipos[] = (int) $t;
+                }
+            }
+        }
+        return array_values(array_unique($tipos));
     }
 
     public function config(): array
@@ -72,6 +113,11 @@ class TiendaPagoService
         foreach (['transferencia_titular', 'transferencia_banco', 'transferencia_cbu', 'transferencia_alias', 'transferencia_texto'] as $t) {
             if (array_key_exists($t, $datos)) {
                 $datos[$t] = trim((string) $datos[$t]) ?: null;
+            }
+        }
+        foreach (['forpag_mercadopago', 'forpag_transferencia', 'forpag_cuenta_corriente', 'forpag_a_convenir'] as $f) {
+            if (array_key_exists($f, $datos)) {
+                $datos[$f] = is_numeric($datos[$f]) && (int) $datos[$f] > 0 ? (int) $datos[$f] : null;
             }
         }
 
@@ -231,11 +277,23 @@ class TiendaPagoService
      * Crea la preferencia de Checkout Pro para un pedido y devuelve la URL de pago (o null).
      * $items: [['nombre','cantidad','precio']]; $envio se agrega como un item mas.
      */
-    public function iniciarMercadoPago(int $pedidoId, int $clienteId, string $slug, array $items, float $envio): ?string
+    public function iniciarMercadoPago(int $pedidoId, int $clienteId, string $slug, array $items, float $envio, float $descuento = 0): ?string
     {
         $token = (new TiendaIntegracionService($this->prefijo))->mercadoPagoToken();
         if (!$token) {
             return null;
+        }
+
+        // MP no acepta items negativos: las promos se prorratean bajando el precio de cada item
+        if ($descuento > 0) {
+            $bruto = array_sum(array_map(fn ($i) => (float) $i['precio'] * (float) $i['cantidad'], $items));
+            if ($bruto > 0) {
+                $factor = max(0, ($bruto - $descuento) / $bruto);
+                $items = array_map(function ($i) use ($factor) {
+                    $i['precio'] = round((float) $i['precio'] * $factor, 2);
+                    return $i;
+                }, $items);
+            }
         }
 
         $mpItems = array_map(fn ($i) => [

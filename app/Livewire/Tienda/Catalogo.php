@@ -44,6 +44,11 @@ class Catalogo extends Component
     public $vendeSinStock = true;      // config web del comercio (TiendaStockService)
     public $mensajeCerrada = null;     // aviso de tienda cerrada (TiendaAgendaService)
     public $habituales = [];           // lo que este comprador compra seguido (ultimos 12 meses)
+    public $destacados = [];           // elegidos por el comercio (tienda_articu.destacado), en su orden
+    public $promosPagina = [];         // codigo => [textos de promo] de los productos visibles
+    public $soloPromos = false;        // seccion Promociones: solo articulos con promo vigente
+    public $hayPromos = false;         // hay alguna promo vigente en la tienda
+    private $tiposFp = [];             // forpag.TIPO de los medios activos: para "vale para cualquier forma de pago"
     public $disponibles = [];          // codigo => disponible, de la pagina visible
     public $avisoStock = '';           // cuando se recorta una cantidad por falta de stock
 
@@ -232,6 +237,17 @@ class Catalogo extends Component
             $query->whereIn('a.DEPTO', $this->deptosSeleccionados);
         }
 
+        // Seccion Promociones: se arma sola con las promos vigentes de gestion
+        $promoSrv = new \App\Services\TiendaPromoService($this->tablePrefix);
+        if (empty($this->tiposFp)) {
+            $this->tiposFp = (new \App\Services\TiendaPagoService($this->tablePrefix))->tiposFpActivos();
+        }
+        $conPromo = $promoSrv->codigosConPromo($this->tiposFp);
+        $this->hayPromos = !empty($conPromo);
+        if ($this->soloPromos) {
+            $query->whereIn('a.CODIGO', $conPromo ?: ['-1']);
+        }
+
         $this->totalProductos = $query->count();
 
         $ordenColumna = match($this->ordenDefecto) {
@@ -250,7 +266,53 @@ class Catalogo extends Component
         // Disponible real (STOCKACT - comprometido en pedidos abiertos): una sola consulta para la pagina
         $this->disponibles = (new \App\Services\TiendaStockService($this->tablePrefix))->disponibleDe($productos);
 
+        // Chips de promo de la pagina: solo las que valen para cualquier forma de pago de la tienda
+        $this->promosPagina = $this->textosPromo($promoSrv, $productos->pluck('CODIGO')->all());
+
         return $productos;
+    }
+
+    /** codigo => [textos] de las promos vigentes que valen para todas las formas de pago activas. */
+    private function textosPromo(\App\Services\TiendaPromoService $promoSrv, array $codigos): array
+    {
+        if (empty($this->tiposFp)) {
+            $this->tiposFp = (new \App\Services\TiendaPagoService($this->tablePrefix))->tiposFpActivos();
+        }
+        $out = [];
+        foreach ($promoSrv->promosVigentes($codigos) as $codigo => $promos) {
+            foreach ($promos as $p) {
+                if (\App\Services\TiendaPromoService::valeParaTodas($p, $this->tiposFp)) {
+                    $out[$codigo][] = \App\Services\TiendaPromoService::textoPromo($p);
+                }
+            }
+        }
+        return $out;
+    }
+
+    public function promosDe($codigo): array
+    {
+        return $this->promosPagina[(string) $codigo] ?? [];
+    }
+
+    public function toggleSoloPromos()
+    {
+        $this->soloPromos = !$this->soloPromos;
+        $this->paginaActual = 1;
+    }
+
+    /** Destacados del comercio, en su orden, con precio y foto de hoy. */
+    private function cargarDestacados()
+    {
+        $this->destacados = DB::connection('client_db')
+            ->table("{$this->tablePrefix}tienda_articu as ta")
+            ->join("{$this->tablePrefix}articu as a", 'a.CODIGO', '=', 'ta.codigo')
+            ->leftJoin("{$this->tablePrefix}articu_fotos as f", 'a.CODIGO', '=', 'f.codigo')
+            ->leftJoin("{$this->tablePrefix}ivas as i", 'a.IVA', '=', 'i.codigo')
+            ->where('ta.destacado', 1)->where('ta.visible_web', 1)->where('a.NOSALE', 0)
+            ->orderBy('ta.orden')->orderBy('a.NOMBRE')
+            ->limit(12)
+            ->get(['a.CODIGO', 'a.NOMBRE', 'a.PRECIOVEN', 'a.REVENTA', 'a.STOCKACT', 'f.url as foto_url', 'i.tasa as tasa_iva'])
+            ->all();
     }
 
     /**
@@ -371,6 +433,7 @@ class Catalogo extends Component
             'tasa' => (float) ($producto->tasa_iva ?? 0),
             'iva' => $this->ivaIncluido($producto),
             'disponible' => max($disponible, 0),
+            'promos' => $this->textosPromo(new \App\Services\TiendaPromoService($this->tablePrefix), [$codigo])[(string) $codigo] ?? [],
         ];
         $this->cantidadModal = $this->permiteDecimal ? 1 : 1;
         $this->modalCantidadAbierto = true;
@@ -484,11 +547,16 @@ class Catalogo extends Component
         $productos = $this->obtenerProductos();
         $totalPaginas = ceil($this->totalProductos / $this->porPagina);
 
-        $sinFiltros = !$this->busqueda && empty($this->rubrosSeleccionados) && empty($this->marcasSeleccionadas) && empty($this->deptosSeleccionados) && $this->paginaActual == 1;
+        $sinFiltros = !$this->busqueda && empty($this->rubrosSeleccionados) && empty($this->marcasSeleccionadas) && empty($this->deptosSeleccionados) && $this->paginaActual == 1 && !$this->soloPromos;
         if ($sinFiltros) {
             $this->cargarHabituales();
+            $this->cargarDestacados();
+            // los destacados tambien muestran su chip de promo
+            $extra = $this->textosPromo(new \App\Services\TiendaPromoService($this->tablePrefix), array_map(fn ($d) => $d->CODIGO, $this->destacados));
+            $this->promosPagina = $this->promosPagina + $extra;
         } else {
             $this->habituales = [];
+            $this->destacados = [];
         }
 
         return view('tienda.catalogo', [

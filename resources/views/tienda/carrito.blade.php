@@ -373,6 +373,18 @@
                             <span class="text-gray-500">Productos ({{ count($carrito) }})</span>
                             <span class="font-medium">${{ number_format($total, 2, ',', '.') }}</span>
                         </div>
+                        @foreach($promoLineas as $pl)
+                            <div class="flex justify-between text-sm">
+                                <span class="text-green-700"><i class="fas fa-tag mr-1 text-xs"></i>{{ $pl['nombre'] }}</span>
+                                <span class="font-medium text-green-700">-${{ number_format(abs($pl['importe']), 2, ',', '.') }}</span>
+                            </div>
+                        @endforeach
+                        @if($promoExcluido)
+                            <p class="text-[11px] text-gray-400">Tu cuenta no participa de las promociones.</p>
+                        @endif
+                        @if(count($promoLineas))
+                            <p class="text-[10px] text-gray-400">Las promociones se confirman al facturar según su vigencia.</p>
+                        @endif
                         @if($resumenIva['iva'] > 0)
                             <div class="text-xs text-gray-400 pt-1 border-t border-dashed border-gray-200">
                                 <p class="mb-0.5">Los precios incluyen IVA:</p>

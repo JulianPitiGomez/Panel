@@ -60,7 +60,10 @@ class TiendaComisionService
             ->selectRaw('COALESCE(SUM(cantidad * (punitario - COALESCE(descu, 0))), 0) AS base')
             ->value('base');
 
-        return round((float) $base, 2);
+        // Las promos (F3) no tocan pedidos_det: se restan del satelite. Se comisiona sobre lo que realmente se vendio.
+        $promos = (float) ($this->tabla('tienda_pedidos')->where('idpedido', $idpedido)->value('descuento_promos') ?? 0);
+
+        return round(max(0, (float) $base - $promos), 2);
     }
 
     public static function calcular(float $base, float $pct): float

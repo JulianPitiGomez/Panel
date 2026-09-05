@@ -89,10 +89,16 @@
                                         <td style="padding: 10px 0; font-size: 13px; color: #374151; text-align: right; font-weight: 600;">${{ number_format($item['subtotal'], 2, ',', '.') }}</td>
                                     </tr>
                                 @endforeach
+                                @foreach(($promos ?? []) as $pl)
+                                    <tr>
+                                        <td colspan="3" style="padding: 6px 0 0; font-size: 13px; color: #15803d; text-align: right;">{{ $pl['nombre'] }}:</td>
+                                        <td style="padding: 6px 0 0; font-size: 13px; color: #15803d; text-align: right;">-${{ number_format(abs($pl['importe']), 2, ',', '.') }}</td>
+                                    </tr>
+                                @endforeach
                                 @if(!empty($envio) && $envio > 0)
                                     <tr>
                                         <td colspan="3" style="padding: 10px 0 0; font-size: 13px; color: #6b7280; text-align: right;">Productos:</td>
-                                        <td style="padding: 10px 0 0; font-size: 13px; color: #374151; text-align: right;">${{ number_format($subtotalProductos ?? ($total - $envio), 2, ',', '.') }}</td>
+                                        <td style="padding: 10px 0 0; font-size: 13px; color: #374151; text-align: right;">${{ number_format(($subtotalProductos ?? ($total - $envio)) - ($descuentoPromos ?? 0), 2, ',', '.') }}</td>
                                     </tr>
                                     <tr>
                                         <td colspan="3" style="padding: 4px 0 0; font-size: 13px; color: #6b7280; text-align: right;">Envío:</td>

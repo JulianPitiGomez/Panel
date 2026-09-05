@@ -545,6 +545,37 @@
                 </label>
             </div>
 
+            <!-- Destacados de la portada -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+                <h3 class="text-lg font-primary font-semibold text-gray-800 mb-1 flex items-center">
+                    <i class="fas fa-star text-[#FFAF22] mr-2"></i> Destacados de la portada
+                </h3>
+                <p class="text-xs text-gray-400 mb-4">Los elegís vos con la estrella en Fotos Productos. Acá los ordenás. Las promociones no se cargan acá: salen solas de las que tenés en gestión.</p>
+                @if(count($destacados) === 0)
+                    <p class="text-sm text-gray-400">Todavía no destacaste ningún artículo.</p>
+                @else
+                    <div class="space-y-2">
+                        @foreach($destacados as $i => $d)
+                            <div class="flex items-center gap-3 p-2 bg-gray-50 rounded-lg" wire:key="dest-{{ $d['codigo'] }}">
+                                <span class="w-6 text-center text-xs text-gray-400">{{ $i + 1 }}</span>
+                                @if($d['foto_url'])
+                                    <img src="{{ $d['foto_url'] }}" class="w-10 h-10 object-cover rounded-lg border border-gray-200">
+                                @else
+                                    <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center"><i class="fas fa-image text-gray-300"></i></div>
+                                @endif
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm text-gray-800 truncate">{{ $d['nombre'] }}</p>
+                                    <p class="text-xs text-gray-400">Cod: {{ $d['codigo'] }}</p>
+                                </div>
+                                <button wire:click="moverDestacado('{{ $d['codigo'] }}', 'arriba')" @disabled($i === 0) class="p-1.5 rounded-lg hover:bg-gray-200 text-gray-500 disabled:opacity-30"><i class="fas fa-arrow-up"></i></button>
+                                <button wire:click="moverDestacado('{{ $d['codigo'] }}', 'abajo')" @disabled($i === count($destacados) - 1) class="p-1.5 rounded-lg hover:bg-gray-200 text-gray-500 disabled:opacity-30"><i class="fas fa-arrow-down"></i></button>
+                                <button wire:click="toggleDestacado('{{ $d['codigo'] }}')" class="p-1.5 rounded-lg hover:bg-red-50 text-red-400" title="Quitar"><i class="fas fa-times"></i></button>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+
             <!-- Botón guardar todo -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
                 <div class="flex justify-end">
@@ -674,6 +705,7 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Codigo</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" title="Se muestra en la portada de la tienda">Dest.</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Para cotizar el correo">Peso (kg)</th>
                             <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Foto</th>
                             <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
@@ -685,6 +717,12 @@
                                 <td class="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{{ $producto->codigo }}</td>
                                 <td class="px-6 py-3 text-sm text-gray-700">{{ $producto->nombre }}</td>
                                 <td class="px-6 py-3 whitespace-nowrap text-sm text-green-600 font-semibold">${{ number_format($producto->precioven, 2) }}</td>
+                                <td class="px-6 py-3 text-center">
+                                    <button wire:click="toggleDestacado('{{ $producto->codigo }}')" title="{{ $producto->destacado ? 'Quitar de destacados' : 'Destacar en la portada' }}"
+                                            class="text-lg {{ $producto->destacado ? 'text-[#FFAF22]' : 'text-gray-300 hover:text-[#FFAF22]' }}">
+                                        <i class="{{ $producto->destacado ? 'fas' : 'far' }} fa-star"></i>
+                                    </button>
+                                </td>
                                 <td class="px-6 py-3 whitespace-nowrap">
                                     <input type="number" step="0.001" min="0" value="{{ $producto->peso !== null ? rtrim(rtrim(number_format((float) $producto->peso, 3, '.', ''), '0'), '.') : '' }}"
                                            wire:change="guardarPeso('{{ $producto->codigo }}', $event.target.value)" placeholder="—"
@@ -716,7 +754,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-6 py-12 text-center text-gray-400">
+                                <td colspan="7" class="px-6 py-12 text-center text-gray-400">
                                     <i class="fas fa-search text-3xl mb-2"></i>
                                     <p class="text-sm">No se encontraron productos</p>
                                 </td>

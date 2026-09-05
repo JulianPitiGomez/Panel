@@ -21,6 +21,7 @@
 --                  tienda_pagos_config, tienda_integraciones (F2 pagos),
 --                  tienda_articu, tienda_correo_tarifas (F2 correo y peso),
 --                  tienda_agenda, tienda_agenda_franjas, tienda_agenda_excepciones (F2 agenda);
+--                  F3: tienda_pedidos.descuento_promos / promos_aplicadas, tienda_pagos_config.forpag_*
 --                  tienda_pedidos.entrega_fecha / entrega_franja_id / entrega_franja / agenda_cupo
 --                  (F1 agrego comision_saldo a tienda_pedidos y tienda_eventos; v1 todavia no salio a produccion,
 --                   por eso se edita en lugar de crear v2)
@@ -173,6 +174,12 @@ CREATE TABLE IF NOT EXISTS `{p}tienda_pagos_config` (
   `cuenta_corriente_activa` TINYINT(1)   NOT NULL DEFAULT 0,     -- solo compradores enlazados a clientes con LIMITE
   `mercadopago_activa`      TINYINT(1)   NOT NULL DEFAULT 0,     -- requiere tienda_integraciones.mercadopago
   `a_convenir_activa`       TINYINT(1)   NOT NULL DEFAULT 1,     -- "pago al recibir / lo arreglamos"
+  -- forma de pago de GESTION (forpag.CODIGO) equivalente a cada medio: define que promos aplican
+  -- (promociones.formapago por forpag.TIPO) y el descuento por forma de pago (forpag_desc por CODIGO)
+  `forpag_mercadopago`      INT          DEFAULT NULL,
+  `forpag_transferencia`    INT          DEFAULT NULL,
+  `forpag_cuenta_corriente` INT          DEFAULT NULL,
+  `forpag_a_convenir`       INT          DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

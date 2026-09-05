@@ -228,6 +228,9 @@
                     <p class="text-[10px] text-gray-400 mt-1 text-center">Podés ingresar valores decimales (ej: 0.5, 1.25)</p>
                 @endif
 
+                @foreach(($productoModal['promos'] ?? []) as $pc)
+                    <p class="text-[11px] mt-1 text-center text-green-700"><i class="fas fa-tag mr-1"></i>{{ $pc }}</p>
+                @endforeach
                 @if(!$vendeSinStock)
                     <p class="text-[11px] mt-1 text-center {{ $productoModal['disponible'] > 0 ? 'text-gray-500' : 'text-red-500' }}">
                         Disponible: {{ \App\Services\TiendaStockService::formato($productoModal['disponible']) }}
