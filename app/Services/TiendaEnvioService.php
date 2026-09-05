@@ -282,7 +282,7 @@ class TiendaEnvioService
      */
     public static function geocodificar(string $direccion): ?array
     {
-        $key = config('app.google_maps_api_key');
+        $key = config('app.google_maps_server_key') ?: config('app.google_maps_api_key');
         $direccion = trim($direccion);
         if (!$key || $direccion === '') {
             return null;

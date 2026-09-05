@@ -125,4 +125,9 @@ return [
 
     'google_maps_api_key' => env('GOOGLE_MAPS_API_KEY'),
 
+    // Clave para llamadas desde el servidor (Geocoding). Una clave con restriccion por sitio
+    // web NO sirve para eso ("API keys with referer restrictions cannot be used with this API"):
+    // conviene una segunda clave restringida por IP. Si no se define, se intenta con la del mapa.
+    'google_maps_server_key' => env('GOOGLE_MAPS_SERVER_KEY', env('GOOGLE_MAPS_API_KEY')),
+
 ];
