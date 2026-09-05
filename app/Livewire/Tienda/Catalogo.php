@@ -42,6 +42,7 @@ class Catalogo extends Component
     public $modoCantidad = 'rapido';
     public $permiteDecimal = false;
     public $vendeSinStock = true;      // config web del comercio (TiendaStockService)
+    public $mensajeCerrada = null;     // aviso de tienda cerrada (TiendaAgendaService)
     public $disponibles = [];          // codigo => disponible, de la pagina visible
     public $avisoStock = '';           // cuando se recorta una cantidad por falta de stock
 
@@ -81,6 +82,17 @@ class Catalogo extends Component
         $this->modoCantidad = $datos['modo_cantidad'] ?? 'rapido';
         $this->permiteDecimal = (bool) ($datos['permite_decimal'] ?? false);
         $this->vendeSinStock = \App\Services\TiendaStockService::vendeSinStock($datos);
+
+        try {
+            $ag = (new \App\Services\TiendaAgendaService($this->tablePrefix))->config();
+            if (!$ag['abierta'] && $ag['muestra_cerrada']) {
+                $this->mensajeCerrada = $ag['recibe_cerrada']
+                    ? 'La tienda está cerrada por el momento. Podés dejar tu pedido y lo preparamos cuando volvamos a abrir.'
+                    : 'La tienda está cerrada por el momento. No estamos tomando pedidos.';
+            }
+        } catch (\Throwable $e) {
+            // sin tablas de agenda: se ignora
+        }
 
         $this->cargarFiltros();
     }

@@ -29,6 +29,12 @@
             <i class="fas fa-truck"></i>
             <span>Envíos</span>
         </button>
+        <button wire:click="$set('tabActivo', 'agenda')"
+                class="flex-1 flex items-center justify-center gap-2 px-2 sm:px-4 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-semibold transition-all
+                {{ $tabActivo === 'agenda' ? 'bg-[#1E1B35] text-white shadow' : 'text-gray-600 hover:bg-gray-100' }}">
+            <i class="fas fa-calendar-check"></i>
+            <span>Agenda</span>
+        </button>
         <button wire:click="$set('tabActivo', 'pagos')"
                 class="flex-1 flex items-center justify-center gap-2 px-2 sm:px-4 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-semibold transition-all
                 {{ $tabActivo === 'pagos' ? 'bg-[#1E1B35] text-white shadow' : 'text-gray-600 hover:bg-gray-100' }}">
@@ -46,6 +52,11 @@
     {{-- ==================== TAB ENVÍOS ==================== --}}
     @if($tabActivo === 'envios')
         @livewire('panel.configurar-envios', [], key('configurar-envios'))
+    @endif
+
+    {{-- ==================== TAB AGENDA ==================== --}}
+    @if($tabActivo === 'agenda')
+        @livewire('panel.configurar-agenda', [], key('configurar-agenda'))
     @endif
 
     {{-- ==================== TAB PAGOS ==================== --}}

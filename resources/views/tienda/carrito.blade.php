@@ -288,14 +288,72 @@
                     </div>
                     @endif
 
-                    <!-- Fecha de entrega -->
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de entrega</label>
-                        <input type="date" wire:model="parafecha"
-                               min="{{ date('Y-m-d') }}"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 outline-none"
-                               style="--tw-ring-color: {{ $colores['boton'] }}">
-                    </div>
+                    <!-- Aviso de tienda cerrada -->
+                    @if(!empty($agenda['mensaje_cerrada']))
+                        <div class="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+                            <i class="fas fa-door-closed mr-1"></i> {{ $agenda['mensaje_cerrada'] }}
+                        </div>
+                    @endif
+
+                    <!-- Cuándo: agenda del comercio o fecha libre -->
+                    @if(!empty($agenda['activa']))
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">¿Cuándo lo querés?</label>
+                            @if($agenda['anticipacion_horas'] > 0)
+                                <p class="text-[11px] text-gray-400 mb-2">Este pedido necesita {{ $agenda['anticipacion_horas'] >= 48 ? round($agenda['anticipacion_horas'] / 24) . ' días' : $agenda['anticipacion_horas'] . ' horas' }} de anticipación.</p>
+                            @endif
+
+                            @if(empty($agenda['dias']))
+                                <p class="text-sm text-red-500">Por ahora no hay días disponibles para este pedido. Consultá al comercio.</p>
+                            @else
+                                @if($agenda['lo_antes_posible'])
+                                    <button type="button" wire:click="elegirLoAntesPosible"
+                                            class="w-full text-left mb-2 px-3 py-2 rounded-lg border text-sm {{ $loAntesPosible ? 'border-gray-400 bg-gray-50 font-medium' : 'border-gray-200' }}" style="color: {{ $colores['texto'] }}">
+                                        <i class="fas fa-bolt mr-1" style="color: {{ $colores['boton'] }}"></i> {{ $agenda['lo_antes_posible']['etiqueta'] }}
+                                    </button>
+                                @endif
+
+                                <div class="flex gap-2 overflow-x-auto pb-1">
+                                    @foreach($agenda['dias'] as $dia)
+                                        <button type="button" wire:click="elegirDia('{{ $dia['fecha'] }}')"
+                                                class="flex-shrink-0 px-3 py-2 rounded-lg border text-xs {{ !$loAntesPosible && $entregaFecha === $dia['fecha'] ? 'text-white border-transparent' : 'border-gray-200 text-gray-700' }}"
+                                                style="{{ !$loAntesPosible && $entregaFecha === $dia['fecha'] ? 'background-color: ' . $colores['precio'] : '' }}">
+                                            {{ $dia['etiqueta'] }}
+                                        </button>
+                                    @endforeach
+                                </div>
+
+                                @php $diaElegido = !$loAntesPosible ? collect($agenda['dias'])->firstWhere('fecha', $entregaFecha) : null; @endphp
+                                @if($diaElegido)
+                                    <div class="mt-2 grid grid-cols-2 gap-2">
+                                        @foreach($diaElegido['franjas'] as $f)
+                                            <button type="button" wire:click="elegirFranja({{ $f['id'] }})" @disabled(!$f['disponible'])
+                                                    title="{{ $f['motivo'] ?? '' }}"
+                                                    class="px-3 py-2 rounded-lg border text-xs {{ (int) $entregaFranjaId === (int) $f['id'] && $f['disponible'] ? 'text-white border-transparent' : 'border-gray-200 text-gray-700' }} {{ !$f['disponible'] ? 'opacity-40 line-through cursor-not-allowed' : '' }}"
+                                                    style="{{ (int) $entregaFranjaId === (int) $f['id'] && $f['disponible'] ? 'background-color: ' . $colores['precio'] : '' }}">
+                                                {{ $f['etiqueta'] }}
+                                            </button>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            @endif
+                            @if($agendaError)
+                                <p class="text-sm text-red-500 mt-2">{{ $agendaError }}</p>
+                            @endif
+                        </div>
+                    @else
+                        <!-- Fecha de entrega libre (sin agenda) -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de entrega</label>
+                            <input type="date" wire:model="parafecha"
+                                   min="{{ date('Y-m-d') }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 outline-none"
+                                   style="--tw-ring-color: {{ $colores['boton'] }}">
+                            @if($agendaError)
+                                <p class="text-sm text-red-500 mt-2">{{ $agendaError }}</p>
+                            @endif
+                        </div>
+                    @endif
 
                     <!-- Observaciones -->
                     <div class="mb-4">

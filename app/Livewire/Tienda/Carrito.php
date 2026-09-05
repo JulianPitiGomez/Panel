@@ -40,6 +40,13 @@ class Carrito extends Component
     public $envioImporte = 0;
     public $entregaError = '';
 
+    // Agenda (F2): cuando lo quiere (ver TiendaAgendaService)
+    public $agenda = [];           // disponibilidad() para el carrito y la modalidad actual
+    public $entregaFecha = '';     // dia elegido (Y-m-d)
+    public $entregaFranjaId = null; // franja elegida (0 = todo el dia / null = lo antes posible)
+    public $loAntesPosible = false;
+    public $agendaError = '';
+
     // Pago (F2): medio elegido y opciones (ver TiendaPagoService)
     public $pagoMedio = '';
     public $opcionesPago = [];
@@ -112,7 +119,62 @@ class Carrito extends Component
 
         $this->envioImporte = $this->entregaModo ? (float) $this->opcionesEntrega[$this->entregaModo]['importe'] : 0.0;
 
+        $this->cotizarAgenda();
         $this->cotizarPago();
+    }
+
+    /** Dias y franjas disponibles para este carrito y modalidad; ajusta la eleccion si dejo de valer. */
+    private function cotizarAgenda()
+    {
+        $this->agenda = (new \App\Services\TiendaAgendaService($this->tablePrefix))
+            ->disponibilidad($this->carrito, $this->entregaModo ?: \App\Services\TiendaPedidoService::ENTREGA_RETIRO);
+
+        if (!$this->agenda['activa']) {
+            return;
+        }
+
+        if ($this->loAntesPosible && $this->agenda['lo_antes_posible']) {
+            $this->entregaFecha = $this->agenda['lo_antes_posible']['fecha'];
+            $this->entregaFranjaId = $this->agenda['lo_antes_posible']['franja_id'];
+            return;
+        }
+        $this->loAntesPosible = false;
+
+        // La fecha elegida sigue ofrecida?
+        $dia = collect($this->agenda['dias'])->firstWhere('fecha', $this->entregaFecha);
+        if (!$dia) {
+            $this->entregaFecha = '';
+            $this->entregaFranjaId = null;
+            return;
+        }
+        $franja = collect($dia['franjas'])->first(fn ($f) => (int) $f['id'] === (int) $this->entregaFranjaId && $f['disponible']);
+        if (!$franja) {
+            $this->entregaFranjaId = null;
+        }
+    }
+
+    public function elegirDia($fecha)
+    {
+        $this->loAntesPosible = false;
+        $this->entregaFecha = (string) $fecha;
+        $this->entregaFranjaId = null;
+        // Si el dia tiene una sola franja disponible, queda elegida
+        $dia = collect($this->agenda['dias'] ?? [])->firstWhere('fecha', $this->entregaFecha);
+        $disponibles = $dia ? array_values(array_filter($dia['franjas'], fn ($f) => $f['disponible'])) : [];
+        if (count($disponibles) === 1) {
+            $this->entregaFranjaId = (int) $disponibles[0]['id'];
+        }
+    }
+
+    public function elegirFranja($id)
+    {
+        $this->loAntesPosible = false;
+        $this->entregaFranjaId = (int) $id;
+    }
+
+    public function elegirLoAntesPosible()
+    {
+        $this->loAntesPosible = true;
     }
 
     /** Medios de pago disponibles para el total actual (con envio) y el comprador logueado. */
@@ -434,13 +496,35 @@ class Carrito extends Component
             return;
         }
 
+        $this->setupClientDatabase();
+
+        // Agenda: con agenda activa, la fecha sale de lo elegido y se revalida contra el cupo real
+        $this->agendaError = '';
+        $franjaTexto = null;
+        $consumeCupo = false;
+        $agendaSrv = new \App\Services\TiendaAgendaService($this->tablePrefix);
+        $this->cotizarEntrega();   // deja $this->agenda al dia con la modalidad actual
+        if ($this->agenda['activa']) {
+            $error = $agendaSrv->validar($this->carrito, $this->entregaModo ?: 'retiro', $this->entregaFecha ?: null, $this->entregaFranjaId !== null ? (int) $this->entregaFranjaId : null);
+            if ($error) {
+                $this->agendaError = $error;
+                return;
+            }
+            $this->parafecha = $this->entregaFecha;
+            $dia = collect($this->agenda['dias'])->firstWhere('fecha', $this->entregaFecha);
+            $franja = $dia ? collect($dia['franjas'])->firstWhere('id', (int) $this->entregaFranjaId) : null;
+            $franjaTexto = $franja['etiqueta'] ?? null;
+            $consumeCupo = $agendaSrv->carritoConsumeCupo($this->carrito);
+        } elseif (!$this->agenda['abierta'] && !$agendaSrv->config()['recibe_cerrada']) {
+            $this->agendaError = 'La tienda está cerrada y no está tomando pedidos.';
+            return;
+        }
+
         // Validar fecha
         if ($this->parafecha < date('Y-m-d')) {
             session()->flash('error', 'La fecha de entrega no puede ser anterior a hoy');
             return;
         }
-
-        $this->setupClientDatabase();
 
         // Revalidar stock al confirmar: entre armar el carrito y confirmar pueden pasar horas
         if (!\App\Services\TiendaStockService::vendeSinStock(session('tienda_datos', []))) {
@@ -456,7 +540,6 @@ class Carrito extends Component
 
         // Entrega: recotizar con el servidor como verdad (no confiar en lo que quedo en pantalla)
         $this->entregaError = '';
-        $this->cotizarEntrega();
         $requiereDireccion = in_array($this->entregaModo, [\App\Services\TiendaPedidoService::ENTREGA_FLOTA, \App\Services\TiendaPedidoService::ENTREGA_CORREO, \App\Services\TiendaPedidoService::ENTREGA_A_CONVENIR], true);
         if (!$this->entregaModo) {
             $this->entregaError = 'Elegí cómo querés recibir el pedido.';
@@ -473,6 +556,9 @@ class Carrito extends Component
         }
         if ($this->envioImporte > 0) {
             $entregaResumen .= ' ($' . number_format($this->envioImporte, 2, ',', '.') . ')';
+        }
+        if ($franjaTexto) {
+            $entregaResumen .= ' · ' . \Carbon\Carbon::parse($this->parafecha)->format('d/m') . ' ' . $franjaTexto;
         }
 
         // Pago: el medio tiene que existir y estar disponible para este comprador y total
@@ -504,7 +590,7 @@ class Carrito extends Component
         // Encabezado, detalle y satelite en una sola transaccion: o entra todo o no entra nada.
         // Lo que va a pedidos_encab / pedidos_det es exactamente lo de siempre (regla del proyecto).
         $pagoRegistrado = [];
-        $pedidoId = DB::connection('client_db')->transaction(function () use ($compradorId, $compradorNombre, $compradorVendedor, $vendedorNombre, $compradorDescuento, $resumenIva, $opcion, $entregaResumen, $requiereDireccion, $pagoMedio, $totalConEnvio, &$pagoRegistrado) {
+        $pedidoId = DB::connection('client_db')->transaction(function () use ($compradorId, $compradorNombre, $compradorVendedor, $vendedorNombre, $compradorDescuento, $resumenIva, $opcion, $entregaResumen, $requiereDireccion, $pagoMedio, $totalConEnvio, &$pagoRegistrado, $franjaTexto, $consumeCupo) {
 
         $pedidoId = DB::connection('client_db')
             ->table("{$this->tablePrefix}pedidos_encab")
@@ -550,6 +636,10 @@ class Carrito extends Component
             'entrega_zona_id'   => $opcion['zona_id'],
             'envio_importe'     => $this->envioImporte,
             'envio_transportista' => $opcion['transportista'] ?? null,
+            'entrega_fecha'     => $this->agenda['activa'] ? $this->parafecha : null,
+            'entrega_franja_id' => $this->agenda['activa'] && $this->entregaFranjaId ? (int) $this->entregaFranjaId : null,
+            'entrega_franja'    => $franjaTexto ? mb_substr($franjaTexto, 0, 20) : null,
+            'agenda_cupo'       => $consumeCupo ? 1 : 0,
         ]);
 
         if ($requiereDireccion) {

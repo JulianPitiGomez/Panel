@@ -386,14 +386,14 @@ class FotosProductos extends Component
             ->leftJoin($this->tablePrefix . 'tienda_articu as ta', 'a.codigo', '=', 'ta.codigo')
             ->where('a.NOSALE', 0)
             ->orderBy('a.nombre')
-            ->get(['a.codigo', 'a.nombre', 'ta.peso', 'ta.alto', 'ta.ancho', 'ta.largo', 'ta.bultos']);
+            ->get(['a.codigo', 'a.nombre', 'ta.peso', 'ta.alto', 'ta.ancho', 'ta.largo', 'ta.bultos', 'ta.anticipacion_horas']);
 
         return response()->streamDownload(function () use ($filas) {
             $out = fopen('php://output', 'w');
             fwrite($out, "\xEF\xBB\xBF");   // BOM: Excel abre bien los acentos
-            fputcsv($out, ['codigo', 'nombre', 'peso_kg', 'alto_cm', 'ancho_cm', 'largo_cm', 'bultos'], ';');
+            fputcsv($out, ['codigo', 'nombre', 'peso_kg', 'alto_cm', 'ancho_cm', 'largo_cm', 'bultos', 'anticipacion_horas'], ';');
             foreach ($filas as $f) {
-                fputcsv($out, [$f->codigo, $f->nombre, $f->peso, $f->alto, $f->ancho, $f->largo, $f->bultos], ';');
+                fputcsv($out, [$f->codigo, $f->nombre, $f->peso, $f->alto, $f->ancho, $f->largo, $f->bultos, $f->anticipacion_horas], ';');
             }
             fclose($out);
         }, 'pesos-articulos.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
@@ -424,7 +424,7 @@ class FotosProductos extends Component
             $this->mensajePesos = 'La planilla tiene que tener una columna "codigo".';
             return;
         }
-        $iPeso = $col('peso_kg'); $iAlto = $col('alto_cm'); $iAncho = $col('ancho_cm'); $iLargo = $col('largo_cm'); $iBultos = $col('bultos');
+        $iPeso = $col('peso_kg'); $iAlto = $col('alto_cm'); $iAncho = $col('ancho_cm'); $iLargo = $col('largo_cm'); $iBultos = $col('bultos'); $iAntic = $col('anticipacion_horas');
         $num = fn ($v) => ($v === null || trim((string) $v) === '') ? null : (is_numeric(str_replace(',', '.', trim($v))) ? (float) str_replace(',', '.', trim($v)) : null);
 
         $codigosValidos = DB::connection('client_db')->table($this->tablePrefix . 'articu')->pluck('codigo')->map(fn ($c) => (string) $c)->flip();
@@ -442,6 +442,7 @@ class FotosProductos extends Component
             if ($iAncho !== false) $datos['ancho'] = $num($c[$iAncho] ?? null);
             if ($iLargo !== false) $datos['largo'] = $num($c[$iLargo] ?? null);
             if ($iBultos !== false) { $b = $num($c[$iBultos] ?? null); $datos['bultos'] = $b !== null ? (int) $b : null; }
+            if ($iAntic !== false) { $h = $num($c[$iAntic] ?? null); $datos['anticipacion_horas'] = $h !== null ? (int) $h : null; }
             if (empty($datos)) { $saltadas++; continue; }
 
             $this->upsertTiendaArticu($codigo, $datos);

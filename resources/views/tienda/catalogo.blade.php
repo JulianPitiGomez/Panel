@@ -1,5 +1,11 @@
 <div class="w-full max-w-full overflow-x-hidden">
 
+    @if($mensajeCerrada)
+        <div class="mb-4 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+            <i class="fas fa-door-closed mr-1"></i> {{ $mensajeCerrada }}
+        </div>
+    @endif
+
     {{-- ===== PARTIALS: Buscador ===== --}}
     @php $searchBar = true; @endphp
 

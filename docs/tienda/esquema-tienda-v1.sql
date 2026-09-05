@@ -19,7 +19,9 @@
 --  v1  2026-09-04  tienda_compradores, tienda_direcciones, tienda_pedidos, tienda_eventos,
 --                  tienda_envios_config, tienda_zonas (F2 checkout y zonas),
 --                  tienda_pagos_config, tienda_integraciones (F2 pagos),
---                  tienda_articu, tienda_correo_tarifas (F2 correo y peso)
+--                  tienda_articu, tienda_correo_tarifas (F2 correo y peso),
+--                  tienda_agenda, tienda_agenda_franjas, tienda_agenda_excepciones (F2 agenda);
+--                  tienda_pedidos.entrega_fecha / entrega_franja_id / entrega_franja / agenda_cupo
 --                  (F1 agrego comision_saldo a tienda_pedidos y tienda_eventos; v1 todavia no salio a produccion,
 --                   por eso se edita en lugar de crear v2)
 -- =====================================================================
@@ -230,4 +232,46 @@ CREATE TABLE IF NOT EXISTS `{p}tienda_correo_tarifas` (
   `orden`           INT          NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   KEY `idx_{p}tienda_correo_tarifas_activa` (`activa`, `orden`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Agenda de entregas (F2): para cuando lo quiere el comprador y cuando puede el comercio.
+-- Una fila por comercio. Si no esta activa, la tienda se comporta como hoy (fecha libre).
+CREATE TABLE IF NOT EXISTS `{p}tienda_agenda` (
+  `id`                       INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `activa`                   TINYINT(1) NOT NULL DEFAULT 0,
+  `anticipacion_min_horas`   INT        NOT NULL DEFAULT 0,      -- "no tomo pedidos para dentro de menos de N horas"
+  `anticipacion_max_dias`    INT        NOT NULL DEFAULT 14,     -- hasta cuantos dias adelante se puede reservar
+  `margen_minutos`           INT        NOT NULL DEFAULT 0,      -- minutos antes del inicio de la franja en que deja de ofrecerse
+  `hora_corte`               TIME       DEFAULT NULL,            -- pedidos despues de esta hora van al dia siguiente
+  `cupo_diario`              INT        DEFAULT NULL,            -- pedidos por dia (null = sin tope)
+  `abierta`                  TINYINT(1) NOT NULL DEFAULT 1,      -- cierre manual de la tienda
+  `recibe_cerrada`           TINYINT(1) NOT NULL DEFAULT 1,      -- cerrada: sigue tomando pedidos (con aviso) o no
+  `muestra_cerrada`          TINYINT(1) NOT NULL DEFAULT 1,      -- cerrada: mostrar el aviso en la tienda
+  `permite_lo_antes_posible` TINYINT(1) NOT NULL DEFAULT 1,      -- ofrecer "lo antes posible" ademas de las franjas
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Franjas por dia de la semana (0 = domingo ... 6 = sabado), con cupo y para que tipo de entrega valen.
+CREATE TABLE IF NOT EXISTS `{p}tienda_agenda_franjas` (
+  `id`          INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `dia_semana`  TINYINT    NOT NULL,
+  `hora_desde`  TIME       NOT NULL,
+  `hora_hasta`  TIME       NOT NULL,
+  `cupo_franja` INT        DEFAULT NULL,                         -- pedidos por franja (null = sin tope)
+  `vale_envio`  TINYINT(1) NOT NULL DEFAULT 1,
+  `vale_retiro` TINYINT(1) NOT NULL DEFAULT 1,
+  `activa`      TINYINT(1) NOT NULL DEFAULT 1,
+  `orden`       INT        NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_{p}tienda_agenda_franjas_dia` (`dia_semana`, `activa`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Excepciones por fecha: feriados, vacaciones, o un dia que se abre fuera de lo habitual.
+CREATE TABLE IF NOT EXISTS `{p}tienda_agenda_excepciones` (
+  `id`      INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `fecha`   DATE         NOT NULL,
+  `cerrado` TINYINT(1)   NOT NULL DEFAULT 1,
+  `motivo`  VARCHAR(80)  DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_{p}tienda_agenda_excepciones_fecha` (`fecha`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
