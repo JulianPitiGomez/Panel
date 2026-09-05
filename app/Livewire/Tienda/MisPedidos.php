@@ -204,6 +204,55 @@ class MisPedidos extends Component
         $this->detallePedido = [];
     }
 
+    /**
+     * Repetir un pedido: arma el carrito con los mismos articulos (los que siguen a la venta),
+     * a precio de hoy y con la lista del comprador, y manda al carrito.
+     */
+    public function repetirPedido($pedidoId)
+    {
+        $this->setupClientDatabase();
+
+        $renglones = DB::connection('client_db')->table("{$this->tablePrefix}pedidos_det")
+            ->where('idpedido', (int) $pedidoId)->get(['codart', 'cantidad']);
+        if ($renglones->isEmpty()) {
+            return;
+        }
+
+        $productos = DB::connection('client_db')
+            ->table("{$this->tablePrefix}articu as a")
+            ->leftJoin("{$this->tablePrefix}articu_fotos as f", 'a.CODIGO', '=', 'f.codigo')
+            ->leftJoin("{$this->tablePrefix}ivas as i", 'a.IVA', '=', 'i.codigo')
+            ->whereIn('a.CODIGO', $renglones->pluck('codart')->all())
+            ->where('a.NOSALE', 0)
+            ->get(['a.CODIGO', 'a.NOMBRE', 'a.PRECIOVEN', 'a.REVENTA', 'f.url as foto_url', 'i.tasa as tasa_iva'])
+            ->keyBy('CODIGO');
+
+        $lispreesp = session('tienda_comprador_lispreesp');
+        $lispre = session('tienda_comprador_lispre');
+        $especiales = $lispreesp
+            ? DB::connection('client_db')->table("{$this->tablePrefix}lispredet")->where('CODLIS', $lispreesp)->whereIn('CODART', $productos->keys()->all())->pluck('PRECIO', 'CODART')
+            : collect();
+
+        $carrito = [];
+        foreach ($renglones as $r) {
+            $p = $productos[$r->codart] ?? null;
+            if (!$p) {
+                continue;   // ya no se vende
+            }
+            $precio = (float) ($especiales[$r->codart] ?? ($lispre == 2 ? $p->REVENTA : $p->PRECIOVEN));
+            $carrito[] = [
+                'codigo' => $p->CODIGO, 'nombre' => $p->NOMBRE, 'precio' => $precio,
+                'precio_ven' => $p->PRECIOVEN, 'precio_rev' => $p->REVENTA,
+                'cantidad' => (float) $r->cantidad, 'subtotal' => $precio * (float) $r->cantidad,
+                'foto_url' => $p->foto_url, 'tasa' => (float) ($p->tasa_iva ?? 0),
+            ];
+        }
+
+        session(['tienda_carrito' => $carrito]);
+
+        return redirect()->route('tienda.carrito', $this->tiendaSlug);
+    }
+
     public function volverAlCatalogo()
     {
         return redirect()->route('tienda.catalogo', $this->tiendaSlug);

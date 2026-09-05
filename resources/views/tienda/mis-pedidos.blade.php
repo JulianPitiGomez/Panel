@@ -163,6 +163,9 @@
                             @endif
 
                             <div class="mt-3 text-right">
+                                <button wire:click="repetirPedido({{ $pedido['id'] }})" class="text-xs px-3 py-1.5 rounded-lg text-white mr-3" style="background-color: {{ $colores['boton'] }}">
+                                    <i class="fas fa-redo mr-1"></i> Repetir este pedido
+                                </button>
                                 <button wire:click="cerrarDetalle" class="text-xs text-gray-400 hover:text-gray-600">
                                     <i class="fas fa-chevron-up mr-1"></i> Cerrar
                                 </button>

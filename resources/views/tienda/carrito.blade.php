@@ -421,9 +421,18 @@
     @endif
 
     {{-- WhatsApp floating button --}}
-    @php $telefonoWa = session('tienda_datos')['telefono'] ?? null; @endphp
+    @php
+        $telefonoWa = session('tienda_datos')['telefono'] ?? null;
+        // Pedir por WhatsApp con el carrito armado: el mensaje lleva los items y el total
+        $textoWa = '';
+        if (!$pedidoConfirmado && count($carrito)) {
+            $lineas = array_map(fn ($i) => rtrim(rtrim(number_format((float) $i['cantidad'], 2, ',', '.'), '0'), ',') . ' x ' . $i['nombre'] . ' ($' . number_format((float) $i['subtotal'], 2, ',', '.') . ')', $carrito);
+            $textoWa = '?text=' . rawurlencode("¡Hola! Quiero hacer este pedido:\n- " . implode("\n- ", $lineas) . "\nTotal: $" . number_format((float) $total, 2, ',', '.') . (session('tienda_comprador_nombre') ? "\nSoy " . session('tienda_comprador_nombre') : ''));
+        }
+    @endphp
     @if($telefonoWa)
-        <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $telefonoWa) }}"
+        <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $telefonoWa) }}{{ $textoWa }}"
+           title="{{ $textoWa ? 'Pedir por WhatsApp con el carrito armado' : 'Escribinos por WhatsApp' }}"
            target="_blank"
            class="fixed bottom-6 right-6 z-50 w-14 h-14 bg-[#25D366] text-white rounded-full shadow-lg flex items-center justify-center hover:bg-[#1ebe57] transition-colors hover:scale-110 transform duration-200">
             <i class="fab fa-whatsapp text-2xl"></i>

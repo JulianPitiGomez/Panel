@@ -43,6 +43,7 @@ class Catalogo extends Component
     public $permiteDecimal = false;
     public $vendeSinStock = true;      // config web del comercio (TiendaStockService)
     public $mensajeCerrada = null;     // aviso de tienda cerrada (TiendaAgendaService)
+    public $habituales = [];           // lo que este comprador compra seguido (ultimos 12 meses)
     public $disponibles = [];          // codigo => disponible, de la pagina visible
     public $avisoStock = '';           // cuando se recorta una cantidad por falta de stock
 
@@ -252,6 +253,48 @@ class Catalogo extends Component
         return $productos;
     }
 
+    /**
+     * "Lo que comprás habitualmente": los articulos que mas veces pidio este cliente
+     * en el ultimo año, con precio y disponibilidad de hoy. Generaliza lo que ya hace
+     * el historial de vendedores. Se muestra sin busqueda ni filtros activos.
+     */
+    private function cargarHabituales()
+    {
+        $codcli = session('tienda_comprador_id');
+        if (!$codcli || !session('tienda_comprador_web_id')) {
+            $this->habituales = [];
+            return;
+        }
+
+        $frecuentes = DB::connection('client_db')
+            ->table("{$this->tablePrefix}pedidos_det as d")
+            ->join("{$this->tablePrefix}pedidos_encab as e", 'e.id', '=', 'd.idpedido')
+            ->where('e.codcli', $codcli)
+            ->where('e.fecha', '>=', now()->subYear()->toDateString())
+            ->groupBy('d.codart')
+            ->orderByRaw('COUNT(*) DESC')
+            ->limit(8)
+            ->pluck('d.codart')
+            ->all();
+
+        if (empty($frecuentes)) {
+            $this->habituales = [];
+            return;
+        }
+
+        $productos = DB::connection('client_db')
+            ->table("{$this->tablePrefix}articu as a")
+            ->leftJoin("{$this->tablePrefix}articu_fotos as f", 'a.CODIGO', '=', 'f.codigo')
+            ->leftJoin("{$this->tablePrefix}ivas as i", 'a.IVA', '=', 'i.codigo')
+            ->whereIn('a.CODIGO', $frecuentes)
+            ->where('a.NOSALE', 0)
+            ->get(['a.CODIGO', 'a.NOMBRE', 'a.PRECIOVEN', 'a.REVENTA', 'a.STOCKACT', 'f.url as foto_url', 'i.tasa as tasa_iva'])
+            ->keyBy('CODIGO');
+
+        // Mantener el orden por frecuencia
+        $this->habituales = collect($frecuentes)->map(fn ($c) => $productos[$c] ?? null)->filter()->values()->all();
+    }
+
     /** Disponible de un producto de la pagina actual. */
     public function disponibleDe($codigo): float
     {
@@ -440,6 +483,13 @@ class Catalogo extends Component
     {
         $productos = $this->obtenerProductos();
         $totalPaginas = ceil($this->totalProductos / $this->porPagina);
+
+        $sinFiltros = !$this->busqueda && empty($this->rubrosSeleccionados) && empty($this->marcasSeleccionadas) && empty($this->deptosSeleccionados) && $this->paginaActual == 1;
+        if ($sinFiltros) {
+            $this->cargarHabituales();
+        } else {
+            $this->habituales = [];
+        }
 
         return view('tienda.catalogo', [
             'productos' => $productos,
