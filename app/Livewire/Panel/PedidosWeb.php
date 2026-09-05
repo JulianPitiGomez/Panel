@@ -120,6 +120,24 @@ class PedidosWeb extends Component
         }
     }
 
+    public $seguimientoInput = '';
+
+    /** Numero de seguimiento del correo, cargado a mano por el comercio (F2; la API va en carril B). */
+    public function guardarSeguimiento($id)
+    {
+        $this->conectar();
+        $seg = mb_substr(trim($this->seguimientoInput), 0, 60);
+        DB::connection('client_db')->table("{$this->tablePrefix}tienda_pedidos")
+            ->where('idpedido', (int) $id)->update(['envio_seguimiento' => $seg ?: null, 'estado_web' => $seg ? 'enviado' : 'recibido']);
+        (new TiendaPedidoService($this->tablePrefix))->registrarEvento((int) $id, $seg ? 'enviado' : 'recibido',
+            $seg ? "Despachado. Número de seguimiento: {$seg}" : 'Se quitó el número de seguimiento', 'comercio', session('cliente_nombre') ?: 'panel');
+        $this->mensaje = $seg ? "Seguimiento del pedido #{$id} guardado." : "Seguimiento del pedido #{$id} quitado.";
+        $this->tipoMensaje = 'success';
+        $this->seguimientoInput = '';
+        $this->cargar();
+        $this->verDetalle($id);
+    }
+
     public function etiquetaEstadoGestion($estado): string
     {
         return TiendaEstadoPedido::etiqueta($estado);

@@ -307,11 +307,13 @@ class FotosProductos extends Component
         $query = DB::connection('client_db')
             ->table($this->tablePrefix . 'articu as a')
             ->leftJoin($this->tablePrefix . 'articu_fotos as f', 'a.codigo', '=', 'f.codigo')
+            ->leftJoin($this->tablePrefix . 'tienda_articu as ta', 'a.codigo', '=', 'ta.codigo')
             ->select(
                 'a.codigo',
                 'a.nombre',
                 'a.precioven',
-                'f.url as foto_url'
+                'f.url as foto_url',
+                'ta.peso as peso'
             )
             ->where('a.NOSALE', 0);
 
@@ -350,6 +352,104 @@ class FotosProductos extends Component
             ->count();
 
         $this->totalSinFoto = $this->totalProductos - $this->totalConFoto;
+    }
+
+    // ------------------------------------------------ peso y medidas (tienda_articu)
+
+    public $planillaPesos = null;    // CSV subido
+    public $mensajePesos = '';
+
+    /** Guarda el peso (kg) de un articulo desde la tabla. Vacio = sin dato. */
+    public function guardarPeso($codigo, $valor)
+    {
+        $this->setupClientDatabase();
+        $peso = is_numeric($valor) && (float) $valor >= 0 ? round((float) $valor, 3) : null;
+        $this->upsertTiendaArticu((string) $codigo, ['peso' => $peso]);
+    }
+
+    private function upsertTiendaArticu(string $codigo, array $datos): void
+    {
+        $tabla = DB::connection('client_db')->table($this->tablePrefix . 'tienda_articu');
+        if ($tabla->where('codigo', $codigo)->exists()) {
+            DB::connection('client_db')->table($this->tablePrefix . 'tienda_articu')->where('codigo', $codigo)->update($datos);
+        } else {
+            DB::connection('client_db')->table($this->tablePrefix . 'tienda_articu')->insert(array_merge(['codigo' => $codigo], $datos));
+        }
+    }
+
+    /** Planilla CSV con todos los articulos y sus pesos/medidas actuales, para completar en Excel. */
+    public function descargarPlanillaPesos()
+    {
+        $this->setupClientDatabase();
+        $filas = DB::connection('client_db')
+            ->table($this->tablePrefix . 'articu as a')
+            ->leftJoin($this->tablePrefix . 'tienda_articu as ta', 'a.codigo', '=', 'ta.codigo')
+            ->where('a.NOSALE', 0)
+            ->orderBy('a.nombre')
+            ->get(['a.codigo', 'a.nombre', 'ta.peso', 'ta.alto', 'ta.ancho', 'ta.largo', 'ta.bultos']);
+
+        return response()->streamDownload(function () use ($filas) {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");   // BOM: Excel abre bien los acentos
+            fputcsv($out, ['codigo', 'nombre', 'peso_kg', 'alto_cm', 'ancho_cm', 'largo_cm', 'bultos'], ';');
+            foreach ($filas as $f) {
+                fputcsv($out, [$f->codigo, $f->nombre, $f->peso, $f->alto, $f->ancho, $f->largo, $f->bultos], ';');
+            }
+            fclose($out);
+        }, 'pesos-articulos.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /**
+     * Importa la planilla: columnas codigo, peso_kg (y opcionales alto_cm, ancho_cm, largo_cm, bultos).
+     * Acepta ; o , como separador y coma o punto decimal. Solo toca las filas con codigo valido.
+     */
+    public function importarPlanillaPesos()
+    {
+        $this->validate(['planillaPesos' => 'required|file|max:4096'], ['planillaPesos.required' => 'Elegí el archivo CSV.']);
+        $this->setupClientDatabase();
+
+        $contenido = file_get_contents($this->planillaPesos->getRealPath());
+        $contenido = preg_replace('/^\xEF\xBB\xBF/', '', $contenido);
+        $lineas = preg_split('/\r\n|\r|\n/', trim($contenido));
+        if (count($lineas) < 2) {
+            $this->mensajePesos = 'La planilla está vacía.';
+            return;
+        }
+
+        $sep = substr_count($lineas[0], ';') >= substr_count($lineas[0], ',') ? ';' : ',';
+        $cab = array_map(fn ($c) => strtolower(trim($c)), str_getcsv($lineas[0], $sep));
+        $col = fn ($nombre) => array_search($nombre, $cab, true);
+        $iCod = $col('codigo');
+        if ($iCod === false) {
+            $this->mensajePesos = 'La planilla tiene que tener una columna "codigo".';
+            return;
+        }
+        $iPeso = $col('peso_kg'); $iAlto = $col('alto_cm'); $iAncho = $col('ancho_cm'); $iLargo = $col('largo_cm'); $iBultos = $col('bultos');
+        $num = fn ($v) => ($v === null || trim((string) $v) === '') ? null : (is_numeric(str_replace(',', '.', trim($v))) ? (float) str_replace(',', '.', trim($v)) : null);
+
+        $codigosValidos = DB::connection('client_db')->table($this->tablePrefix . 'articu')->pluck('codigo')->map(fn ($c) => (string) $c)->flip();
+        $ok = 0; $saltadas = 0;
+
+        foreach (array_slice($lineas, 1) as $linea) {
+            if (trim($linea) === '') continue;
+            $c = str_getcsv($linea, $sep);
+            $codigo = trim((string) ($c[$iCod] ?? ''));
+            if ($codigo === '' || !isset($codigosValidos[$codigo])) { $saltadas++; continue; }
+
+            $datos = [];
+            if ($iPeso !== false) $datos['peso'] = $num($c[$iPeso] ?? null);
+            if ($iAlto !== false) $datos['alto'] = $num($c[$iAlto] ?? null);
+            if ($iAncho !== false) $datos['ancho'] = $num($c[$iAncho] ?? null);
+            if ($iLargo !== false) $datos['largo'] = $num($c[$iLargo] ?? null);
+            if ($iBultos !== false) { $b = $num($c[$iBultos] ?? null); $datos['bultos'] = $b !== null ? (int) $b : null; }
+            if (empty($datos)) { $saltadas++; continue; }
+
+            $this->upsertTiendaArticu($codigo, $datos);
+            $ok++;
+        }
+
+        $this->planillaPesos = null;
+        $this->mensajePesos = "Planilla importada: {$ok} artículos actualizados" . ($saltadas ? ", {$saltadas} filas salteadas (código inexistente o sin datos)" : '') . '.';
     }
 
     public function seleccionarProducto($codigo)

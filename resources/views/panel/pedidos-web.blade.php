@@ -99,6 +99,16 @@
                                             @if($p['pago_referencia'])<p>Referencia de pago: {{ $p['pago_referencia'] }}</p>@endif
                                             <p>IVA incluido: ${{ number_format($p['iva_incluido'], 2, ',', '.') }} · Comisión: ${{ number_format($p['comision_importe'], 2, ',', '.') }} ({{ $p['comision_estado'] }})</p>
                                         </div>
+                                        @if($p['entrega_modo'] === 'correo')
+                                            <div class="mt-3 flex items-center gap-2" wire:click.stop>
+                                                <input type="text" wire:model="seguimientoInput" maxlength="60" placeholder="{{ $p['envio_seguimiento'] ?: 'Nº de seguimiento del correo' }}"
+                                                       class="px-2 py-1.5 border border-gray-300 rounded-lg text-xs w-56">
+                                                <button wire:click="guardarSeguimiento({{ $p['idpedido'] }})" class="px-3 py-1.5 bg-[#1E1B35] text-white rounded-lg text-xs font-semibold hover:bg-[#2d2952]">
+                                                    <i class="fas fa-truck mr-1"></i>{{ $p['envio_seguimiento'] ? 'Actualizar seguimiento' : 'Marcar despachado' }}
+                                                </button>
+                                            </div>
+                                            @if($p['envio_seguimiento'])<p class="text-xs text-gray-500 mt-1">Seguimiento actual: <strong>{{ $p['envio_seguimiento'] }}</strong>{{ $p['envio_transportista'] ? ' · ' . ucwords(str_replace('_', ' ', $p['envio_transportista'])) : '' }}</p>@endif
+                                        @endif
                                         @if($p['pago_medio'] === 'transferencia' && $p['pago_estado'] === 'pendiente')
                                             <button wire:click="rechazarPago({{ $p['idpedido'] }})" wire:confirm="¿Marcar el pago del pedido #{{ $p['idpedido'] }} como rechazado?" class="mt-3 text-xs text-red-500 hover:underline">Marcar pago como rechazado</button>
                                         @endif

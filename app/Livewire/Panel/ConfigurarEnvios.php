@@ -15,6 +15,8 @@ class ConfigurarEnvios extends Component
 {
     public $config = [];
     public $zonas = [];
+    public $tarifas = [];      // tarifario manual de correo
+    public $provincias = TiendaEnvioService::PROVINCIAS;
     public $mensaje = '';
     public $tipoMensaje = '';
 
@@ -54,6 +56,20 @@ class ConfigurarEnvios extends Component
             'demora_estimada' => $z->demora_estimada,
             'activa'          => (bool) $z->activa,
         ], $srv->zonas());
+
+        $this->tarifas = array_map(fn ($t) => [
+            'id'              => $t->id,
+            'nombre'          => $t->nombre,
+            'tipo'            => $t->tipo,
+            'provincias'      => $t->provincias_array,
+            'cp_desde'        => $t->cp_desde,
+            'cp_hasta'        => $t->cp_hasta,
+            'peso_desde'      => $t->peso_desde,
+            'peso_hasta'      => $t->peso_hasta,
+            'precio'          => $t->precio,
+            'demora_estimada' => $t->demora_estimada,
+            'activa'          => (bool) $t->activa,
+        ], $srv->tarifasCorreo());
     }
 
     /** Lo llama el mapa cuando se mueve el marcador o se elige una direccion. */
@@ -66,8 +82,8 @@ class ConfigurarEnvios extends Component
         }
     }
 
-    /** Guarda config + zonas. $zonas viene armado por el JS de la pantalla (con los poligonos). */
-    public function guardar(array $zonas)
+    /** Guarda config + zonas + tarifario. $zonas y $tarifas vienen armados por el JS de la pantalla. */
+    public function guardar(array $zonas, array $tarifas = [])
     {
         $this->conectar();
 
@@ -75,6 +91,7 @@ class ConfigurarEnvios extends Component
             $srv = new TiendaEnvioService($this->tablePrefix);
             $srv->guardarConfig($this->config);
             $srv->guardarZonas($zonas);
+            $srv->guardarTarifasCorreo($tarifas);
 
             $this->cargar();
             $this->mensaje = 'Configuración de envíos guardada.';

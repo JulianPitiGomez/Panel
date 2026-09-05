@@ -11,7 +11,14 @@
     {{-- Modalidades --}}
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6">
         <h3 class="font-primary font-semibold text-gray-800 mb-4"><i class="fas fa-sliders-h text-[#FFAF22] mr-2"></i>Formas de entrega</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            <label class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100">
+                <input type="checkbox" wire:model.live="config.correo_activo" class="mt-1 w-4 h-4 rounded text-[#FFAF22] focus:ring-[#FFAF22]">
+                <div>
+                    <span class="text-sm font-medium text-gray-700">Envío por correo</span>
+                    <p class="text-xs text-gray-400">Correo Argentino, Andreani u otro, con el tarifario que cargás abajo.</p>
+                </div>
+            </label>
             <label class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100">
                 <input type="checkbox" wire:model.live="config.retiro_local" class="mt-1 w-4 h-4 rounded text-[#FFAF22] focus:ring-[#FFAF22]">
                 <div>
@@ -144,6 +151,84 @@
         </div>
     </div>
 
+    {{-- Correo: tarifario manual --}}
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6" x-show="$wire.config.correo_activo" x-transition>
+        <h3 class="font-primary font-semibold text-gray-800 mb-1"><i class="fas fa-envelope-open-text text-[#FFAF22] mr-2"></i>Envío por correo: tarifario</h3>
+        <p class="text-xs text-gray-400 mb-4">Cargá cuánto cobrás según el destino y el peso del pedido. El peso sale de lo que cargues por artículo en Fotos Productos; si un artículo no lo tiene, se usa el peso por defecto. Cuando el correo tenga API, la cotización se enchufa acá sin cambiar nada.</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Transportista</label>
+                <select wire:model="config.correo_proveedor" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    <option value="">Elegí…</option>
+                    <option value="correo_argentino">Correo Argentino</option>
+                    <option value="andreani">Andreani</option>
+                    <option value="oca">OCA</option>
+                    <option value="otro">Otro</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Peso por defecto por artículo (kg)</label>
+                <input type="number" step="0.001" min="0" wire:model="config.peso_default" placeholder="0.500"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+            </div>
+            <div class="flex items-end">
+                <div class="flex gap-1">
+                    <button type="button" @click="agregarTarifa('provincia')" class="px-2 py-2 text-xs rounded-lg bg-[#FFAF22]/15 text-[#B8860B] hover:bg-[#FFAF22]/30"><i class="fas fa-map mr-1"></i>Por provincia</button>
+                    <button type="button" @click="agregarTarifa('cp')" class="px-2 py-2 text-xs rounded-lg bg-[#FFAF22]/15 text-[#B8860B] hover:bg-[#FFAF22]/30"><i class="fas fa-hashtag mr-1"></i>Por rango de CP</button>
+                </div>
+            </div>
+        </div>
+
+        <div wire:ignore class="space-y-3">
+            <template x-if="tarifas.length === 0">
+                <p class="text-xs text-gray-400 py-3 text-center">Sin tarifas cargadas. Agregá al menos una por provincia o por rango de código postal.</p>
+            </template>
+            <template x-for="(t, i) in tarifas" :key="t.uid">
+                <div class="rounded-xl border border-gray-200 p-3 grid grid-cols-2 md:grid-cols-6 gap-2 items-end">
+                    <label class="text-xs text-gray-500 col-span-2">Destino
+                        <input type="text" x-model="t.nombre" placeholder="Ej: Buenos Aires interior" class="w-full mt-0.5 px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+                    </label>
+                    <template x-if="t.tipo === 'provincia'">
+                        <label class="text-xs text-gray-500 col-span-2">Provincias (Ctrl para varias)
+                            <select multiple x-model="t.provincias" class="w-full mt-0.5 px-2 py-1 border border-gray-300 rounded-lg text-xs h-20">
+                                @foreach($provincias as $prov)
+                                    <option value="{{ $prov }}">{{ $prov }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                    </template>
+                    <template x-if="t.tipo === 'cp'">
+                        <div class="col-span-2 grid grid-cols-2 gap-2">
+                            <label class="text-xs text-gray-500">CP desde
+                                <input type="number" x-model="t.cp_desde" class="w-full mt-0.5 px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+                            </label>
+                            <label class="text-xs text-gray-500">CP hasta
+                                <input type="number" x-model="t.cp_hasta" class="w-full mt-0.5 px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+                            </label>
+                        </div>
+                    </template>
+                    <label class="text-xs text-gray-500">Peso desde (kg)
+                        <input type="number" step="0.001" min="0" x-model="t.peso_desde" class="w-full mt-0.5 px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+                    </label>
+                    <label class="text-xs text-gray-500">Peso hasta (kg)
+                        <input type="number" step="0.001" min="0" x-model="t.peso_hasta" placeholder="sin tope" class="w-full mt-0.5 px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+                    </label>
+                    <label class="text-xs text-gray-500">Precio ($)
+                        <input type="number" step="0.01" min="0" x-model="t.precio" class="w-full mt-0.5 px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+                    </label>
+                    <label class="text-xs text-gray-500 col-span-2 md:col-span-3">Demora
+                        <input type="text" x-model="t.demora_estimada" placeholder="3 a 5 días hábiles" maxlength="60" class="w-full mt-0.5 px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+                    </label>
+                    <div class="col-span-2 md:col-span-2 flex items-center justify-between">
+                        <label class="flex items-center gap-2 text-xs text-gray-600"><input type="checkbox" x-model="t.activa" class="w-4 h-4 rounded text-[#FFAF22]"> Activa</label>
+                        <button type="button" @click="quitarTarifa(i)" class="text-red-400 hover:text-red-600 p-1" title="Quitar"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
     <div class="flex justify-end">
         <button type="button" @click="guardar()" wire:loading.attr="disabled"
                 class="px-6 py-2.5 bg-[#1E1B35] text-white rounded-lg hover:bg-[#2d2952] transition font-semibold text-sm disabled:opacity-50">
@@ -163,14 +248,36 @@ Alpine.data('enviosConfig', () => ({
     colores: ['#8C52FF','#5271FF','#FFBD59','#FF5757','#00C2CB','#7ED957','#FF66C4','#5CE1E6','#C9E265','#CB6CE6','#38B6FF','#FFDE59'],
     uidSeq: 1,
 
+    tarifas: [],
+
     init() {
         this.zonas = this.normalizar(JSON.parse(JSON.stringify(this.$wire.zonas || [])));
+        this.tarifas = this.normalizarTarifas(JSON.parse(JSON.stringify(this.$wire.tarifas || [])));
         this.$wire.on('envios-guardados', () => {
             this.zonas = this.normalizar(JSON.parse(JSON.stringify(this.$wire.zonas || [])));
+            this.tarifas = this.normalizarTarifas(JSON.parse(JSON.stringify(this.$wire.tarifas || [])));
             this.redibujar();
         });
         this.cargarGoogleMaps();
     },
+
+    normalizarTarifas(lista) {
+        return lista.map(t => ({
+            id: t.id || 0, uid: this.uidSeq++,
+            nombre: t.nombre || '', tipo: t.tipo || 'provincia',
+            provincias: Array.isArray(t.provincias) ? t.provincias : [],
+            cp_desde: t.cp_desde ?? '', cp_hasta: t.cp_hasta ?? '',
+            peso_desde: t.peso_desde ?? 0, peso_hasta: t.peso_hasta ?? '',
+            precio: t.precio || 0, demora_estimada: t.demora_estimada || '',
+            activa: t.activa !== false && t.activa !== 0,
+        }));
+    },
+
+    agregarTarifa(tipo) {
+        this.tarifas.push({ id: 0, uid: this.uidSeq++, nombre: '', tipo, provincias: [], cp_desde: '', cp_hasta: '', peso_desde: 0, peso_hasta: '', precio: 0, demora_estimada: '', activa: true });
+    },
+
+    quitarTarifa(i) { this.tarifas.splice(i, 1); },
 
     normalizar(lista) {
         return lista.map(z => ({
@@ -338,7 +445,11 @@ Alpine.data('enviosConfig', () => ({
             radio_km: z.radio_km, tarifa: z.tarifa, tarifa_por_km: z.tarifa_por_km,
             minimo_gratis: z.minimo_gratis, demora_estimada: z.demora_estimada, activa: !!z.activa,
         }));
-        this.$wire.guardar(payload);
+        const tarifas = this.tarifas.map(t => ({
+            id: t.id, nombre: t.nombre, tipo: t.tipo, provincias: t.provincias, cp_desde: t.cp_desde, cp_hasta: t.cp_hasta,
+            peso_desde: t.peso_desde, peso_hasta: t.peso_hasta, precio: t.precio, demora_estimada: t.demora_estimada, activa: !!t.activa,
+        }));
+        this.$wire.guardar(payload, tarifas);
     },
 }));
 </script>

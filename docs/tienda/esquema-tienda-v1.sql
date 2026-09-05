@@ -18,7 +18,8 @@
 -- Historial:
 --  v1  2026-09-04  tienda_compradores, tienda_direcciones, tienda_pedidos, tienda_eventos,
 --                  tienda_envios_config, tienda_zonas (F2 checkout y zonas),
---                  tienda_pagos_config, tienda_integraciones (F2 pagos)
+--                  tienda_pagos_config, tienda_integraciones (F2 pagos),
+--                  tienda_articu, tienda_correo_tarifas (F2 correo y peso)
 --                  (F1 agrego comision_saldo a tienda_pedidos y tienda_eventos; v1 todavia no salio a produccion,
 --                   por eso se edita en lugar de crear v2)
 -- =====================================================================
@@ -189,4 +190,44 @@ CREATE TABLE IF NOT EXISTS `{p}tienda_integraciones` (
   `creado`           DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_{p}tienda_integraciones_servicio` (`servicio`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Lo que el articulo necesita para venderse online y que articu no tiene.
+-- Sin peso y medidas no hay cotizacion de correo posible.
+CREATE TABLE IF NOT EXISTS `{p}tienda_articu` (
+  `codigo`             BIGINT       NOT NULL,                     -- articu.CODIGO
+  `visible_web`        TINYINT(1)   NOT NULL DEFAULT 1,
+  `destacado`          TINYINT(1)   NOT NULL DEFAULT 0,           -- F3
+  `orden`              INT          NOT NULL DEFAULT 0,
+  `descripcion_larga`  TEXT         DEFAULT NULL,                 -- F4
+  `peso`               DECIMAL(8,3) DEFAULT NULL,                 -- kg
+  `alto`               DECIMAL(8,2) DEFAULT NULL,                 -- cm
+  `ancho`              DECIMAL(8,2) DEFAULT NULL,
+  `largo`              DECIMAL(8,2) DEFAULT NULL,
+  `bultos`             INT          DEFAULT NULL,
+  `anticipacion_horas` INT          DEFAULT NULL,                 -- agenda: el que fabrica a pedido
+  `consume_cupo`       TINYINT(1)   NOT NULL DEFAULT 1,           -- agenda
+  `meta_titulo`        VARCHAR(120) DEFAULT NULL,                 -- F6
+  `meta_descripcion`   VARCHAR(255) DEFAULT NULL,
+  PRIMARY KEY (`codigo`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tarifario MANUAL de correo (F2): el comercio carga destino, rango de peso y precio.
+-- La cotizacion por API del transportista (carril B) se enchufa detras del mismo cotizador.
+-- Destino por provincias (lista) o por rango de codigo postal. Gana la tarifa mas barata que aplique.
+CREATE TABLE IF NOT EXISTS `{p}tienda_correo_tarifas` (
+  `id`              INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `nombre`          VARCHAR(60)  NOT NULL,                        -- "Buenos Aires interior", "Patagonia"
+  `tipo`            VARCHAR(10)  NOT NULL DEFAULT 'provincia',    -- provincia | cp
+  `provincias`      TEXT         DEFAULT NULL,                    -- csv de nombres de provincia
+  `cp_desde`        INT          DEFAULT NULL,
+  `cp_hasta`        INT          DEFAULT NULL,
+  `peso_desde`      DECIMAL(8,3) NOT NULL DEFAULT 0,              -- kg, inclusive
+  `peso_hasta`      DECIMAL(8,3) DEFAULT NULL,                    -- kg, inclusive; null = sin tope
+  `precio`          DECIMAL(10,2) NOT NULL DEFAULT 0,
+  `demora_estimada` VARCHAR(60)  DEFAULT NULL,
+  `activa`          TINYINT(1)   NOT NULL DEFAULT 1,
+  `orden`           INT          NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_{p}tienda_correo_tarifas_activa` (`activa`, `orden`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -26,6 +26,16 @@ class TiendaEnvioService
     public const ZONA_CP       = 'cp';
     public const ZONA_POLIGONO = 'poligono';
 
+    public const TARIFA_PROVINCIA = 'provincia';
+    public const TARIFA_CP        = 'cp';
+
+    public const PROVINCIAS = [
+        'Buenos Aires', 'CABA', 'Catamarca', 'Chaco', 'Chubut', 'Córdoba', 'Corrientes', 'Entre Ríos',
+        'Formosa', 'Jujuy', 'La Pampa', 'La Rioja', 'Mendoza', 'Misiones', 'Neuquén', 'Río Negro',
+        'Salta', 'San Juan', 'San Luis', 'Santa Cruz', 'Santa Fe', 'Santiago del Estero',
+        'Tierra del Fuego', 'Tucumán',
+    ];
+
     private string $prefijo;
 
     public function __construct(string $prefijo)
@@ -150,6 +160,154 @@ class TiendaEnvioService
         }
     }
 
+    // ------------------------------------------------------ correo (tarifario)
+
+    public function tarifasCorreo(bool $soloActivas = false): array
+    {
+        $q = $this->tabla('tienda_correo_tarifas')->orderBy('orden')->orderBy('id');
+        if ($soloActivas) {
+            $q->where('activa', 1);
+        }
+
+        return $q->get()->map(function ($t) {
+            $t->provincias_array = self::parsearProvincias($t->provincias);
+            return $t;
+        })->all();
+    }
+
+    /** Guarda la lista completa del tarifario (alta, modificacion y baja de las que no vienen). */
+    public function guardarTarifasCorreo(array $tarifas): void
+    {
+        $existentes = $this->tabla('tienda_correo_tarifas')->pluck('id')->all();
+        $vistas = [];
+
+        foreach (array_values($tarifas) as $orden => $t) {
+            $tipo = ($t['tipo'] ?? '') === self::TARIFA_CP ? self::TARIFA_CP : self::TARIFA_PROVINCIA;
+            $provincias = $tipo === self::TARIFA_PROVINCIA ? self::parsearProvincias($t['provincias'] ?? null) : [];
+            $cpDesde = $tipo === self::TARIFA_CP && is_numeric($t['cp_desde'] ?? null) ? (int) $t['cp_desde'] : null;
+            $cpHasta = $tipo === self::TARIFA_CP && is_numeric($t['cp_hasta'] ?? null) ? (int) $t['cp_hasta'] : null;
+
+            if (($tipo === self::TARIFA_PROVINCIA && empty($provincias)) || ($tipo === self::TARIFA_CP && ($cpDesde === null || $cpHasta === null))) {
+                continue;   // sin destino no sirve
+            }
+
+            $fila = [
+                'nombre'          => mb_substr(trim($t['nombre'] ?? '') ?: 'Destino ' . ($orden + 1), 0, 60),
+                'tipo'            => $tipo,
+                'provincias'      => $tipo === self::TARIFA_PROVINCIA ? implode(',', $provincias) : null,
+                'cp_desde'        => $cpDesde,
+                'cp_hasta'        => $cpHasta,
+                'peso_desde'      => max(0, round((float) ($t['peso_desde'] ?? 0), 3)),
+                'peso_hasta'      => is_numeric($t['peso_hasta'] ?? null) && (float) $t['peso_hasta'] > 0 ? round((float) $t['peso_hasta'], 3) : null,
+                'precio'          => round((float) ($t['precio'] ?? 0), 2),
+                'demora_estimada' => mb_substr(trim((string) ($t['demora_estimada'] ?? '')), 0, 60) ?: null,
+                'activa'          => !empty($t['activa']) ? 1 : 0,
+                'orden'           => $orden,
+            ];
+
+            $id = (int) ($t['id'] ?? 0);
+            if ($id > 0 && in_array($id, $existentes, true)) {
+                $this->tabla('tienda_correo_tarifas')->where('id', $id)->update($fila);
+                $vistas[] = $id;
+            } else {
+                $vistas[] = $this->tabla('tienda_correo_tarifas')->insertGetId($fila);
+            }
+        }
+
+        $borrar = array_diff($existentes, $vistas);
+        if (!empty($borrar)) {
+            $this->tabla('tienda_correo_tarifas')->whereIn('id', $borrar)->delete();
+        }
+    }
+
+    /**
+     * Peso total del carrito en kg y cantidad de bultos, con tienda_articu.peso
+     * (o el peso por defecto del comercio para los que no lo tienen cargado).
+     * @param array $carrito items con 'codigo' y 'cantidad'
+     * @return array{peso: float, bultos: int, sin_peso: int}
+     */
+    public function pesoCarrito(array $carrito, ?array $config = null): array
+    {
+        $config ??= $this->config();
+        $default = (float) ($config['peso_default'] ?? 0);
+        $codigos = array_map(fn ($i) => $i['codigo'], $carrito);
+
+        $datos = empty($codigos) ? collect() : $this->tabla('tienda_articu')->whereIn('codigo', $codigos)->get()->keyBy('codigo');
+
+        $peso = 0.0;
+        $bultos = 0;
+        $sinPeso = 0;
+        foreach ($carrito as $i) {
+            $a = $datos[$i['codigo']] ?? null;
+            $p = $a && $a->peso !== null ? (float) $a->peso : null;
+            if ($p === null) {
+                $sinPeso++;
+                $p = $default;
+            }
+            $peso += $p * (float) $i['cantidad'];
+            $bultos += max(1, (int) ($a->bultos ?? 1)) * (int) ceil((float) $i['cantidad']);
+        }
+
+        return ['peso' => round($peso, 3), 'bultos' => $bultos, 'sin_peso' => $sinPeso];
+    }
+
+    /**
+     * Cotiza el correo con el tarifario manual. Devuelve la tarifa mas barata que
+     * aplique al destino (provincia o cp) y al peso, o null si ninguna cubre.
+     * @return array{tarifa: object, importe: float}|null
+     */
+    public function cotizarCorreo(?string $provincia, ?string $cp, float $pesoKg): ?array
+    {
+        $prov = self::normalizarProvincia($provincia);
+        $cpNum = (int) self::normalizarCp($cp);
+        $mejor = null;
+
+        foreach ($this->tarifasCorreo(true) as $t) {
+            if ($pesoKg < (float) $t->peso_desde || ($t->peso_hasta !== null && $pesoKg > (float) $t->peso_hasta)) {
+                continue;
+            }
+            $cubre = $t->tipo === self::TARIFA_CP
+                ? ($cpNum > 0 && $cpNum >= (int) $t->cp_desde && $cpNum <= (int) $t->cp_hasta)
+                : ($prov !== '' && in_array($prov, array_map([self::class, 'normalizarProvincia'], $t->provincias_array), true));
+            if (!$cubre) {
+                continue;
+            }
+            if ($mejor === null || (float) $t->precio < (float) $mejor->precio) {
+                $mejor = $t;
+            }
+        }
+
+        return $mejor ? ['tarifa' => $mejor, 'importe' => round((float) $mejor->precio, 2)] : null;
+    }
+
+    public static function parsearProvincias($valor): array
+    {
+        $lista = is_array($valor) ? $valor : (is_string($valor) ? explode(',', $valor) : []);
+        $out = [];
+        foreach ($lista as $p) {
+            $n = self::normalizarProvincia($p);
+            foreach (self::PROVINCIAS as $oficial) {
+                if (self::normalizarProvincia($oficial) === $n) {
+                    $out[] = $oficial;
+                    break;
+                }
+            }
+        }
+        return array_values(array_unique($out));
+    }
+
+    /** "Ciudad Autónoma de Buenos Aires" / "capital federal" -> "caba"; sin tildes ni mayusculas. */
+    public static function normalizarProvincia(?string $p): string
+    {
+        $s = mb_strtolower(trim((string) $p));
+        $s = strtr($s, ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u', 'ñ' => 'n']);
+        $s = preg_replace('/\s+/', ' ', $s);
+        if (in_array($s, ['ciudad autonoma de buenos aires', 'capital federal', 'ciudad de buenos aires', 'buenos aires capital', 'c.a.b.a.', 'caba'], true)) {
+            return 'caba';
+        }
+        return str_replace('provincia de ', '', $s);
+    }
+
     // --------------------------------------------------------------- resolver
 
     /**
@@ -226,7 +384,7 @@ class TiendaEnvioService
      * Opciones de entrega para el checkout, con costo, para una direccion.
      * @return array<string, array{modo: string, etiqueta: string, importe: float, disponible: bool, detalle: string, zona_id: ?int}>
      */
-    public function opciones(float $subtotal, ?float $lat, ?float $lng, ?string $cp): array
+    public function opciones(float $subtotal, ?float $lat, ?float $lng, ?string $cp, ?string $provincia = null, ?array $carrito = null): array
     {
         $cfg = $this->config();
         $out = [];
@@ -258,6 +416,28 @@ class TiendaEnvioService
                     'importe' => 0.0, 'disponible' => false,
                     'detalle' => $sinDatos ? 'Ingresá tu dirección para cotizar' : 'No llegamos a esa dirección con reparto propio',
                     'zona_id' => null,
+                ];
+            }
+        }
+
+        if ($cfg['correo_activo']) {
+            $tieneDestino = self::normalizarProvincia($provincia) !== '' || self::normalizarCp($cp) !== '';
+            $peso = $this->pesoCarrito($carrito ?? [], $cfg);
+            $cot = $tieneDestino ? $this->cotizarCorreo($provincia, $cp, $peso['peso']) : null;
+            $proveedor = $cfg['correo_proveedor'] ? ucwords(str_replace('_', ' ', $cfg['correo_proveedor'])) : 'Correo';
+            if ($cot) {
+                $out[TiendaPedidoService::ENTREGA_CORREO] = [
+                    'modo' => TiendaPedidoService::ENTREGA_CORREO, 'etiqueta' => 'Envío por ' . $proveedor,
+                    'importe' => $cot['importe'], 'disponible' => true,
+                    'detalle' => $cot['tarifa']->nombre . ($cot['tarifa']->demora_estimada ? ' · ' . $cot['tarifa']->demora_estimada : '') . ' · ' . self::formatoPeso($peso['peso']),
+                    'zona_id' => null, 'transportista' => $cfg['correo_proveedor'] ?: 'correo',
+                ];
+            } else {
+                $out[TiendaPedidoService::ENTREGA_CORREO] = [
+                    'modo' => TiendaPedidoService::ENTREGA_CORREO, 'etiqueta' => 'Envío por ' . $proveedor,
+                    'importe' => 0.0, 'disponible' => false,
+                    'detalle' => !$tieneDestino ? 'Ingresá provincia o código postal para cotizar' : 'No tenemos tarifa de correo para ese destino o peso (' . self::formatoPeso($peso['peso']) . ')',
+                    'zona_id' => null, 'transportista' => $cfg['correo_proveedor'] ?: 'correo',
                 ];
             }
         }
@@ -302,6 +482,11 @@ class TiendaEnvioService
         });
 
         return $resultado ?: null;
+    }
+
+    public static function formatoPeso(float $kg): string
+    {
+        return $kg >= 1 ? rtrim(rtrim(number_format($kg, 2, ',', '.'), '0'), ',') . ' kg' : (int) round($kg * 1000) . ' g';
     }
 
     // -------------------------------------------------------------- geometria

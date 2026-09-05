@@ -620,6 +620,31 @@
             </div>
         </div>
 
+        <!-- Peso y medidas por planilla (para cotizar el correo) -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-5">
+            <div class="flex flex-col lg:flex-row lg:items-center gap-3">
+                <div class="flex-1">
+                    <h3 class="text-sm font-primary font-semibold text-gray-800"><i class="fas fa-weight-hanging text-[#FFAF22] mr-2"></i>Peso y medidas de los artículos</h3>
+                    <p class="text-xs text-gray-400">Sirven para cotizar el envío por correo. Cargá el peso en la tabla o completá la planilla en Excel y subila (columnas: codigo, peso_kg, alto_cm, ancho_cm, largo_cm, bultos).</p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                    <button wire:click="descargarPlanillaPesos" class="px-3 py-2 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 whitespace-nowrap">
+                        <i class="fas fa-download mr-1"></i> Descargar planilla
+                    </button>
+                    <div class="flex items-center gap-2">
+                        <input type="file" wire:model="planillaPesos" accept=".csv,text/csv" class="text-xs w-48">
+                        <button wire:click="importarPlanillaPesos" wire:loading.attr="disabled" class="px-3 py-2 rounded-lg text-xs font-semibold bg-[#1E1B35] text-white hover:bg-[#2d2952] whitespace-nowrap">
+                            <i class="fas fa-upload mr-1"></i> Importar
+                        </button>
+                    </div>
+                </div>
+            </div>
+            @error('planillaPesos') <p class="text-xs text-red-500 mt-2">{{ $message }}</p> @enderror
+            @if($mensajePesos)
+                <p class="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2 mt-3">{{ $mensajePesos }} <button wire:click="$set('mensajePesos', '')" class="float-right">&times;</button></p>
+            @endif
+        </div>
+
         <!-- Lista de productos -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200">
             <div class="px-6 py-4 border-b border-gray-200">
@@ -638,6 +663,7 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Codigo</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Para cotizar el correo">Peso (kg)</th>
                             <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Foto</th>
                             <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                         </tr>
@@ -648,6 +674,11 @@
                                 <td class="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{{ $producto->codigo }}</td>
                                 <td class="px-6 py-3 text-sm text-gray-700">{{ $producto->nombre }}</td>
                                 <td class="px-6 py-3 whitespace-nowrap text-sm text-green-600 font-semibold">${{ number_format($producto->precioven, 2) }}</td>
+                                <td class="px-6 py-3 whitespace-nowrap">
+                                    <input type="number" step="0.001" min="0" value="{{ $producto->peso !== null ? rtrim(rtrim(number_format((float) $producto->peso, 3, '.', ''), '0'), '.') : '' }}"
+                                           wire:change="guardarPeso('{{ $producto->codigo }}', $event.target.value)" placeholder="—"
+                                           class="w-24 px-2 py-1 border border-gray-300 rounded-lg text-sm text-right">
+                                </td>
                                 <td class="px-6 py-3 text-center">
                                     @if($producto->foto_url)
                                         <img src="{{ $producto->foto_url }}" alt="{{ $producto->nombre }}" class="w-12 h-12 object-cover rounded-lg mx-auto border border-gray-200">
@@ -674,7 +705,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="px-6 py-12 text-center text-gray-400">
+                                <td colspan="6" class="px-6 py-12 text-center text-gray-400">
                                     <i class="fas fa-search text-3xl mb-2"></i>
                                     <p class="text-sm">No se encontraron productos</p>
                                 </td>

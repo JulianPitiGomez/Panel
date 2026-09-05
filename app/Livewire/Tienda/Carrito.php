@@ -94,7 +94,9 @@ class Carrito extends Component
             (float) $this->getTotal(),
             $this->direccion['lat'] !== null ? (float) $this->direccion['lat'] : null,
             $this->direccion['lng'] !== null ? (float) $this->direccion['lng'] : null,
-            $this->direccion['cp'] ?: null
+            $this->direccion['cp'] ?: null,
+            $this->direccion['provincia'] ?: null,
+            $this->carrito
         );
 
         // Modo elegido invalido o no disponible: pasar al primero disponible
@@ -455,7 +457,7 @@ class Carrito extends Component
         // Entrega: recotizar con el servidor como verdad (no confiar en lo que quedo en pantalla)
         $this->entregaError = '';
         $this->cotizarEntrega();
-        $requiereDireccion = in_array($this->entregaModo, [\App\Services\TiendaPedidoService::ENTREGA_FLOTA, \App\Services\TiendaPedidoService::ENTREGA_A_CONVENIR], true);
+        $requiereDireccion = in_array($this->entregaModo, [\App\Services\TiendaPedidoService::ENTREGA_FLOTA, \App\Services\TiendaPedidoService::ENTREGA_CORREO, \App\Services\TiendaPedidoService::ENTREGA_A_CONVENIR], true);
         if (!$this->entregaModo) {
             $this->entregaError = 'Elegí cómo querés recibir el pedido.';
             return;
@@ -547,6 +549,7 @@ class Carrito extends Component
             'entrega_cp'        => $requiereDireccion ? (mb_substr(trim($this->direccion['cp']), 0, 10) ?: null) : null,
             'entrega_zona_id'   => $opcion['zona_id'],
             'envio_importe'     => $this->envioImporte,
+            'envio_transportista' => $opcion['transportista'] ?? null,
         ]);
 
         if ($requiereDireccion) {

@@ -225,7 +225,7 @@
                             @endforeach
                         </div>
 
-                        @if(in_array($entregaModo, ['flota', 'a_convenir']) || (isset($opcionesEntrega['flota']) && !$opcionesEntrega['flota']['disponible']))
+                        @if(in_array($entregaModo, ['flota', 'correo', 'a_convenir']) || (isset($opcionesEntrega['flota']) && !$opcionesEntrega['flota']['disponible']) || (isset($opcionesEntrega['correo']) && !$opcionesEntrega['correo']['disponible']))
                         <div class="mt-3 p-3 bg-gray-50 rounded-lg space-y-2">
                             <p class="text-xs font-medium text-gray-600">Dirección de entrega</p>
 
