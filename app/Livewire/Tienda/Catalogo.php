@@ -434,6 +434,8 @@ class Catalogo extends Component
             'iva' => $this->ivaIncluido($producto),
             'disponible' => max($disponible, 0),
             'promos' => $this->textosPromo(new \App\Services\TiendaPromoService($this->tablePrefix), [$codigo])[(string) $codigo] ?? [],
+            'fotos' => (new \App\Services\TiendaFotoService($this->tablePrefix))->urlsFicha($codigo),
+            'descripcion' => DB::connection('client_db')->table("{$this->tablePrefix}tienda_articu")->where('codigo', $codigo)->value('descripcion_larga'),
         ];
         $this->cantidadModal = $this->permiteDecimal ? 1 : 1;
         $this->modalCantidadAbierto = true;

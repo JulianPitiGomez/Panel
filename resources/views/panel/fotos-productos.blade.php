@@ -741,7 +741,7 @@
                                     <div class="flex items-center justify-center gap-2">
                                         <button wire:click="seleccionarProducto('{{ $producto->codigo }}')"
                                                 class="px-3 py-1.5 bg-[#FFAF22] text-white rounded-lg hover:bg-[#E89B0A] transition text-xs font-semibold">
-                                            <i class="fas fa-upload mr-1"></i>{{ $producto->foto_url ? 'Cambiar' : 'Subir' }}
+                                            <i class="fas fa-images mr-1"></i>{{ $producto->foto_url ? 'Fotos' : 'Subir' }}
                                         </button>
                                         @if($producto->foto_url)
                                             <button @click="confirmarEliminar = '{{ $producto->codigo }}'"
@@ -813,43 +813,81 @@
     @if($productoSeleccionado)
         <div class="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-4"
              x-transition.opacity>
-            <div class="bg-white rounded-xl shadow-2xl max-w-md w-full" @click.away="$wire.cerrarModal()">
+            <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col" @click.away="$wire.cerrarModal()">
                 <div class="bg-[#FFAF22] px-6 py-4 rounded-t-xl flex items-center justify-between">
                     <h3 class="text-lg font-primary font-semibold text-white">
-                        <i class="fas fa-upload mr-2"></i>Subir Foto
+                        <i class="fas fa-images mr-2"></i>Fotos del producto
                     </h3>
                     <button wire:click="cerrarModal" class="text-white hover:text-gray-200 text-xl">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
-                <div class="p-6 space-y-4">
+                <div class="p-6 space-y-4 overflow-y-auto">
                     <p class="text-sm text-gray-600 font-secondary">
                         Producto: <span class="font-semibold text-gray-800">{{ $productoSeleccionado }}</span>
+                        <span class="text-xs text-gray-400 ml-2">La principal se ve en la grilla; las demás, en la ficha.</span>
                     </p>
-                    <div>
-                        <label class="block text-sm font-secondary font-medium text-gray-700 mb-2">Seleccionar imagen</label>
-                        <input type="file" wire:model="foto" accept="image/*"
-                               class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#FFAF22] file:text-white hover:file:bg-[#E89B0A] cursor-pointer">
-                        @error('foto') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                    </div>
-                    @if($foto)
-                        <div class="relative">
-                            <img src="{{ $foto->temporaryUrl() }}" alt="Preview" class="w-full h-48 object-contain rounded-lg border border-gray-200 bg-gray-50">
-                        </div>
+
+                    @if($mensajeGaleria)
+                        <p class="text-xs px-3 py-2 rounded-lg {{ str_contains($mensajeGaleria, 'Error') ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-700' }}">{{ $mensajeGaleria }}</p>
                     @endif
-                    <div wire:loading wire:target="foto" class="flex items-center gap-2 text-sm text-gray-500">
-                        <i class="fas fa-spinner fa-spin text-[#FFAF22]"></i> Cargando imagen...
+
+                    {{-- Galeria actual --}}
+                    @if(count($galeria))
+                        <div class="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                            @foreach($galeria as $i => $g)
+                                <div class="relative rounded-lg border {{ $g['principal'] ? 'border-[#FFAF22] ring-2 ring-[#FFAF22]/40' : 'border-gray-200' }} bg-gray-50 p-1" wire:key="gal-{{ $g['id'] }}">
+                                    <img src="{{ $g['url_thumb'] }}" class="w-full aspect-square object-contain rounded">
+                                    @if($g['principal'])
+                                        <span class="absolute top-1 left-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-[#FFAF22] text-white">Principal</span>
+                                    @endif
+                                    <div class="flex items-center justify-between mt-1">
+                                        <div class="flex gap-0.5">
+                                            <button wire:click="moverGaleria({{ $g['id'] }}, 'arriba')" @disabled($i === 0) class="p-1 text-gray-400 hover:text-gray-700 disabled:opacity-30" title="Antes"><i class="fas fa-arrow-left text-xs"></i></button>
+                                            <button wire:click="moverGaleria({{ $g['id'] }}, 'abajo')" @disabled($i === count($galeria) - 1) class="p-1 text-gray-400 hover:text-gray-700 disabled:opacity-30" title="Después"><i class="fas fa-arrow-right text-xs"></i></button>
+                                        </div>
+                                        <div class="flex gap-0.5">
+                                            @if(!$g['principal'])
+                                                <button wire:click="principalGaleria({{ $g['id'] }})" class="p-1 text-gray-400 hover:text-[#FFAF22]" title="Hacer principal"><i class="far fa-star text-xs"></i></button>
+                                            @endif
+                                            <button wire:click="eliminarFotoGaleria({{ $g['id'] }})" wire:confirm="¿Eliminar esta foto?" class="p-1 text-gray-400 hover:text-red-500" title="Eliminar"><i class="fas fa-trash text-xs"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <p class="text-sm text-gray-400 text-center py-4"><i class="fas fa-image text-2xl block mb-1 text-gray-300"></i>Este producto todavía no tiene fotos.</p>
+                    @endif
+
+                    {{-- Subir nuevas --}}
+                    <div class="border-t border-gray-100 pt-4">
+                        <label class="block text-sm font-secondary font-medium text-gray-700 mb-2">Agregar fotos (podés elegir varias)</label>
+                        <input type="file" wire:model="fotosNuevas" accept="image/*" multiple
+                               class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#FFAF22] file:text-white hover:file:bg-[#E89B0A] file:cursor-pointer">
+                        @error('fotosNuevas') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                        @error('fotosNuevas.*') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
+                        @if(count($fotosNuevas))
+                            <div class="flex gap-2 mt-3 flex-wrap">
+                                @foreach($fotosNuevas as $fn)
+                                    <img src="{{ $fn->temporaryUrl() }}" class="w-16 h-16 object-contain rounded-lg border border-gray-200 bg-gray-50">
+                                @endforeach
+                            </div>
+                        @endif
+                        <div wire:loading wire:target="fotosNuevas" class="flex items-center gap-2 text-sm text-gray-500 mt-2">
+                            <i class="fas fa-spinner fa-spin text-[#FFAF22]"></i> Cargando imágenes...
+                        </div>
                     </div>
                 </div>
                 <div class="px-6 py-4 border-t border-gray-200 flex gap-3">
                     <button wire:click="cerrarModal"
                             class="flex-1 px-4 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold text-sm">
-                        Cancelar
+                        Cerrar
                     </button>
-                    <button wire:click="subirFoto" wire:loading.attr="disabled" wire:target="subirFoto"
-                            {{ !$foto ? 'disabled' : '' }}
+                    <button wire:click="subirFoto" wire:loading.attr="disabled" wire:target="subirFoto,fotosNuevas"
+                            {{ !count($fotosNuevas) ? 'disabled' : '' }}
                             class="flex-1 px-4 py-2.5 bg-[#FFAF22] text-white rounded-lg hover:bg-[#E89B0A] transition font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed">
-                        <span wire:loading.remove wire:target="subirFoto"><i class="fas fa-cloud-upload-alt mr-1"></i>Subir</span>
+                        <span wire:loading.remove wire:target="subirFoto"><i class="fas fa-cloud-upload-alt mr-1"></i>Subir {{ count($fotosNuevas) > 1 ? count($fotosNuevas) . ' fotos' : '' }}</span>
                         <span wire:loading wire:target="subirFoto"><i class="fas fa-spinner fa-spin mr-1"></i> Subiendo...</span>
                     </button>
                 </div>

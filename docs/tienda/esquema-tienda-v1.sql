@@ -21,7 +21,8 @@
 --                  tienda_pagos_config, tienda_integraciones (F2 pagos),
 --                  tienda_articu, tienda_correo_tarifas (F2 correo y peso),
 --                  tienda_agenda, tienda_agenda_franjas, tienda_agenda_excepciones (F2 agenda);
---                  F3: tienda_pedidos.descuento_promos / promos_aplicadas, tienda_pagos_config.forpag_*
+--                  F3: tienda_pedidos.descuento_promos / promos_aplicadas, tienda_pagos_config.forpag_*;
+--                  F4: tienda_fotos (galeria)
 --                  tienda_pedidos.entrega_fecha / entrega_franja_id / entrega_franja / agenda_cupo
 --                  (F1 agrego comision_saldo a tienda_pedidos y tienda_eventos; v1 todavia no salio a produccion,
 --                   por eso se edita en lugar de crear v2)
@@ -281,4 +282,20 @@ CREATE TABLE IF NOT EXISTS `{p}tienda_agenda_excepciones` (
   `motivo`  VARCHAR(80)  DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_{p}tienda_agenda_excepciones_fecha` (`fecha`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Galeria (F4): varias fotos por articulo con orden y principal. articu_fotos sigue
+-- guardando la URL del thumb de la principal (es lo que lee el catalogo y gestion).
+CREATE TABLE IF NOT EXISTS `{p}tienda_fotos` (
+  `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `codigo`       BIGINT       NOT NULL,                           -- articu.CODIGO
+  `clave`        VARCHAR(200) NOT NULL,                           -- prefijo en R2: productos/{p}/{codigo}/gXXXX
+  `url_thumb`    VARCHAR(254) NOT NULL,                           -- 400px (grilla)
+  `url_medium`   VARCHAR(254) NOT NULL,                           -- 900px (ficha)
+  `url_original` VARCHAR(254) NOT NULL,                           -- 1600px (zoom)
+  `orden`        INT          NOT NULL DEFAULT 0,
+  `principal`    TINYINT(1)   NOT NULL DEFAULT 0,
+  `creado`       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_{p}tienda_fotos_codigo` (`codigo`, `orden`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

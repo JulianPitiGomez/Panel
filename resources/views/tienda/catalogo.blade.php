@@ -191,8 +191,29 @@
                     <i class="fas fa-times"></i>
                 </button>
 
+                @php $fotosFicha = $productoModal['fotos'] ?? []; @endphp
+                @if(count($fotosFicha))
+                    {{-- Galeria de la ficha: imagen grande + miniaturas --}}
+                    <div class="mb-4" x-data="{ actual: 0 }">
+                        <div class="w-full aspect-square bg-gray-50 rounded-xl flex items-center justify-center overflow-hidden">
+                            @foreach($fotosFicha as $i => $ff)
+                                <img src="{{ $ff['medium'] }}" alt="{{ $productoModal['nombre'] }}" x-show="actual === {{ $i }}" class="max-w-full max-h-full object-contain" @if($i > 0) style="display:none" @endif>
+                            @endforeach
+                        </div>
+                        @if(count($fotosFicha) > 1)
+                            <div class="flex gap-2 mt-2 overflow-x-auto">
+                                @foreach($fotosFicha as $i => $ff)
+                                    <button type="button" @click="actual = {{ $i }}" :class="actual === {{ $i }} ? 'ring-2 ring-offset-1' : 'opacity-70'"
+                                            class="w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden bg-gray-50 border border-gray-200" style="--tw-ring-color: {{ $colores['boton'] }}">
+                                        <img src="{{ $ff['thumb'] }}" class="w-full h-full object-contain">
+                                    </button>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                @endif
                 <div class="flex items-center gap-3 mb-4">
-                    <div class="w-16 h-16 bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                    <div class="w-16 h-16 bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0 {{ count($fotosFicha) ? 'hidden' : '' }}">
                         @if($productoModal['foto_url'])
                             <img src="{{ $productoModal['foto_url'] }}" alt="{{ $productoModal['nombre'] }}" class="max-w-full max-h-full object-contain">
                         @else
@@ -205,6 +226,11 @@
                             ${{ number_format($productoModal['precio'], 2, ',', '.') }}
                         </p>
                     </div>
+                </div>
+                @if(!empty($productoModal['descripcion']))
+                    <p class="text-xs text-gray-600 leading-relaxed mb-4 max-h-32 overflow-y-auto">{{ $productoModal['descripcion'] }}</p>
+                @endif
+                <div class="hidden">
                 </div>
 
                 <label class="block text-xs font-medium text-gray-600 mb-2">Cantidad</label>

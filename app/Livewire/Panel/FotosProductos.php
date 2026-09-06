@@ -507,85 +507,103 @@ class FotosProductos extends Component
     {
         $this->productoSeleccionado = $codigo;
         $this->foto = null;
+        $this->fotosNuevas = [];
+        $this->mensajeGaleria = '';
         $this->resetErrorBag();
+        $this->cargarGaleria();
     }
 
     public function cerrarModal()
     {
         $this->productoSeleccionado = null;
         $this->foto = null;
+        $this->fotosNuevas = [];
+        $this->galeria = [];
+        $this->mensajeGaleria = '';
         $this->resetErrorBag();
     }
 
 
+    // ------------------------------------------------------- galeria (F4)
+
+    public $fotosNuevas = [];      // archivos a subir (varios)
+    public $galeria = [];          // fotos del producto seleccionado
+    public $mensajeGaleria = '';
+
+    private function cargarGaleria()
+    {
+        $this->setupClientDatabase();
+        $this->galeria = $this->productoSeleccionado
+            ? array_map(fn ($f) => (array) $f, (new \App\Services\TiendaFotoService($this->tablePrefix))->de($this->productoSeleccionado))
+            : [];
+    }
+
+    /** Sube una o varias fotos al producto seleccionado. La primera del articulo queda como principal. */
     public function subirFoto()
     {
         $this->validate([
-            'foto' => 'required|image|max:5120',
+            'fotosNuevas' => 'required|array|min:1|max:10',
+            'fotosNuevas.*' => 'image|max:5120',
         ], [
-            'foto.required' => 'Seleccioná una imagen.',
-            'foto.image' => 'El archivo debe ser una imagen (jpg, png, gif, webp).',
-            'foto.max' => 'La imagen no puede superar los 5MB.',
+            'fotosNuevas.required' => 'Seleccioná al menos una imagen.',
+            'fotosNuevas.max' => 'Hasta 10 fotos por vez.',
+            'fotosNuevas.*.image' => 'Todos los archivos deben ser imágenes (jpg, png, gif, webp).',
+            'fotosNuevas.*.max' => 'Cada imagen puede pesar hasta 5MB.',
         ]);
 
         $this->setupClientDatabase();
+        $srv = new \App\Services\TiendaFotoService($this->tablePrefix);
+        $ok = 0;
 
         try {
             $this->subiendo = true;
-
-            // El servicio redimensiona, genera las variantes y sube a R2
-            $url = app(ImagenProductoService::class)->subir(
-                $this->tablePrefix,
-                (string) $this->productoSeleccionado,
-                $this->foto->getRealPath()
-            );
-
-            $existe = DB::connection('client_db')
-                ->table($this->tablePrefix . 'articu_fotos')
-                ->where('codigo', $this->productoSeleccionado)
-                ->exists();
-
-            if ($existe) {
-                DB::connection('client_db')
-                    ->table($this->tablePrefix . 'articu_fotos')
-                    ->where('codigo', $this->productoSeleccionado)
-                    ->update(['url' => $url]);
-            } else {
-                DB::connection('client_db')
-                    ->table($this->tablePrefix . 'articu_fotos')
-                    ->insert([
-                        'codigo' => $this->productoSeleccionado,
-                        'url' => $url,
-                    ]);
+            foreach ($this->fotosNuevas as $archivo) {
+                $srv->agregar($this->productoSeleccionado, $archivo->getRealPath());
+                $ok++;
             }
-
-            $this->mensaje = 'Foto subida correctamente.';
-            $this->tipoMensaje = 'success';
-            $this->cerrarModal();
+            $this->mensajeGaleria = $ok === 1 ? 'Foto subida.' : "{$ok} fotos subidas.";
+            $this->fotosNuevas = [];
+            $this->cargarGaleria();
             $this->calcularContadores();
-
         } catch (\Exception $e) {
             Log::error('Error subiendo foto de producto: ' . $e->getMessage());
-            $this->mensaje = 'Error al subir la foto. Intentá de nuevo.';
-            $this->tipoMensaje = 'error';
+            $this->mensajeGaleria = ($ok ? "Se subieron {$ok}. " : '') . 'Error al subir una foto. Intentá de nuevo.';
         } finally {
             $this->subiendo = false;
         }
     }
 
+    public function eliminarFotoGaleria($id)
+    {
+        $this->setupClientDatabase();
+        (new \App\Services\TiendaFotoService($this->tablePrefix))->eliminar((int) $id);
+        $this->cargarGaleria();
+        $this->calcularContadores();
+    }
+
+    public function principalGaleria($id)
+    {
+        $this->setupClientDatabase();
+        (new \App\Services\TiendaFotoService($this->tablePrefix))->principal((int) $id);
+        $this->cargarGaleria();
+    }
+
+    public function moverGaleria($id, $direccion)
+    {
+        $this->setupClientDatabase();
+        (new \App\Services\TiendaFotoService($this->tablePrefix))->mover((int) $id, $direccion);
+        $this->cargarGaleria();
+    }
+
+    /** Borra todas las fotos del articulo (boton de la tabla). */
     public function eliminarFoto($codigo)
     {
         $this->setupClientDatabase();
 
         try {
-            app(ImagenProductoService::class)->eliminar($this->tablePrefix, (string) $codigo);
+            (new \App\Services\TiendaFotoService($this->tablePrefix))->eliminarTodas($codigo);
 
-            DB::connection('client_db')
-                ->table($this->tablePrefix . 'articu_fotos')
-                ->where('codigo', $codigo)
-                ->delete();
-
-            $this->mensaje = 'Foto eliminada correctamente.';
+            $this->mensaje = 'Fotos eliminadas correctamente.';
             $this->tipoMensaje = 'success';
             $this->calcularContadores();
 

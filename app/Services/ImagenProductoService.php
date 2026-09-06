@@ -63,6 +63,43 @@ class ImagenProductoService
         return $this->url($prefijo, $codigo, 'thumb', $version);
     }
 
+    /**
+     * Galeria (F4): sube las tres variantes bajo una clave propia por foto, asi un
+     * articulo puede tener varias. Devuelve la clave y las tres URLs (con ?v=).
+     * @return array{clave: string, thumb: string, medium: string, original: string}
+     */
+    public function subirEnGaleria(string $prefijo, string $codigo, string $rutaLocal): array
+    {
+        $imagen = $this->abrir($rutaLocal);
+        if (!$imagen) {
+            throw new \RuntimeException('El archivo no es una imagen valida.');
+        }
+
+        $slot = 'g' . base_convert((string) (microtime(true) * 1000), 10, 36) . substr(bin2hex(random_bytes(2)), 0, 3);
+        $clave = "productos/{$prefijo}/{$codigo}/{$slot}";
+        $version = time();
+        $urls = [];
+
+        foreach (self::VARIANTES as $nombre => $spec) {
+            $jpeg = $this->renderizar($imagen, $spec['ancho'], $spec['calidad']);
+            $this->disco->put("{$clave}/{$nombre}.jpg", $jpeg, [
+                'ContentType' => 'image/jpeg',
+                'CacheControl' => 'public, max-age=31536000',
+            ]);
+            $urls[$nombre] = $this->disco->url("{$clave}/{$nombre}.jpg") . '?v=' . $version;
+        }
+
+        imagedestroy($imagen);
+
+        return ['clave' => $clave] + $urls;
+    }
+
+    /** Borra las tres variantes de una foto de galeria por su clave. */
+    public function eliminarClave(string $clave): void
+    {
+        $this->disco->delete(array_map(fn ($v) => "{$clave}/{$v}.jpg", array_keys(self::VARIANTES)));
+    }
+
     /** Borra las tres variantes de una foto. */
     public function eliminar(string $prefijo, string $codigo): void
     {
