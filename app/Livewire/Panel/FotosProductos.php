@@ -62,6 +62,8 @@ class FotosProductos extends Component
         'modo_cantidad' => 'rapido',
         'permite_decimal' => false,
         'tienda_vende_sin_stock' => true,   // ver TiendaStockService
+        'tienda_meta_titulo' => '',
+        'tienda_meta_descripcion' => '',
         'tienda_registro_aprobacion' => false,   // F5: los registros web esperan aprobacion del comercio
     ];
 
@@ -863,6 +865,9 @@ class FotosProductos extends Component
     public function seleccionarProducto($codigo)
     {
         $this->productoSeleccionado = $codigo;
+        $this->setupClientDatabase();
+        $this->ficha = (new \App\Services\TiendaSeoService($this->tablePrefix))->fichaDe($codigo);
+        $this->mensajeFicha = '';
         $this->foto = null;
         $this->fotosNuevas = [];
         $this->mensajeGaleria = '';
@@ -870,9 +875,30 @@ class FotosProductos extends Component
         $this->cargarGaleria();
     }
 
+    // ------------------------------------------------- ficha: descripcion y SEO por producto (F6)
+    public $ficha = ['descripcion' => '', 'meta_titulo' => '', 'meta_descripcion' => ''];
+    public $mensajeFicha = '';
+
+    public function guardarFicha()
+    {
+        if (!$this->productoSeleccionado) {
+            return;
+        }
+        $this->setupClientDatabase();
+        $this->upsertTiendaArticu((string) $this->productoSeleccionado, [
+            'descripcion_larga' => trim((string) $this->ficha['descripcion']) ?: null,
+            'meta_titulo'       => mb_substr(trim((string) $this->ficha['meta_titulo']), 0, 70) ?: null,
+            'meta_descripcion'  => mb_substr(trim((string) $this->ficha['meta_descripcion']), 0, 160) ?: null,
+        ]);
+        $this->invalidarCatalogo();
+        $this->mensajeFicha = 'Descripción y datos para Google guardados.';
+        $this->calcularChequeo();
+    }
+
     public function cerrarModal()
     {
         $this->productoSeleccionado = null;
+        $this->mensajeFicha = '';
         $this->foto = null;
         $this->fotosNuevas = [];
         $this->galeria = [];

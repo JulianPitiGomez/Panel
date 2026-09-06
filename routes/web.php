@@ -110,6 +110,8 @@ Route::prefix('web')->middleware([\App\Http\Middleware\TiendaMiddleware::class])
     Route::post('/{tienda}/login', [TiendaController::class, 'login'])->name('tienda.login');
     Route::get('/{tienda}/logout', [TiendaController::class, 'logout'])->name('tienda.logout');
     Route::get('/{tienda}/catalogo', \App\Livewire\Tienda\Catalogo::class)->name('tienda.catalogo');
+    Route::get('/{tienda}/p/{codigo}', \App\Livewire\Tienda\Catalogo::class)->name('tienda.producto');   // ficha con URL propia (SEO, F6)
+    Route::get('/{tienda}/sitemap.xml', [TiendaController::class, 'sitemap'])->name('tienda.sitemap');
     Route::get('/{tienda}/carrito', \App\Livewire\Tienda\Carrito::class)->name('tienda.carrito');
     Route::get('/{tienda}/mis-pedidos', \App\Livewire\Tienda\MisPedidos::class)->name('tienda.mis-pedidos');
     Route::get('/{tienda}/pago/{pedido}', [TiendaController::class, 'pago'])->name('tienda.pago');

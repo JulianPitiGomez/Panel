@@ -27,7 +27,7 @@
                         </div>
                         <div class="p-2 flex flex-col flex-1">
                             <h3 class="text-xs font-medium line-clamp-1 leading-tight" style="color: {{ $colores['texto'] }}">
-                                {{ $producto->NOMBRE }}
+                                <a href="{{ $this->urlProducto($producto->CODIGO) }}" wire:click.prevent="abrirModalCantidad('{{ $producto->CODIGO }}')" class="hover:underline">{{ $producto->NOMBRE }}</a>
                             </h3>
                             <div class="flex items-center justify-between mt-auto pt-1.5">
                                 <span class="text-sm font-bold" style="color: {{ $colores['precio'] }}">
@@ -75,7 +75,7 @@
                         <div class="p-3 flex flex-col flex-1">
                             <p class="text-[10px] text-gray-400 uppercase tracking-wide">{{ $producto->CODIGO }}</p>
                             <h3 class="text-sm font-medium line-clamp-2 leading-tight mt-0.5" style="color: {{ $colores['texto'] }}">
-                                {{ $producto->NOMBRE }}
+                                <a href="{{ $this->urlProducto($producto->CODIGO) }}" wire:click.prevent="abrirModalCantidad('{{ $producto->CODIGO }}')" class="hover:underline">{{ $producto->NOMBRE }}</a>
                             </h3>
                             <div class="flex items-center gap-2 mt-1">
                                 @if($this->disponibleDe($producto->CODIGO) > 0)
@@ -129,7 +129,7 @@
                         </div>
                         <div class="p-2.5 flex flex-col flex-1">
                             <h3 class="text-xs font-medium line-clamp-2 leading-tight" style="color: {{ $colores['texto'] }}">
-                                {{ $producto->NOMBRE }}
+                                <a href="{{ $this->urlProducto($producto->CODIGO) }}" wire:click.prevent="abrirModalCantidad('{{ $producto->CODIGO }}')" class="hover:underline">{{ $producto->NOMBRE }}</a>
                             </h3>
                             <div class="mt-auto pt-2">
                                 <span class="text-sm font-bold block" style="color: {{ $colores['precio'] }}">

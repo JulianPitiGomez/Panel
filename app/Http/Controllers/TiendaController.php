@@ -12,6 +12,14 @@ use App\Services\TiendaPagoService;
 
 class TiendaController extends Controller
 {
+    /** sitemap.xml de la tienda (F6). La privada devuelve uno vacio. */
+    public function sitemap($tienda)
+    {
+        $xml = (new \App\Services\TiendaSeoService(session('tienda_prefix')))->sitemap($tienda, session('tienda_modo'));
+
+        return response($xml, 200, ['Content-Type' => 'application/xml; charset=UTF-8']);
+    }
+
     public function index($tienda)
     {
         // El middleware ya configuró sesión y DB

@@ -5,7 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ session('tienda_nombre', 'Tienda') }}</title>
+    @php $meta = $meta ?? []; @endphp
+    <title>{{ $meta['title'] ?? session('tienda_nombre', 'Tienda') }}</title>
+    @if(!empty($meta['description']))<meta name="description" content="{{ $meta['description'] }}">@endif
+    <meta name="robots" content="{{ $meta['robots'] ?? 'noindex, nofollow' }}">
+    @if(!empty($meta['url']))<link rel="canonical" href="{{ $meta['url'] }}">@endif
+    <meta property="og:site_name" content="{{ session('tienda_nombre', 'Tienda') }}">
+    <meta property="og:type" content="{{ $meta['type'] ?? 'website' }}">
+    <meta property="og:title" content="{{ $meta['title'] ?? session('tienda_nombre', 'Tienda') }}">
+    @if(!empty($meta['description']))<meta property="og:description" content="{{ $meta['description'] }}">@endif
+    @if(!empty($meta['url']))<meta property="og:url" content="{{ $meta['url'] }}">@endif
+    @if(!empty($meta['image']))<meta property="og:image" content="{{ $meta['image'] }}">@endif
+    <meta name="twitter:card" content="{{ !empty($meta['image']) ? 'summary_large_image' : 'summary' }}">
+    @if(!empty($meta['jsonld']))<script type="application/ld+json">{!! json_encode($meta['jsonld'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>@endif
+    @if(session('tienda_slug'))<link rel="sitemap" type="application/xml" href="{{ route('tienda.sitemap', session('tienda_slug')) }}">@endif
     <link href="{{ asset('images/logo.ico') }}" rel="shortcut icon" />
 
     <link rel="preconnect" href="https://fonts.bunny.net">

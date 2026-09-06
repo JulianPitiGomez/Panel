@@ -58,9 +58,10 @@ class Catalogo extends Component
     public $productoModal = null;
     public $cantidadModal = 1;
 
-    public function mount($tienda)
+    public function mount($tienda, $codigo = null)
     {
         $this->tiendaSlug = $tienda;
+        $this->fichaCodigo = $codigo;   // /p/{codigo}: la ficha abre sola y la pagina lleva sus metadatos (F6)
         $this->setupClientDatabase();
 
         $this->nombreTienda = session('tienda_nombre');
@@ -106,6 +107,36 @@ class Catalogo extends Component
 
         // Metrica: una visita por carga del catalogo
         (new \App\Services\TiendaMetricaService($this->tablePrefix))->registrar(\App\Services\TiendaMetricaService::VISITA);
+
+        if ($this->fichaCodigo !== null) {
+            $this->abrirModalCantidad($this->fichaCodigo);
+        }
+    }
+
+    public $fichaCodigo = null;
+
+    /** Metadatos de la pagina: los de la ficha si se entro por /p/{codigo}, los de la tienda si no. */
+    private function metaPagina(): array
+    {
+        $datos = session('tienda_datos', []);
+        $nombre = (string) session('tienda_nombre');
+        if ($this->fichaCodigo !== null && $this->productoModal) {
+            $m = (new \App\Services\TiendaSeoService($this->tablePrefix))->metaProducto(
+                $this->fichaCodigo, $datos, $nombre, $this->modo, route('tienda.producto', [$this->tiendaSlug, $this->fichaCodigo]),
+                (float) $this->productoModal['precio'], $this->productoModal['fotos'][0]['medium'] ?? ($this->productoModal['foto_url'] ?: null),
+                $this->vendeSinStock || $this->productoModal['disponible'] > 0
+            );
+            if ($m) {
+                return $m;
+            }
+        }
+
+        return \App\Services\TiendaSeoService::metaTienda($datos, $nombre, $this->modo, route('tienda.catalogo', $this->tiendaSlug));
+    }
+
+    public function urlProducto($codigo): string
+    {
+        return route('tienda.producto', [$this->tiendaSlug, $codigo]);
     }
 
     private function setupClientDatabase()
@@ -597,7 +628,6 @@ class Catalogo extends Component
         return redirect()->route('tienda.carrito', $this->tiendaSlug);
     }
 
-    #[Layout('layouts.tienda')]
     public function render()
     {
         $productos = $this->obtenerProductos();
@@ -618,6 +648,6 @@ class Catalogo extends Component
         return view('tienda.catalogo', [
             'productos' => $productos,
             'totalPaginas' => $totalPaginas,
-        ]);
+        ])->layout('layouts.tienda', ['meta' => $this->metaPagina()]);
     }
 }

@@ -493,6 +493,25 @@
                         </div>
                     </div>
                 </div>
+
+                {{-- SEO (F6): como aparece la tienda en Google --}}
+                <div class="mt-6 pt-5 border-t border-gray-100">
+                    <h4 class="text-sm font-semibold text-gray-700 mb-1"><i class="fab fa-google text-[#FFAF22] mr-1"></i> Cómo aparece tu tienda en Google</h4>
+                    <p class="text-xs text-gray-400 mb-3">Google lee estos textos para mostrar tu tienda en los resultados. Si los dejás vacíos, usamos el nombre y el slogan. Cada producto tiene los suyos en el botón de fotos. La tienda privada no se indexa.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Título en Google <span class="text-gray-400 font-normal">(hasta 70 letras)</span></label>
+                            <input type="text" wire:model="datosComercio.tienda_meta_titulo" maxlength="70" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="Ej: Distribuidora López | Bebidas y almacén en Mercedes">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Descripción en Google <span class="text-gray-400 font-normal">(hasta 160 letras)</span></label>
+                            <input type="text" wire:model="datosComercio.tienda_meta_descripcion" maxlength="160" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="Ej: Comprá online con envío a domicilio en Mercedes y zona. Precios mayoristas para comercios.">
+                        </div>
+                    </div>
+                    @if($tiendaSlug)
+                        <p class="text-xs text-gray-400 mt-3">Mapa del sitio para Google Search Console: <a href="{{ route('tienda.sitemap', $tiendaSlug) }}" target="_blank" class="text-blue-600 hover:underline">{{ route('tienda.sitemap', $tiendaSlug) }}</a></p>
+                    @endif
+                </div>
             </div>
 
             <!-- Colores y Filtros -->
@@ -1140,6 +1159,29 @@
                     @else
                         <p class="text-sm text-gray-400 text-center py-4"><i class="fas fa-image text-2xl block mb-1 text-gray-300"></i>Este producto todavía no tiene fotos.</p>
                     @endif
+
+                    {{-- Descripcion y SEO del producto (F6) --}}
+                    <div class="border-t border-gray-100 pt-4 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <label class="block text-sm font-secondary font-medium text-gray-700"><i class="fas fa-align-left text-[#FFAF22] mr-1"></i> Descripción y cómo lo encuentra Google</label>
+                            @if($mensajeFicha)<span class="text-xs text-green-700">{{ $mensajeFicha }}</span>@endif
+                        </div>
+                        <textarea wire:model="ficha.descripcion" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="Qué es, para qué sirve, de qué está hecho… lo que le contarías a un cliente en el mostrador."></textarea>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <input type="text" wire:model="ficha.meta_titulo" maxlength="70" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="Título para Google (opcional)">
+                                <p class="text-[10px] text-gray-400 mt-0.5">Vacío: nombre del producto + tienda.</p>
+                            </div>
+                            <div>
+                                <input type="text" wire:model="ficha.meta_descripcion" maxlength="160" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="Descripción corta para Google (opcional)">
+                                <p class="text-[10px] text-gray-400 mt-0.5">Vacío: el principio de la descripción.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <a href="{{ $tiendaSlug ? route('tienda.producto', [$tiendaSlug, $productoSeleccionado]) : '#' }}" target="_blank" class="text-xs text-gray-400 hover:text-gray-600 {{ $tiendaSlug ? '' : 'hidden' }}"><i class="fas fa-external-link-alt mr-1"></i>Ver la ficha en la tienda</a>
+                            <button wire:click="guardarFicha" class="px-3 py-1.5 bg-[#1E1B35] text-white rounded-lg text-xs font-semibold hover:bg-[#2d2952]"><i class="fas fa-save mr-1"></i>Guardar descripción</button>
+                        </div>
+                    </div>
 
                     {{-- Subir nuevas --}}
                     <div class="border-t border-gray-100 pt-4">

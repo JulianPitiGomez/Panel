@@ -73,7 +73,7 @@ class TiendaMiddleware
         // Control de acceso: si es privado y no está logueado, redirigir al index (login)
         // Excepto para la ruta index y login que siempre son accesibles
         $routeName = $request->route()->getName();
-        $rutasPublicas = ['tienda.index', 'tienda.login', 'tienda.registro', 'tienda.registro.post', 'tienda.validar', 'tienda.recuperar', 'tienda.recuperar.post', 'tienda.nueva-clave', 'tienda.nueva-clave.post', 'tienda.legales', 'tienda.arrepentimiento', 'tienda.arrepentimiento.post'];
+        $rutasPublicas = ['tienda.index', 'tienda.login', 'tienda.registro', 'tienda.registro.post', 'tienda.validar', 'tienda.recuperar', 'tienda.recuperar.post', 'tienda.nueva-clave', 'tienda.nueva-clave.post', 'tienda.legales', 'tienda.arrepentimiento', 'tienda.arrepentimiento.post', 'tienda.sitemap'];
 
         if (TiendaService::esPrivada($modo) && !session('tienda_comprador_web_id') && !in_array($routeName, $rutasPublicas)) {
             return redirect()->route('tienda.index', $tienda);
