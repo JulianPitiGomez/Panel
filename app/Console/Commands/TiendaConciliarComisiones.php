@@ -38,7 +38,7 @@ class TiendaConciliarComisiones extends Command
             }
 
             [$cliente, $prefijo] = TiendaService::conectarCliente($clienteId);
-            $r = (new TiendaComisionService($prefijo))->conciliar();
+            $r = (new TiendaComisionService($prefijo))->conciliar((int) $cliente->id);
 
             $this->line(sprintf(
                 'Cliente %d - %s: %d devengadas revisadas, %d revertidas, %d a revisar',

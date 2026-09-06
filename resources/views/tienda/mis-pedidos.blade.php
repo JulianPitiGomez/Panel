@@ -152,9 +152,36 @@
                                     </div>
                                 </div>
 
+                                @if(count($detallePasos))
+                                    <div class="mt-3 bg-white rounded-lg p-3">
+                                        <p class="text-gray-400 uppercase text-[10px] mb-2">Estado de tu pedido</p>
+                                        <div class="flex items-start">
+                                            @foreach($detallePasos as $i => $paso)
+                                                <div class="flex-1 min-w-0 text-center relative">
+                                                    @if($i > 0)
+                                                        <div class="absolute top-3 right-1/2 w-full h-0.5 {{ $paso['hecho'] ? '' : 'bg-gray-200' }}" style="{{ $paso['hecho'] ? 'background-color: ' . $colores['boton'] : '' }}"></div>
+                                                    @endif
+                                                    <div class="relative inline-flex items-center justify-center w-6 h-6 rounded-full text-[10px] text-white {{ $paso['hecho'] ? '' : 'bg-gray-200' }} {{ $paso['actual'] ? 'ring-4 ring-offset-0' : '' }}"
+                                                         style="{{ $paso['hecho'] ? 'background-color: ' . $colores['boton'] . ';' : '' }} {{ $paso['actual'] ? '--tw-ring-color: ' . $colores['boton'] . '33;' : '' }}">
+                                                        @if($paso['hecho'])<i class="fas fa-check"></i>@endif
+                                                    </div>
+                                                    <p class="text-[10px] mt-1 leading-tight {{ $paso['actual'] ? 'font-semibold text-gray-800' : ($paso['hecho'] ? 'text-gray-600' : 'text-gray-400') }}">{{ $paso['etiqueta'] }}</p>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                        @if($pedido['envio_seguimiento'])
+                                            <p class="text-xs text-gray-600 mt-3 text-center">Nº de seguimiento: <strong>{{ $pedido['envio_seguimiento'] }}</strong>
+                                                @if($detalleSeguimientoUrl)
+                                                    <a href="{{ $detalleSeguimientoUrl }}" target="_blank" rel="noopener" class="ml-2 inline-block px-2.5 py-1 rounded-lg text-white text-[11px]" style="background-color: {{ $colores['boton'] }}"><i class="fas fa-external-link-alt mr-1"></i>Seguir el envío</a>
+                                                @endif
+                                            </p>
+                                        @endif
+                                    </div>
+                                @endif
+
                                 @if(count($detalleEventos))
                                     <div class="mt-3 bg-white rounded-lg p-3 text-xs">
-                                        <p class="text-gray-400 uppercase text-[10px] mb-1">Seguimiento</p>
+                                        <p class="text-gray-400 uppercase text-[10px] mb-1">Historial</p>
                                         @foreach($detalleEventos as $ev)
                                             <p class="text-gray-600"><span class="text-gray-400">{{ \Carbon\Carbon::parse($ev['fecha'])->format('d/m H:i') }}</span> · {{ $ev['detalle'] }}</p>
                                         @endforeach

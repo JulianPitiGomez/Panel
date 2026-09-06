@@ -93,6 +93,9 @@ class MisPedidos extends Component
                 'pago_estado' => $s->pago_estado ?? null,
                 'pago_importe_unico' => $s->pago_importe_unico ?? null,
                 'pago_comprobante' => $s->pago_comprobante ?? null,
+                'estado_web' => $s ? \App\Services\TiendaSeguimientoService::normalizar($s->estado_web) : null,
+                'envio_seguimiento' => $s->envio_seguimiento ?? null,
+                'envio_transportista' => $s->envio_transportista ?? null,
             ];
         })->toArray();
     }
@@ -165,6 +168,14 @@ class MisPedidos extends Component
         $estado = $pedido['estado'];
         $nuevo = $pedido['nuevo'];
 
+        // Pedido web: manda el seguimiento propio de la tienda (F6); gestion solo pisa cuando anula
+        if (!empty($pedido['web']) && !empty($pedido['estado_web'])) {
+            $ew = \App\Services\TiendaEstadoPedido::esAnulado($estado) ? 'cancelado' : $pedido['estado_web'];
+            $iconos = ['recibido' => 'fa-check-circle', 'preparacion' => 'fa-box-open', 'listo' => 'fa-check-double', 'despachado' => 'fa-truck', 'en_camino' => 'fa-motorcycle', 'entregado' => 'fa-flag-checkered', 'cancelado' => 'fa-times-circle'];
+            $coloresEw = ['recibido' => '#3b82f6', 'preparacion' => '#f59e0b', 'listo' => '#8b5cf6', 'despachado' => '#0ea5e9', 'en_camino' => '#0ea5e9', 'entregado' => '#10b981', 'cancelado' => '#ef4444'];
+            return ['texto' => \App\Services\TiendaSeguimientoService::etiqueta($ew, $pedido['entrega_modo']), 'color' => $coloresEw[$ew] ?? '#6b7280', 'icono' => $iconos[$ew] ?? 'fa-clock'];
+        }
+
         return match(true) {
             $estado === 'F' => ['texto' => 'Facturado', 'color' => '#10b981', 'icono' => 'fa-file-invoice'],
             $estado === 'A' => ['texto' => 'En armado', 'color' => '#f59e0b', 'icono' => 'fa-box-open'],
@@ -196,7 +207,26 @@ class MisPedidos extends Component
             ->filter(fn ($e) => in_array($e->origen, ['comprador', 'comercio', 'sistema']) && !str_starts_with($e->estado, 'comision_'))
             ->map(fn ($e) => ['fecha' => $e->fecha, 'detalle' => $e->detalle ?: $e->estado])
             ->values()->all();
+
+        // Pasos del seguimiento (F6): el camino completo con lo hecho marcado
+        $pedido = collect($this->pedidos)->firstWhere('id', (int) $pedidoId);
+        $this->detallePasos = [];
+        if ($pedido && $pedido['web'] && $pedido['estado_web'] && $pedido['estado_web'] !== 'cancelado' && !\App\Services\TiendaEstadoPedido::esAnulado($pedido['estado'])) {
+            $flujo = \App\Services\TiendaSeguimientoService::flujo($pedido['entrega_modo']);
+            $pos = array_search($pedido['estado_web'], $flujo, true);
+            if ($pos === false && in_array($pedido['estado_web'], ['en_camino', 'despachado'])) {
+                $flujo = ['recibido', 'preparacion', 'listo', $pedido['estado_web'], 'entregado'];
+                $pos = 3;
+            }
+            foreach ($flujo as $i => $e) {
+                $this->detallePasos[] = ['etiqueta' => \App\Services\TiendaSeguimientoService::etiqueta($e, $pedido['entrega_modo']), 'hecho' => $pos !== false && $i <= $pos, 'actual' => $i === $pos];
+            }
+            $this->detalleSeguimientoUrl = \App\Services\TiendaSeguimientoService::urlSeguimiento($pedido['envio_transportista'], $pedido['envio_seguimiento']);
+        }
     }
+
+    public $detallePasos = [];
+    public $detalleSeguimientoUrl = null;
 
     public function cerrarDetalle()
     {

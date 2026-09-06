@@ -10,6 +10,13 @@
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col sm:flex-row gap-3">
         <input type="text" wire:model.live.debounce.400ms="busqueda" placeholder="Buscar por nº de pedido, cliente o mail…"
                class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+        <select wire:model.live="filtroEstado" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+            <option value="todos">Todos los estados</option>
+            <option value="abiertos">En curso (sin entregar)</option>
+            @foreach(config('tienda.estados_web') as $ek => $ev)
+                <option value="{{ $ek }}">{{ $ev }}</option>
+            @endforeach
+        </select>
         <select wire:model.live="filtroPago" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
             <option value="todos">Todos los pagos</option>
             <option value="pendiente">Pago pendiente</option>
@@ -32,7 +39,7 @@
                         <th class="text-left px-4 py-3">Entrega</th>
                         <th class="text-left px-4 py-3">Pago</th>
                         <th class="text-right px-4 py-3">Total</th>
-                        <th class="text-left px-4 py-3">Gestión</th>
+                        <th class="text-left px-4 py-3">Estado</th>
                         <th class="px-4 py-3"></th>
                     </tr>
                 </thead>
@@ -60,7 +67,11 @@
                             <span class="block text-xs font-medium {{ $colorPago }}">{{ $this->etiquetaPago($p['pago_estado']) }}</span>
                         </td>
                         <td class="px-4 py-3 text-right font-semibold text-gray-800">${{ number_format($total, 2, ',', '.') }}</td>
-                        <td class="px-4 py-3 text-gray-600">{{ $this->etiquetaEstadoGestion($p['estado']) }}</td>
+                        @php $ew = \App\Services\TiendaSeguimientoService::normalizar($p['estado_web']); $colorEw = ['entregado' => 'bg-green-100 text-green-700', 'cancelado' => 'bg-red-100 text-red-600', 'recibido' => 'bg-blue-50 text-blue-700'][$ew] ?? 'bg-amber-50 text-amber-700'; @endphp
+                        <td class="px-4 py-3">
+                            <span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold {{ $colorEw }}">{{ $this->etiquetaEstadoWeb($ew, $p['entrega_modo']) }}</span>
+                            <span class="block text-xs text-gray-400 mt-0.5">Gestión: {{ $this->etiquetaEstadoGestion($p['estado']) }}</span>
+                        </td>
                         <td class="px-4 py-3 text-right whitespace-nowrap" wire:click.stop>
                             @if($p['pago_medio'] === 'transferencia' && $p['pago_estado'] === 'pendiente')
                                 <button wire:click="confirmarPago({{ $p['idpedido'] }})" wire:confirm="¿Confirmar que llegó la transferencia del pedido #{{ $p['idpedido'] }}?"
@@ -99,16 +110,39 @@
                                             @if($p['pago_referencia'])<p>Referencia de pago: {{ $p['pago_referencia'] }}</p>@endif
                                             <p>IVA incluido: ${{ number_format($p['iva_incluido'], 2, ',', '.') }} · Comisión: ${{ number_format($p['comision_importe'], 2, ',', '.') }} ({{ $p['comision_estado'] }})</p>
                                         </div>
-                                        @if($p['entrega_modo'] === 'correo')
-                                            <div class="mt-3 flex items-center gap-2" wire:click.stop>
+                                        @php
+                                            $ew = \App\Services\TiendaSeguimientoService::normalizar($p['estado_web']);
+                                            $sig = $this->siguientesEstados($ew, $p['entrega_modo']);
+                                            $ant = $this->estadoAnterior($ew, $p['entrega_modo']);
+                                            $pideSeguimiento = in_array('despachado', $sig) || ($ew === 'despachado');
+                                        @endphp
+                                        <div class="mt-3 p-3 bg-white rounded-lg border border-gray-200" wire:click.stop>
+                                            <p class="text-[11px] uppercase text-gray-400 mb-1.5">Estado del pedido web</p>
+                                            <p class="text-sm text-gray-800 font-semibold mb-2">{{ $this->etiquetaEstadoWeb($ew, $p['entrega_modo']) }}</p>
+                                            @if($pideSeguimiento)
                                                 <input type="text" wire:model="seguimientoInput" maxlength="60" placeholder="{{ $p['envio_seguimiento'] ?: 'Nº de seguimiento del correo' }}"
-                                                       class="px-2 py-1.5 border border-gray-300 rounded-lg text-xs w-56">
-                                                <button wire:click="guardarSeguimiento({{ $p['idpedido'] }})" class="px-3 py-1.5 bg-[#1E1B35] text-white rounded-lg text-xs font-semibold hover:bg-[#2d2952]">
-                                                    <i class="fas fa-truck mr-1"></i>{{ $p['envio_seguimiento'] ? 'Actualizar seguimiento' : 'Marcar despachado' }}
-                                                </button>
+                                                       class="px-2 py-1.5 border border-gray-300 rounded-lg text-xs w-56 mb-2">
+                                            @endif
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                @foreach($sig as $e)
+                                                    <button wire:click="cambiarEstado({{ $p['idpedido'] }}, '{{ $e }}')" class="px-3 py-1.5 bg-[#1E1B35] text-white rounded-lg text-xs font-semibold hover:bg-[#2d2952]">
+                                                        <i class="fas {{ ['preparacion' => 'fa-box-open', 'listo' => 'fa-check', 'despachado' => 'fa-truck', 'en_camino' => 'fa-motorcycle', 'entregado' => 'fa-flag-checkered'][$e] ?? 'fa-arrow-right' }} mr-1"></i>{{ $this->etiquetaEstadoWeb($e, $p['entrega_modo']) }}
+                                                    </button>
+                                                @endforeach
+                                                @if($ant)
+                                                    <button wire:click="cambiarEstado({{ $p['idpedido'] }}, '{{ $ant }}')" class="text-xs text-gray-400 hover:text-gray-600"><i class="fas fa-undo mr-1"></i>Volver a "{{ $this->etiquetaEstadoWeb($ant, $p['entrega_modo']) }}"</button>
+                                                @endif
+                                                @if(empty($sig) && !$ant)
+                                                    <span class="text-xs text-gray-400">Sin cambios posibles.</span>
+                                                @endif
                                             </div>
-                                            @if($p['envio_seguimiento'])<p class="text-xs text-gray-500 mt-1">Seguimiento actual: <strong>{{ $p['envio_seguimiento'] }}</strong>{{ $p['envio_transportista'] ? ' · ' . ucwords(str_replace('_', ' ', $p['envio_transportista'])) : '' }}</p>@endif
-                                        @endif
+                                            @if($p['envio_seguimiento'])
+                                                <p class="text-xs text-gray-500 mt-2">Seguimiento: <strong>{{ $p['envio_seguimiento'] }}</strong>{{ $p['envio_transportista'] ? ' · ' . ucwords(str_replace('_', ' ', $p['envio_transportista'])) : '' }}
+                                                    @if($u = $this->urlSeguimiento($p['envio_transportista'], $p['envio_seguimiento']))<a href="{{ $u }}" target="_blank" class="ml-1 text-blue-600 hover:underline">Ver en el transportista</a>@endif
+                                                </p>
+                                            @endif
+                                            <p class="text-[11px] text-gray-400 mt-2">Cada avance le llega al comprador por mail.</p>
+                                        </div>
                                         @if($p['pago_medio'] === 'transferencia' && $p['pago_estado'] === 'pendiente')
                                             <button wire:click="rechazarPago({{ $p['idpedido'] }})" wire:confirm="¿Marcar el pago del pedido #{{ $p['idpedido'] }} como rechazado?" class="mt-3 text-xs text-red-500 hover:underline">Marcar pago como rechazado</button>
                                         @endif
@@ -117,7 +151,7 @@
                                         <p class="text-[11px] uppercase text-gray-400 mb-2">Seguimiento</p>
                                         <div class="space-y-1.5 text-xs">
                                             @foreach($eventos as $e)
-                                                <p class="text-gray-600"><span class="text-gray-400">{{ \Carbon\Carbon::parse($e['fecha'])->format('d/m H:i') }}</span> · <span class="text-gray-400">[{{ $e['origen'] }}]</span> {{ $e['detalle'] ?: $e['estado'] }}</p>
+                                                <p class="text-gray-600"><span class="text-gray-400">{{ \Carbon\Carbon::parse($e['fecha'])->format('d/m H:i') }}</span> · <span class="text-gray-400">[{{ $e['origen'] }}]</span> {{ $e['detalle'] ?: $e['estado'] }}@if(!empty($e['notificado'])) <i class="fas fa-envelope text-gray-300 ml-1" title="Avisado por mail"></i>@endif</p>
                                             @endforeach
                                         </div>
                                     </div>

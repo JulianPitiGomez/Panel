@@ -63,6 +63,31 @@ return [
     // Estados que revierten la comision (la conciliacion los busca)
     'estados_anulados' => ['N', 'R'],
 
+    /*
+    | Estados propios del pedido WEB (tienda_pedidos.estado_web), separados del
+    | estado de gestion. Los pone el comercio desde Pedidos web; "cancelado" lo
+    | pone la conciliacion cuando gestion anula o rechaza. Ver TiendaSeguimientoService.
+    */
+    'estados_web' => [
+        'recibido'    => 'Recibido',
+        'preparacion' => 'En preparación',
+        'listo'       => 'Listo',
+        'despachado'  => 'Despachado',
+        'en_camino'   => 'En camino',
+        'entregado'   => 'Entregado',
+        'cancelado'   => 'Cancelado',
+    ],
+
+    /*
+    | Link publico de seguimiento por transportista ({nro} = numero de envio).
+    | Sin API: el comprador lo abre desde la tienda o desde el mail.
+    */
+    'seguimiento_urls' => [
+        'correo_argentino' => 'https://www.correoargentino.com.ar/formularios/e-commerce?id={nro}',
+        'andreani'         => 'https://www.andreani.com/#!/informacionEnvio/{nro}',
+        'oca'              => 'https://www.oca.com.ar/envios/seguimiento?nro={nro}',
+    ],
+
     // Estados que comprometen stock (F2): armado, pendiente y en proceso. Facturado ya descontó.
     'estados_comprometen_stock' => ['P', 'A'],
 

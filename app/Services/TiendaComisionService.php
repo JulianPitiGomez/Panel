@@ -110,7 +110,7 @@ class TiendaComisionService
      *    en silencio: un borrado puede ser un error tanto como una limpieza legitima.
      * Solo mira las devengadas; las ya revertidas / en revision no se vuelven a tocar.
      */
-    public function conciliar(): array
+    public function conciliar(?int $clienteId = null): array
     {
         $resumen = ['revisadas' => 0, 'revertidas' => 0, 'a_revisar' => 0, 'detalle' => []];
         $eventos = new TiendaPedidoService($this->prefijo);
@@ -144,6 +144,7 @@ class TiendaComisionService
                 $eventos->registrarEvento($p->idpedido, 'comision_revertida',
                     "Pedido " . strtolower(TiendaEstadoPedido::etiqueta($p->estado)) . " en gestion; se revierte comision de $" . number_format($p->comision_importe, 2, ',', '.'),
                     'conciliacion');
+                (new TiendaSeguimientoService($this->prefijo, $clienteId))->cancelarPorGestion($p->idpedido, strtolower(TiendaEstadoPedido::etiqueta($p->estado)) . ' en gestión');
                 $resumen['revertidas']++;
                 $resumen['detalle'][] = ['idpedido' => $p->idpedido, 'importe' => $p->comision_importe, 'resultado' => 'revertida', 'estado' => $p->estado];
             }

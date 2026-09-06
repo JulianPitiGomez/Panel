@@ -5,6 +5,7 @@ namespace App\Livewire\Panel;
 use App\Services\TiendaEstadoPedido;
 use App\Services\TiendaPagoService;
 use App\Services\TiendaPedidoService;
+use App\Services\TiendaSeguimientoService;
 use App\Services\TiendaService;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
@@ -17,6 +18,7 @@ use Livewire\Component;
 class PedidosWeb extends Component
 {
     public $filtroPago = 'todos';   // todos | pendiente | aprobado | rechazado | no_aplica
+    public $filtroEstado = 'todos'; // todos | abiertos | <estado_web>
     public $busqueda = '';
     public $pedidos = [];
     public $detalleId = null;
@@ -44,6 +46,12 @@ class PedidosWeb extends Component
         $this->cargar();
     }
 
+    public function updatedFiltroEstado()
+    {
+        $this->conectar();
+        $this->cargar();
+    }
+
     public function updatedBusqueda()
     {
         $this->conectar();
@@ -66,6 +74,13 @@ class PedidosWeb extends Component
             )
             ->orderByDesc('t.idpedido')
             ->limit(200);
+
+        if ($this->filtroEstado === 'abiertos') {
+            $q->whereNotIn('t.estado_web', [TiendaSeguimientoService::ENTREGADO, TiendaSeguimientoService::CANCELADO]);
+        } elseif ($this->filtroEstado !== 'todos') {
+            $valores = $this->filtroEstado === TiendaSeguimientoService::DESPACHADO ? ['despachado', 'enviado'] : [$this->filtroEstado];
+            $q->whereIn('t.estado_web', $valores);
+        }
 
         if ($this->filtroPago !== 'todos') {
             $q->where('t.pago_estado', $this->filtroPago);
@@ -122,20 +137,39 @@ class PedidosWeb extends Component
 
     public $seguimientoInput = '';
 
-    /** Numero de seguimiento del correo, cargado a mano por el comercio (F2; la API va en carril B). */
-    public function guardarSeguimiento($id)
+    /** El comercio avanza (o deshace) el estado web del pedido. Avisa al comprador por mail (F6). */
+    public function cambiarEstado($id, $estado)
     {
         $this->conectar();
-        $seg = mb_substr(trim($this->seguimientoInput), 0, 60);
-        DB::connection('client_db')->table("{$this->tablePrefix}tienda_pedidos")
-            ->where('idpedido', (int) $id)->update(['envio_seguimiento' => $seg ?: null, 'estado_web' => $seg ? 'enviado' : 'recibido']);
-        (new TiendaPedidoService($this->tablePrefix))->registrarEvento((int) $id, $seg ? 'enviado' : 'recibido',
-            $seg ? "Despachado. Número de seguimiento: {$seg}" : 'Se quitó el número de seguimiento', 'comercio', session('cliente_nombre') ?: 'panel');
-        $this->mensaje = $seg ? "Seguimiento del pedido #{$id} guardado." : "Seguimiento del pedido #{$id} quitado.";
-        $this->tipoMensaje = 'success';
-        $this->seguimientoInput = '';
+        $r = (new TiendaSeguimientoService($this->tablePrefix, (int) session('client_id')))
+            ->cambiar((int) $id, (string) $estado, $this->seguimientoInput, session('cliente_nombre') ?: 'panel');
+        $this->mensaje = $r['mensaje'];
+        $this->tipoMensaje = $r['ok'] ? 'success' : 'error';
+        if ($r['ok']) {
+            $this->seguimientoInput = '';
+        }
         $this->cargar();
         $this->verDetalle($id);
+    }
+
+    public function siguientesEstados($estadoWeb, $entregaModo): array
+    {
+        return TiendaSeguimientoService::siguientes($estadoWeb, $entregaModo);
+    }
+
+    public function estadoAnterior($estadoWeb, $entregaModo): ?string
+    {
+        return TiendaSeguimientoService::anterior($estadoWeb, $entregaModo);
+    }
+
+    public function etiquetaEstadoWeb($estadoWeb, $entregaModo = null): string
+    {
+        return TiendaSeguimientoService::etiqueta($estadoWeb, $entregaModo);
+    }
+
+    public function urlSeguimiento($transportista, $numero): ?string
+    {
+        return TiendaSeguimientoService::urlSeguimiento($transportista, $numero);
     }
 
     public function etiquetaEstadoGestion($estado): string
