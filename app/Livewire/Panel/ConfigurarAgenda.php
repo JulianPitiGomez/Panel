@@ -90,9 +90,27 @@ class ConfigurarAgenda extends Component
     {
         $this->conectar();
         $this->config['abierta'] = !$this->config['abierta'];
-        (new TiendaAgendaService($this->tablePrefix))->guardarConfig(['abierta' => $this->config['abierta']]);
+        (new TiendaAgendaService($this->tablePrefix))->guardarConfig([
+            'abierta'         => $this->config['abierta'],
+            'recibe_cerrada'  => $this->config['recibe_cerrada'],
+            'muestra_cerrada' => $this->config['muestra_cerrada'],
+        ]);
         $this->mensaje = $this->config['abierta'] ? 'Tienda abierta.' : 'Tienda cerrada. ' . ($this->config['recibe_cerrada'] ? 'Sigue recibiendo pedidos con aviso.' : 'No toma pedidos hasta que la abras.');
         $this->tipoMensaje = 'success';
+    }
+
+    /** "Cerrada igual recibe" y "mostrar aviso" se graban al tildarlos: no dependen del boton Guardar. */
+    public function updatedConfig($valor, $clave)
+    {
+        if (!in_array($clave, ['recibe_cerrada', 'muestra_cerrada'], true)) {
+            return;
+        }
+        $this->conectar();
+        (new TiendaAgendaService($this->tablePrefix))->guardarConfig([$clave => (bool) $valor]);
+        if (!$this->config['abierta']) {
+            $this->mensaje = 'Tienda cerrada. ' . ($this->config['recibe_cerrada'] ? 'Sigue recibiendo pedidos con aviso.' : 'No toma pedidos hasta que la abras.');
+            $this->tipoMensaje = 'success';
+        }
     }
 
     public function guardar()

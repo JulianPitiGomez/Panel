@@ -44,6 +44,7 @@ class Catalogo extends Component
     public $vendeSinStock = true;      // config web del comercio (TiendaStockService)
     public $mensajeCerrada = null;     // aviso de tienda cerrada (TiendaAgendaService)
     public $esVitrina = false;         // modo vitrina: se mira, no se compra
+    public $cerradaSinPedidos = false; // agenda: cerrada y sin 'recibe cerrada' -> no se agrega al carrito
     public $habituales = [];           // lo que este comprador compra seguido (ultimos 12 meses)
     public $destacados = [];           // elegidos por el comercio (tienda_articu.destacado), en su orden
     public $promosPagina = [];         // codigo => [textos de promo] de los productos visibles
@@ -94,6 +95,7 @@ class Catalogo extends Component
 
         try {
             $ag = (new \App\Services\TiendaAgendaService($this->tablePrefix))->config();
+            $this->cerradaSinPedidos = !$ag['abierta'] && !$ag['recibe_cerrada'];
             if (!$ag['abierta'] && $ag['muestra_cerrada']) {
                 $this->mensajeCerrada = $ag['recibe_cerrada']
                     ? 'La tienda está cerrada por el momento. Podés dejar tu pedido y lo preparamos cuando volvamos a abrir.'
@@ -552,6 +554,10 @@ class Catalogo extends Component
 
     public function agregarAlCarrito($codigo, $cantidadAgregar = 1)
     {
+        if ($this->cerradaSinPedidos) {
+            $this->avisoStock = 'La tienda está cerrada por el momento y no está tomando pedidos.';
+            return;
+        }
         if ($this->esVitrina) {
             return;
         }

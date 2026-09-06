@@ -13,8 +13,8 @@
             <h3 class="font-primary font-semibold text-gray-800"><i class="fas {{ $config['abierta'] ? 'fa-door-open text-green-500' : 'fa-door-closed text-red-500' }} mr-2"></i>La tienda está {{ $config['abierta'] ? 'abierta' : 'cerrada' }}</h3>
             <p class="text-xs text-gray-400">Cerrala cuando no puedas tomar pedidos (vacaciones, corte de luz, demasiado trabajo). Se abre de nuevo con un toque.</p>
             <div class="flex flex-wrap gap-4 mt-3">
-                <label class="flex items-center gap-2 text-xs text-gray-600"><input type="checkbox" wire:model="config.recibe_cerrada" class="w-4 h-4 rounded text-[#FFAF22]"> Cerrada, igual recibe pedidos (con aviso)</label>
-                <label class="flex items-center gap-2 text-xs text-gray-600"><input type="checkbox" wire:model="config.muestra_cerrada" class="w-4 h-4 rounded text-[#FFAF22]"> Mostrar el aviso de cerrado en la tienda</label>
+                <label class="flex items-center gap-2 text-xs text-gray-600"><input type="checkbox" wire:model.live="config.recibe_cerrada" class="w-4 h-4 rounded text-[#FFAF22]"> Cerrada, igual recibe pedidos (con aviso)</label>
+                <label class="flex items-center gap-2 text-xs text-gray-600"><input type="checkbox" wire:model.live="config.muestra_cerrada" class="w-4 h-4 rounded text-[#FFAF22]"> Mostrar el aviso de cerrado en la tienda</label>
             </div>
         </div>
         <button type="button" wire:click="alternarAbierta" class="px-5 py-2.5 rounded-xl font-semibold text-sm text-white {{ $config['abierta'] ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600' }}">
