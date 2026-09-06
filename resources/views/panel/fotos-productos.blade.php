@@ -73,6 +73,55 @@
     @if($tabActivo === 'configuracion')
         <div class="space-y-6">
 
+            <!-- Asistente de alta: que falta para salir a vender -->
+            @php $listos = collect($asistente)->where('ok', true)->count(); $totalPasos = count($asistente); @endphp
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-lg font-primary font-semibold text-gray-800 flex items-center">
+                        <i class="fas fa-rocket text-[#FFAF22] mr-2"></i> Tu tienda, paso a paso
+                    </h3>
+                    <span class="text-xs font-semibold px-2.5 py-1 rounded-full {{ $listos === $totalPasos ? 'bg-green-100 text-green-700' : 'bg-[#FFAF22]/15 text-[#B8860B]' }}">{{ $listos }} de {{ $totalPasos }} listos</span>
+                </div>
+                <div class="w-full h-2 bg-gray-100 rounded-full mb-4 overflow-hidden">
+                    <div class="h-2 bg-[#FFAF22] rounded-full" style="width: {{ $totalPasos ? (int) ($listos * 100 / $totalPasos) : 0 }}%"></div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    @foreach($asistente as $paso)
+                        <div class="flex items-start gap-3 p-3 rounded-lg {{ $paso['ok'] ? 'bg-green-50' : 'bg-gray-50' }}">
+                            <i class="fas {{ $paso['ok'] ? 'fa-check-circle text-green-500' : (!empty($paso['opcional']) ? 'fa-circle text-gray-300' : 'fa-exclamation-circle text-[#FFAF22]') }} mt-0.5"></i>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-800">{{ $paso['titulo'] }} @if(!empty($paso['opcional']))<span class="text-[10px] text-gray-400 font-normal">opcional</span>@endif</p>
+                                <p class="text-xs text-gray-500 truncate">{{ $paso['detalle'] }}</p>
+                            </div>
+                            @if($paso['tab'] && $paso['tab'] !== 'configuracion')
+                                <button wire:click="$set('tabActivo', '{{ $paso['tab'] }}')" class="text-xs text-[#B8860B] hover:underline whitespace-nowrap">Ir <i class="fas fa-arrow-right"></i></button>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+
+            <!-- Chequeo del catalogo -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+                <h3 class="text-lg font-primary font-semibold text-gray-800 mb-1 flex items-center">
+                    <i class="fas fa-clipboard-check text-[#FFAF22] mr-2"></i> Chequeo del catálogo
+                </h3>
+                <p class="text-xs text-gray-400 mb-4">Un catálogo presentable vende. Tocá cada número para ver esos artículos y resolverlos.</p>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    @foreach([['sin_foto', 'Sin foto', 'fa-image'], ['sin_precio', 'Sin precio', 'fa-dollar-sign'], ['sin_descripcion', 'Sin descripción', 'fa-align-left'], ['sin_peso', 'Sin peso', 'fa-weight-hanging']] as [$clave, $titulo, $icono])
+                        @if(($chequeo[$clave] ?? null) !== null)
+                            <button wire:click="irAChequeo('{{ $clave }}')" class="text-left p-3 rounded-xl border {{ ($chequeo[$clave] ?? 0) > 0 ? 'border-amber-200 bg-amber-50 hover:bg-amber-100' : 'border-green-200 bg-green-50' }}">
+                                <p class="text-2xl font-bold {{ ($chequeo[$clave] ?? 0) > 0 ? 'text-amber-700' : 'text-green-700' }}">{{ number_format($chequeo[$clave] ?? 0, 0, ',', '.') }}</p>
+                                <p class="text-xs text-gray-600"><i class="fas {{ $icono }} mr-1"></i>{{ $titulo }}</p>
+                            </button>
+                        @endif
+                    @endforeach
+                </div>
+                @if(($chequeo['sin_precio'] ?? 0) > 0)
+                    <p class="text-[11px] text-gray-400 mt-2">Los artículos sin precio se muestran en la tienda a $0: cargales el precio en gestión.</p>
+                @endif
+            </div>
+
             <!-- URL, Nombre de Tienda y Modo de Acceso -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
                 <h3 class="text-lg font-primary font-semibold text-gray-800 mb-4 flex items-center">
@@ -642,7 +691,7 @@
                 </button>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <label class="block text-sm font-secondary font-medium text-gray-700 mb-2">Buscar por Codigo o Nombre</label>
                     <input type="text"
@@ -659,7 +708,63 @@
                         <option value="sin">Sin foto</option>
                     </select>
                 </div>
+                <div>
+                    <label class="block text-sm font-secondary font-medium text-gray-700 mb-2">Chequeo</label>
+                    <select wire:model.live="filtroChequeo"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent font-secondary text-sm">
+                        <option value="">Todos</option>
+                        <option value="sin_precio">Sin precio</option>
+                        <option value="sin_descripcion">Sin descripción</option>
+                        <option value="sin_peso">Sin peso</option>
+                    </select>
+                </div>
             </div>
+        </div>
+
+        <!-- Descripciones con IA -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-5">
+            <div class="flex flex-col lg:flex-row lg:items-center gap-3">
+                <div class="flex-1">
+                    <h3 class="text-sm font-primary font-semibold text-gray-800"><i class="fas fa-magic text-[#FFAF22] mr-2"></i>Descripciones con IA</h3>
+                    <p class="text-xs text-gray-400">Para los artículos sin descripción, la IA propone un texto, un título y una categoría a partir del nombre, rubro y marca. Nada se publica hasta que lo revisás: podés retocar, aceptar o descartar cada uno.</p>
+                </div>
+                @if(\App\Services\TiendaIaService::disponible())
+                    <button wire:click="iaGenerarLote" wire:loading.attr="disabled" wire:target="iaGenerarLote" @disabled($iaCandidatos === 0)
+                            class="px-4 py-2 rounded-lg text-xs font-semibold bg-[#1E1B35] text-white hover:bg-[#2d2952] whitespace-nowrap disabled:opacity-40">
+                        <span wire:loading.remove wire:target="iaGenerarLote"><i class="fas fa-magic mr-1"></i> Proponer para {{ min($iaCandidatos, \App\Services\TiendaIaService::LOTE_MAX) }} artículos</span>
+                        <span wire:loading wire:target="iaGenerarLote"><i class="fas fa-spinner fa-spin mr-1"></i> Pensando…</span>
+                    </button>
+                    <span class="text-[11px] text-gray-400">{{ $iaCandidatos }} sin descripción</span>
+                @else
+                    <span class="text-xs text-gray-400 bg-gray-50 px-3 py-2 rounded-lg">Función no habilitada en este servidor.</span>
+                @endif
+            </div>
+            @if($iaMensaje)
+                <p class="text-xs mt-3 px-3 py-2 rounded-lg {{ str_starts_with($iaMensaje, 'No se pudo') ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-700' }}">{{ $iaMensaje }} <button wire:click="$set('iaMensaje', '')" class="float-right">&times;</button></p>
+            @endif
+
+            @if(count($iaPendientes))
+                <div class="mt-4 flex items-center justify-between">
+                    <p class="text-xs font-semibold text-gray-700">{{ count($iaPendientes) }} propuestas para revisar</p>
+                    <button wire:click="iaAceptarTodas" wire:confirm="¿Aceptar todas las propuestas tal como están (o como las editaste)?" class="text-xs px-3 py-1.5 rounded-lg bg-green-500 text-white hover:bg-green-600"><i class="fas fa-check-double mr-1"></i>Aceptar todas</button>
+                </div>
+                <div class="mt-2 space-y-2 max-h-[520px] overflow-y-auto pr-1">
+                    @foreach($iaPendientes as $p)
+                        <div class="rounded-lg border border-gray-200 p-3" wire:key="ia-{{ $p['codigo'] }}">
+                            <div class="flex items-center justify-between gap-2 mb-1">
+                                <p class="text-sm font-medium text-gray-800 truncate">{{ $p['nombre'] }} <span class="text-xs text-gray-400">({{ $p['codigo'] }})</span></p>
+                                <span class="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 whitespace-nowrap">{{ $p['sugerencia']['categoria'] ?? '' }}</span>
+                            </div>
+                            <textarea wire:model="iaEdicion.{{ $p['codigo'] }}.descripcion" rows="3" class="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-700">{{ $p['sugerencia']['descripcion'] ?? '' }}</textarea>
+                            <p class="text-[10px] text-gray-400 mt-1"><span class="font-semibold">Título:</span> {{ $p['sugerencia']['meta_titulo'] ?? '' }} · <span class="font-semibold">Google:</span> {{ $p['sugerencia']['meta_descripcion'] ?? '' }}</p>
+                            <div class="flex gap-2 mt-2">
+                                <button wire:click="iaAceptar('{{ $p['codigo'] }}')" class="px-3 py-1 rounded-lg bg-green-500 text-white text-xs hover:bg-green-600"><i class="fas fa-check mr-1"></i>Aceptar</button>
+                                <button wire:click="iaDescartar('{{ $p['codigo'] }}')" class="px-3 py-1 rounded-lg bg-gray-100 text-gray-600 text-xs hover:bg-gray-200"><i class="fas fa-times mr-1"></i>Descartar</button>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
         </div>
 
         <!-- Peso y medidas por planilla (para cotizar el correo) -->

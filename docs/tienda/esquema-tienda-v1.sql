@@ -219,6 +219,8 @@ CREATE TABLE IF NOT EXISTS `{p}tienda_articu` (
   `consume_cupo`       TINYINT(1)   NOT NULL DEFAULT 1,           -- agenda
   `meta_titulo`        VARCHAR(120) DEFAULT NULL,                 -- F6
   `meta_descripcion`   VARCHAR(255) DEFAULT NULL,
+  `ia_sugerencia`      TEXT         DEFAULT NULL,                 -- F4: JSON propuesto por la IA, pendiente de revision del comercio
+  `ia_fecha`           DATETIME     DEFAULT NULL,
   PRIMARY KEY (`codigo`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

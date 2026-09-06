@@ -88,6 +88,9 @@ class FotosProductos extends Component
         $this->cargarDatosComercio();
         $this->cargarDatosTienda();
         $this->cargarDestacados();
+        $this->calcularChequeo();
+        $this->calcularAsistente();
+        $this->cargarIa();
     }
 
     private function setupClientDatabase()
@@ -332,6 +335,15 @@ class FotosProductos extends Component
             $query->whereNull('f.url');
         }
 
+        // Filtros del chequeo del catalogo
+        if ($this->filtroChequeo === 'sin_precio') {
+            $query->where('a.PRECIOVEN', '<=', 0);
+        } elseif ($this->filtroChequeo === 'sin_descripcion') {
+            $query->where(fn ($q) => $q->whereNull('ta.descripcion_larga')->orWhere('ta.descripcion_larga', ''));
+        } elseif ($this->filtroChequeo === 'sin_peso') {
+            $query->whereNull('ta.peso');
+        }
+
         $query->orderBy('a.nombre', 'asc');
 
         return $query->paginate(20);
@@ -354,6 +366,177 @@ class FotosProductos extends Component
             ->count();
 
         $this->totalSinFoto = $this->totalProductos - $this->totalConFoto;
+    }
+
+    // ------------------------------------------------ chequeo del catalogo y asistente (F4)
+
+    public $chequeo = [];       // sin_foto, sin_precio, sin_descripcion, sin_peso, total
+    public $asistente = [];     // pasos del alta de la tienda con su estado
+    public $filtroChequeo = ''; // '' | sin_precio | sin_descripcion | sin_peso (filtro extra de la tabla)
+
+    public function calcularChequeo()
+    {
+        $this->setupClientDatabase();
+        $p = $this->tablePrefix;
+        $base = fn () => DB::connection('client_db')->table("{$p}articu as a")
+            ->leftJoin("{$p}articu_fotos as f", 'a.codigo', '=', 'f.codigo')
+            ->leftJoin("{$p}tienda_articu as ta", 'a.codigo', '=', 'ta.codigo')
+            ->where('a.NOSALE', 0);
+
+        $correoActivo = false;
+        try {
+            $correoActivo = (bool) ((new \App\Services\TiendaEnvioService($p))->config()['correo_activo'] ?? false);
+        } catch (\Throwable $e) {
+        }
+
+        $this->chequeo = [
+            'total' => $base()->count(),
+            'sin_foto' => $base()->whereNull('f.url')->count(),
+            'sin_precio' => $base()->where('a.PRECIOVEN', '<=', 0)->count(),
+            'sin_descripcion' => $base()->where(fn ($q) => $q->whereNull('ta.descripcion_larga')->orWhere('ta.descripcion_larga', ''))->count(),
+            'sin_peso' => $correoActivo ? $base()->whereNull('ta.peso')->count() : null,
+        ];
+    }
+
+    /** Estado de cada paso del alta de la tienda: lo que falta para salir a vender. */
+    public function calcularAsistente()
+    {
+        $this->setupClientDatabase();
+        $p = $this->tablePrefix;
+        $clientId = (int) session('client_id');
+        $d = $this->datosComercio;
+
+        $pasos = [];
+        $pasos[] = ['clave' => 'slug', 'titulo' => 'Nombre de la tienda', 'ok' => trim((string) $this->tiendaSlug) !== '', 'detalle' => trim((string) $this->tiendaSlug) !== '' ? url('/web/' . $this->tiendaSlug) : 'Elegí el nombre que va en la dirección web', 'tab' => 'configuracion'];
+        $datosOk = !empty($d['direccion']) && !empty($d['telefono']) && !empty($d['email_comercio']);
+        $pasos[] = ['clave' => 'datos', 'titulo' => 'Datos del comercio', 'ok' => $datosOk, 'detalle' => $datosOk ? 'Dirección, teléfono y mail cargados' : 'Faltan dirección, teléfono o mail (a ese mail llegan los pedidos)', 'tab' => 'configuracion'];
+        $pasos[] = ['clave' => 'logo', 'titulo' => 'Logo', 'ok' => !empty($this->logoUrl), 'detalle' => !empty($this->logoUrl) ? 'Cargado' : 'Subí el logo para que la tienda se vea tuya', 'tab' => 'configuracion'];
+
+        $total = (int) ($this->chequeo['total'] ?? 0);
+        $conFoto = $total - (int) ($this->chequeo['sin_foto'] ?? 0);
+        $pct = $total ? (int) round($conFoto * 100 / $total) : 0;
+        $pasos[] = ['clave' => 'fotos', 'titulo' => 'Fotos de los artículos', 'ok' => $pct >= 80, 'detalle' => "{$conFoto} de {$total} con foto ({$pct}%)" . ($pct < 80 ? '. Apuntá a más del 80%' : ''), 'tab' => 'productos'];
+
+        $envio = null;
+        try { $envio = (new \App\Services\TiendaEnvioService($p))->config(); } catch (\Throwable $e) {}
+        $envioOk = $envio && ($envio['retiro_local'] || $envio['flota_propia'] || $envio['correo_activo'] || $envio['a_convenir']);
+        $pasos[] = ['clave' => 'envios', 'titulo' => 'Envíos', 'ok' => (bool) $envioOk, 'detalle' => $envioOk ? 'Al menos una forma de entrega activa' : 'Definí cómo entregás', 'tab' => 'envios'];
+
+        $pagos = null;
+        try { $pagos = (new \App\Services\TiendaPagoService($p))->config(); } catch (\Throwable $e) {}
+        $pagosOk = $pagos && (
+            ($pagos['transferencia_activa'] && ($pagos['transferencia_cbu'] || $pagos['transferencia_alias']))
+            || $pagos['mercadopago_activa'] || $pagos['cuenta_corriente_activa'] || $pagos['a_convenir_activa']
+        );
+        $pasos[] = ['clave' => 'pagos', 'titulo' => 'Medios de pago', 'ok' => (bool) $pagosOk, 'detalle' => $pagosOk ? 'Al menos un medio listo' : 'Cargá los datos de transferencia o activá otro medio', 'tab' => 'pagos'];
+
+        $agenda = null;
+        try { $agenda = (new \App\Services\TiendaAgendaService($p))->config(); } catch (\Throwable $e) {}
+        $pasos[] = ['clave' => 'agenda', 'titulo' => 'Agenda de entregas', 'ok' => true, 'opcional' => true, 'detalle' => $agenda && $agenda['activa'] ? 'Activa' : 'Opcional: solo si fabricás a pedido o entregás en franjas', 'tab' => 'agenda'];
+
+        $habilitada = \App\Services\TiendaService::habilitada($clientId);
+        $pasos[] = ['clave' => 'habilitada', 'titulo' => 'Tienda habilitada', 'ok' => $habilitada, 'detalle' => $habilitada ? 'Tu tienda está activa' : 'Cuando esté todo listo, BCN la habilita', 'tab' => null];
+
+        $this->asistente = $pasos;
+    }
+
+    public function irAChequeo($filtro)
+    {
+        $this->filtroChequeo = $filtro === 'sin_foto' ? '' : $filtro;
+        $this->filtroFoto = $filtro === 'sin_foto' ? 'sin' : '';
+        $this->busqueda = '';
+        $this->tabActivo = 'productos';
+        $this->resetPage();
+    }
+
+    public function updatedFiltroChequeo()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedTabActivo($valor)
+    {
+        if ($valor === 'configuracion') {
+            $this->calcularChequeo();
+            $this->calcularAsistente();
+        }
+    }
+
+    // ------------------------------------------------ descripciones con IA (F4)
+
+    public $iaPendientes = [];     // propuestas a revisar
+    public $iaCandidatos = 0;      // articulos sin descripcion ni propuesta
+    public $iaMensaje = '';
+    public $iaEdicion = [];        // codigo => ['descripcion' => ...] cuando el comercio retoca antes de aceptar
+
+    private function cargarIa()
+    {
+        $this->setupClientDatabase();
+        $srv = new \App\Services\TiendaIaService($this->tablePrefix);
+        $this->iaPendientes = $srv->pendientes();
+        $this->iaCandidatos = count($srv->candidatos(500));
+    }
+
+    public function iaGenerarLote()
+    {
+        $this->setupClientDatabase();
+        $srv = new \App\Services\TiendaIaService($this->tablePrefix);
+        $codigos = $srv->candidatos();
+        if (empty($codigos)) {
+            $this->iaMensaje = 'No quedan artículos sin descripción.';
+            return;
+        }
+        try {
+            $n = $srv->generar($codigos, (string) ($this->datosComercio['nombre_fantasia'] ?? session('cliente_nombre') ?? ''), (string) ($this->datosComercio['rubro'] ?? ''));
+            $this->iaMensaje = $n ? "La IA propuso descripciones para {$n} artículos. Revisalas abajo." : 'La IA no devolvió propuestas para este lote.';
+        } catch (\Throwable $e) {
+            Log::error('TiendaIa generar: ' . $e->getMessage());
+            $this->iaMensaje = 'No se pudo generar: ' . $e->getMessage();
+        }
+        $this->cargarIa();
+        $this->calcularChequeo();
+    }
+
+    public function iaAceptar($codigo)
+    {
+        $this->setupClientDatabase();
+        $editada = $this->iaEdicion[(string) $codigo] ?? null;
+        (new \App\Services\TiendaIaService($this->tablePrefix))->aceptar($codigo, $editada ? array_merge($this->sugerenciaDe($codigo), $editada) : null);
+        unset($this->iaEdicion[(string) $codigo]);
+        $this->cargarIa();
+        $this->calcularChequeo();
+    }
+
+    public function iaAceptarTodas()
+    {
+        $this->setupClientDatabase();
+        $srv = new \App\Services\TiendaIaService($this->tablePrefix);
+        foreach ($this->iaPendientes as $p) {
+            $editada = $this->iaEdicion[(string) $p['codigo']] ?? null;
+            $srv->aceptar($p['codigo'], $editada ? array_merge($p['sugerencia'], $editada) : null);
+        }
+        $this->iaEdicion = [];
+        $this->iaMensaje = 'Descripciones aceptadas.';
+        $this->cargarIa();
+        $this->calcularChequeo();
+    }
+
+    public function iaDescartar($codigo)
+    {
+        $this->setupClientDatabase();
+        (new \App\Services\TiendaIaService($this->tablePrefix))->descartar($codigo);
+        unset($this->iaEdicion[(string) $codigo]);
+        $this->cargarIa();
+    }
+
+    private function sugerenciaDe($codigo): array
+    {
+        foreach ($this->iaPendientes as $p) {
+            if ((string) $p['codigo'] === (string) $codigo) {
+                return $p['sugerencia'];
+            }
+        }
+        return [];
     }
 
     // ------------------------------------------------ destacados (tienda_articu)

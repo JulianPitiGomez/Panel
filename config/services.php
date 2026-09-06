@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    // Claude (Anthropic): descripciones del catalogo de la tienda web (F4). Clave de BCN, no del comercio.
+    'anthropic' => [
+        'key' => env('ANTHROPIC_API_KEY'),
+        'model' => env('ANTHROPIC_MODEL', 'claude-opus-5'),
+    ],
+
 ];
