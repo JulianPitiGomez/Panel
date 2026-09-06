@@ -22,7 +22,7 @@
 --                  tienda_articu, tienda_correo_tarifas (F2 correo y peso),
 --                  tienda_agenda, tienda_agenda_franjas, tienda_agenda_excepciones (F2 agenda);
 --                  F3: tienda_pedidos.descuento_promos / promos_aplicadas, tienda_pagos_config.forpag_*;
---                  F4: tienda_fotos (galeria); F5: tienda_metricas; F6: tienda_pagos_cuenta
+--                  F4: tienda_fotos (galeria); F5: tienda_metricas; F6: tienda_pagos_cuenta, tienda_links
 --                  tienda_pedidos.entrega_fecha / entrega_franja_id / entrega_franja / agenda_cupo
 --                  (F1 agrego comision_saldo a tienda_pedidos y tienda_eventos; v1 todavia no salio a produccion,
 --                   por eso se edita en lugar de crear v2)
@@ -333,4 +333,27 @@ CREATE TABLE IF NOT EXISTS `{p}tienda_pagos_cuenta` (
   `usuario`       VARCHAR(60)   DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_codcli` (`codcli`, `estado`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- F6: link del preventista. El vendedor arma el pedido en su modulo y le manda
+-- al cliente un link; el cliente lo revisa en la tienda y confirma. El pedido
+-- queda a nombre del vendedor y el borrador se reemplaza.
+CREATE TABLE IF NOT EXISTS `{p}tienda_links` (
+  `id`                INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `token`             VARCHAR(64)  NOT NULL,
+  `idpedido_borrador` INT          NOT NULL,                     -- pedidos_encab.id del borrador del vendedor
+  `codcli`            INT          NOT NULL,
+  `codven`            VARCHAR(10)  DEFAULT NULL,
+  `vendedor`          VARCHAR(60)  DEFAULT NULL,
+  `items`             TEXT         NOT NULL,                     -- JSON [{codigo, nombre, cantidad}]
+  `observa`           VARCHAR(200) DEFAULT NULL,
+  `creado`            DATETIME     NOT NULL,
+  `vence`             DATETIME     NOT NULL,
+  `veces_abierto`     INT UNSIGNED NOT NULL DEFAULT 0,
+  `ultima_apertura`   DATETIME     DEFAULT NULL,
+  `usado`             DATETIME     DEFAULT NULL,
+  `idpedido_final`    INT          DEFAULT NULL,                 -- pedidos_encab.id del pedido confirmado por el cliente
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_token` (`token`),
+  KEY `idx_borrador` (`idpedido_borrador`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

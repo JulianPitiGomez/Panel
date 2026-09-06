@@ -73,14 +73,14 @@ class TiendaMiddleware
         // Control de acceso: si es privado y no está logueado, redirigir al index (login)
         // Excepto para la ruta index y login que siempre son accesibles
         $routeName = $request->route()->getName();
-        $rutasPublicas = ['tienda.index', 'tienda.login', 'tienda.registro', 'tienda.registro.post', 'tienda.validar', 'tienda.recuperar', 'tienda.recuperar.post', 'tienda.nueva-clave', 'tienda.nueva-clave.post', 'tienda.legales', 'tienda.arrepentimiento', 'tienda.arrepentimiento.post', 'tienda.sitemap'];
+        $rutasPublicas = ['tienda.index', 'tienda.login', 'tienda.registro', 'tienda.registro.post', 'tienda.validar', 'tienda.recuperar', 'tienda.recuperar.post', 'tienda.nueva-clave', 'tienda.nueva-clave.post', 'tienda.legales', 'tienda.arrepentimiento', 'tienda.arrepentimiento.post', 'tienda.sitemap', 'tienda.link'];
 
         if (TiendaService::esPrivada($modo) && !session('tienda_comprador_web_id') && !in_array($routeName, $rutasPublicas)) {
             return redirect()->route('tienda.index', $tienda);
         }
 
         // Vitrina: se mira, no se compra. Sin carrito, sin cuenta, sin registro.
-        $rutasCompra = ['tienda.carrito', 'tienda.mis-pedidos', 'tienda.mi-cuenta', 'tienda.comprobante', 'tienda.pago', 'tienda.registro', 'tienda.registro.post', 'tienda.login'];
+        $rutasCompra = ['tienda.carrito', 'tienda.link', 'tienda.mis-pedidos', 'tienda.mi-cuenta', 'tienda.comprobante', 'tienda.pago', 'tienda.registro', 'tienda.registro.post', 'tienda.login'];
         if (TiendaService::esVitrina($modo) && in_array($routeName, $rutasCompra)) {
             return redirect()->route('tienda.catalogo', $tienda);
         }

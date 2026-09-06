@@ -62,6 +62,13 @@
         <div class="grid lg:grid-cols-3 gap-6" x-data="{ confirmVaciar: false }">
             <!-- Lista de items (2/3) -->
             <div class="lg:col-span-2 space-y-3">
+                @if($linkVendedor)
+                    <div class="px-4 py-3 rounded-xl bg-blue-50 border border-blue-100 text-sm text-blue-900">
+                        <p><i class="fas fa-user-tie mr-1"></i> Este pedido lo armó <strong>{{ $linkVendedor['vendedor'] ?: 'tu vendedor' }}</strong>. Revisalo, cambiá lo que quieras y confirmalo.</p>
+                        @if(!empty($linkVendedor['observa']))<p class="text-xs mt-1 text-blue-700"><i class="fas fa-comment mr-1"></i>{{ $linkVendedor['observa'] }}</p>@endif
+                        @if(!empty($linkVendedor['salteados']))<p class="text-xs mt-1 text-amber-700"><i class="fas fa-exclamation-triangle mr-1"></i>No se pudieron cargar (ya no se venden): {{ implode(', ', $linkVendedor['salteados']) }}</p>@endif
+                    </div>
+                @endif
                 <div class="flex items-center justify-between mb-2">
                     <h2 class="text-xl font-bold" style="color: {{ $colores['texto'] }}">
                         <i class="fas fa-shopping-cart mr-2" style="color: {{ $colores['boton'] }}"></i> Mi carrito

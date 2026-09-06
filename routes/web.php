@@ -122,6 +122,7 @@ Route::prefix('web')->middleware([\App\Http\Middleware\TiendaMiddleware::class])
     Route::get('/{tienda}/sitemap.xml', [TiendaController::class, 'sitemap'])->name('tienda.sitemap');
     Route::get('/{tienda}/carrito', \App\Livewire\Tienda\Carrito::class)->name('tienda.carrito');
     Route::get('/{tienda}/mis-pedidos', \App\Livewire\Tienda\MisPedidos::class)->name('tienda.mis-pedidos');
+    Route::get('/{tienda}/link/{token}', [TiendaController::class, 'link'])->name('tienda.link');   // pedido armado por el vendedor (F6)
     Route::get('/{tienda}/mi-cuenta', \App\Livewire\Tienda\MiCuenta::class)->name('tienda.mi-cuenta');   // portal del mayorista (F6)
     Route::get('/{tienda}/comprobante/{ticomp}/{letra}/{numero}', [TiendaController::class, 'comprobante'])->name('tienda.comprobante');
     Route::get('/{tienda}/pago/{pedido}', [TiendaController::class, 'pago'])->name('tienda.pago');

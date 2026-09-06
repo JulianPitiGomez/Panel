@@ -308,6 +308,13 @@
             <span class="text-2xl font-bold" style="color: #FFAF22;">${{ number_format($total, 2) }}</span>
         </div>
         <div class="flex flex-col sm:flex-row gap-2 justify-end">
+            @if($this->tiendaDisponible())
+                <button wire:click="generarLink" wire:loading.attr="disabled" wire:target="generarLink"
+                        class="bg-[#1E1B35] hover:bg-[#2d2952] text-white font-semibold py-2 px-4 rounded shadow flex items-center justify-center">
+                    <i class="fa fa-link mr-2"></i>
+                    Link para el cliente
+                </button>
+            @endif
             <button wire:click="imprimirPedido"
                     class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded shadow flex items-center justify-center">
                 <i class="fa fa-print mr-2"></i>
@@ -321,6 +328,32 @@
     </div>
 
     {{-- Modal elegir tipo de impresión --}}
+    {{-- Link para el cliente (tienda web) --}}
+    @if($mostrarModalLink)
+        <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" wire:click="$set('mostrarModalLink', false)">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6" wire:click.stop>
+                <h3 class="text-lg font-bold text-gray-800 mb-1"><i class="fa fa-link mr-2" style="color: #FFAF22;"></i>Link para el cliente</h3>
+                <p class="text-sm text-gray-500 mb-3">{{ $linkMensaje }}</p>
+                @if($linkUrl)
+                    <p class="text-xs text-gray-500 mb-2">El cliente abre el link, entra con su cuenta de la tienda, revisa el pedido y lo confirma. Queda a tu nombre. Cuando confirme, este borrador se reemplaza por su pedido. Vence el {{ $linkVence }}.</p>
+                    <div class="flex items-center gap-2 mb-3" x-data="{ copied: false }">
+                        <input type="text" readonly value="{{ $linkUrl }}" id="linkCliente" class="flex-1 min-w-0 px-3 py-2 text-xs border border-gray-300 rounded-lg bg-gray-50">
+                        <button @click="navigator.clipboard.writeText(document.getElementById('linkCliente').value); copied = true; setTimeout(() => copied = false, 2000)"
+                                class="px-3 py-2 rounded-lg text-sm font-semibold text-white" :class="copied ? 'bg-green-500' : 'bg-[#1E1B35]'">
+                            <i class="fas" :class="copied ? 'fa-check' : 'fa-copy'"></i>
+                        </button>
+                    </div>
+                    @if($linkWhatsapp)
+                        <a href="{{ $linkWhatsapp }}" target="_blank" class="block w-full text-center py-2.5 rounded-lg bg-[#25D366] hover:bg-[#1ebe57] text-white font-semibold text-sm"><i class="fab fa-whatsapp mr-1"></i> Mandar por WhatsApp</a>
+                    @else
+                        <p class="text-xs text-amber-600">El cliente no tiene teléfono cargado: copiá el link y mandáselo.</p>
+                    @endif
+                @endif
+                <button wire:click="$set('mostrarModalLink', false)" class="mt-4 w-full py-2 text-sm text-gray-500 hover:text-gray-700">Cerrar</button>
+            </div>
+        </div>
+    @endif
+
     @if($mostrarModalImprimir)
         <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div class="bg-white rounded-lg shadow-xl p-6 mx-4 max-w-sm w-full">

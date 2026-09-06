@@ -12,6 +12,55 @@ use App\Services\TiendaPagoService;
 
 class TiendaController extends Controller
 {
+    /**
+     * Link del preventista (F6): guarda el token en sesion y, si el comprador ya esta
+     * logueado, arma el carrito; si no, lo manda a ingresar y el carrito se arma al entrar.
+     */
+    public function link($tienda, $token)
+    {
+        $links = new \App\Services\TiendaLinkService(session('tienda_prefix'));
+        $r = $links->porToken($token);
+        if (!$r['link']) {
+            return view('tienda.mensaje', ['nombreTienda' => session('tienda_nombre'), 'titulo' => 'Este link no sirve', 'texto' => $r['motivo'], 'error' => true, 'icono' => 'fa-link',
+                'url' => route('tienda.catalogo', $tienda), 'boton' => 'Ir al catálogo']);
+        }
+        $links->registrarApertura((int) $r['link']->id);
+        session(['tienda_link_token' => $token]);
+
+        if (session('tienda_comprador_web_id')) {
+            return $this->aplicarLinkPendiente($tienda) ?: redirect()->route('tienda.carrito', $tienda);
+        }
+
+        return $this->vistaLogin($tienda, ['aviso' => 'Tu vendedor te armó un pedido. Ingresá con tu cuenta para revisarlo y confirmarlo.']);
+    }
+
+    /** Si hay un link pendiente en sesion, arma el carrito para el comprador logueado. Devuelve una respuesta o null. */
+    private function aplicarLinkPendiente($tienda)
+    {
+        $token = session('tienda_link_token');
+        if (!$token) {
+            return null;
+        }
+        session()->forget('tienda_link_token');
+        $links = new \App\Services\TiendaLinkService(session('tienda_prefix'));
+        $r = $links->porToken($token);
+        if (!$r['link']) {
+            return null;
+        }
+        $link = $r['link'];
+        if ((int) $link->codcli !== (int) session('tienda_comprador_id')) {
+            return view('tienda.mensaje', ['nombreTienda' => session('tienda_nombre'), 'titulo' => 'Este pedido es de otro cliente', 'texto' => 'El link que abriste fue armado para otra cuenta. Si es tuyo, ingresá con el usuario correcto o pedile a tu vendedor que lo vuelva a mandar.', 'error' => true, 'icono' => 'fa-user-lock',
+                'url' => route('tienda.catalogo', $tienda), 'boton' => 'Ir al catálogo']);
+        }
+        $armado = $links->armarCarrito($link, session('tienda_modo'));
+        session([
+            'tienda_carrito' => $armado['carrito'],
+            'tienda_link' => ['id' => $link->id, 'codven' => $link->codven, 'vendedor' => $link->vendedor, 'salteados' => $armado['salteados'], 'observa' => $link->observa],
+        ]);
+
+        return redirect()->route('tienda.carrito', $tienda);
+    }
+
     /** Copia del comprobante para el cliente (F6): HTML imprimible, o PDF con ?pdf=1. Solo los propios. */
     public function comprobante($tienda, $ticomp, $letra, $numero)
     {
@@ -327,7 +376,7 @@ class TiendaController extends Controller
         switch ($login['resultado']) {
             case TiendaCompradorService::LOGIN_OK:
                 $compradores->iniciarSesion($login['comprador']);
-                return redirect()->route('tienda.catalogo', $tienda);
+                return $this->aplicarLinkPendiente($tienda) ?: redirect()->route('tienda.catalogo', $tienda);
 
             case TiendaCompradorService::LOGIN_SIN_VALIDAR:
                 // Se le reenvia el enlace de confirmacion

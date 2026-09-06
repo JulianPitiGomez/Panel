@@ -286,6 +286,50 @@ class GestorPedidosVendedor extends Component
         $this->editandoFechaId = null;
     }
 
+    // ------------------------------------------------- link para el cliente (tienda web, F6)
+    public $mostrarModalLink = false;
+    public $linkUrl = '';
+    public $linkWhatsapp = null;
+    public $linkMensaje = '';
+    public $linkVence = '';
+
+    /** La tienda web del comercio esta habilitada y tiene URL: recien ahi tiene sentido el link. */
+    public function tiendaDisponible(): bool
+    {
+        $cliente = \App\Models\Cliente::find(session('client_id'));
+
+        return $cliente && $cliente->tienda && \App\Services\TiendaService::habilitada($cliente->id)
+            && !\App\Services\TiendaService::esVitrina(\App\Services\TiendaService::modo($cliente->id));
+    }
+
+    public function generarLink()
+    {
+        $this->setupClientDatabase();
+        $cliente = \App\Models\Cliente::find(session('client_id'));
+        if (!$this->tiendaDisponible()) {
+            $this->linkMensaje = 'El comercio no tiene la tienda web habilitada.';
+            $this->mostrarModalLink = true;
+            return;
+        }
+        $r = (new \App\Services\TiendaLinkService($this->tablePrefix))->crearDesdePedido((int) $this->pedidoId, (string) session('vendedor_user_id'), (string) session('vendedor_nombre'));
+        $this->linkMensaje = $r['mensaje'];
+        $this->mostrarModalLink = true;
+        if (!$r['ok']) {
+            $this->linkUrl = '';
+            return;
+        }
+        $slug = $cliente->tienda;
+        $datos = \App\Services\TiendaService::configuracionWeb($cliente->id);
+        $base = \App\Services\TiendaDominioService::urlPublica($slug, $datos);
+        $this->linkUrl = ($base && str_starts_with($base, 'https://') && !str_contains($base, '/web/'))
+            ? rtrim($base, '/') . '/link/' . $r['token']
+            : \App\Services\TiendaLinkService::url($slug, $r['token']);
+        $this->linkVence = \Carbon\Carbon::parse($r['link']->vence)->format('d/m/Y');
+        $nombreCliente = trim((string) ($this->cliente->NOMBRE ?? ''));
+        $texto = "Hola" . ($nombreCliente ? " {$nombreCliente}" : '') . "! Te armé el pedido en la tienda de " . session('cliente_nombre') . ". Revisalo y confirmalo acá: {$this->linkUrl}";
+        $this->linkWhatsapp = \App\Services\TiendaLinkService::urlWhatsapp($this->cliente->TELEFONO ?? null, $texto);
+    }
+
     public function imprimirPedido()
     {
         $this->mostrarModalImprimir = true;

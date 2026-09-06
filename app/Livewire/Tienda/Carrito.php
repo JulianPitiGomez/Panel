@@ -60,6 +60,8 @@ class Carrito extends Component
 
     public $colores = [];
 
+    public $linkVendedor = null;   // ['id','codven','vendedor','salteados','observa'] cuando el carrito vino de un link del vendedor
+
     public function mount($tienda)
     {
         $this->tiendaSlug = $tienda;
@@ -68,6 +70,7 @@ class Carrito extends Component
         $this->nombreTienda = session('tienda_nombre');
         $this->modo = \App\Services\TiendaService::normalizarModo(session('tienda_modo'));
         $this->carrito = session('tienda_carrito', []);
+        $this->linkVendedor = session('tienda_link');   // pedido armado por el preventista (F6)
         $this->parafecha = date('Y-m-d');
 
         $datos = session('tienda_datos', []);
@@ -624,6 +627,11 @@ class Carrito extends Component
         $compradorNombre = session('tienda_comprador_nombre');
         $compradorVendedor = session('tienda_comprador_vendedor');
         $compradorDescuento = session('tienda_comprador_descuento', 0);
+        // Pedido armado por el preventista: queda a su nombre, con su comision
+        $linkVendedor = session('tienda_link');
+        if (!empty($linkVendedor['codven'])) {
+            $compradorVendedor = $linkVendedor['codven'];
+        }
 
         // Obtener nombre del vendedor
         $vendedorNombre = 'TIENDA WEB';
@@ -745,6 +753,14 @@ class Carrito extends Component
 
         // Enviar emails
         $this->enviarEmails($pedidoId, $compradorNombre, $itemsParaEmail, $totalEmail, $entregaParaEmail, $envioParaEmail);
+
+        // Link del preventista: usado, y el borrador del vendedor se reemplaza por este pedido
+        if (!empty($linkVendedor['id'])) {
+            (new \App\Services\TiendaLinkService($this->tablePrefix))->marcarUsado((int) $linkVendedor['id'], (int) $pedidoId);
+            (new \App\Services\TiendaPedidoService($this->tablePrefix))->registrarEvento((int) $pedidoId, 'link_vendedor', 'Pedido armado por el vendedor ' . ($linkVendedor['vendedor'] ?: $linkVendedor['codven']) . ' y confirmado por el cliente', 'sistema');
+            session()->forget('tienda_link');
+            $this->linkVendedor = null;
+        }
 
         // Limpiar carrito
         session()->forget('tienda_carrito');

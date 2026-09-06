@@ -41,6 +41,9 @@
             @endif
 
             <!-- Formulario -->
+            @if(!empty($aviso))
+                <div class="mb-4 px-4 py-3 rounded-xl bg-blue-50 border border-blue-100 text-blue-800 text-sm"><i class="fas fa-user-tie mr-1"></i> {{ $aviso }}</div>
+            @endif
             <form method="POST" action="{{ route('tienda.login', $tienda) }}">
                 @csrf
                 <div class="space-y-4">
