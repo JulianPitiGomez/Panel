@@ -43,6 +43,7 @@ class Catalogo extends Component
     public $permiteDecimal = false;
     public $vendeSinStock = true;      // config web del comercio (TiendaStockService)
     public $mensajeCerrada = null;     // aviso de tienda cerrada (TiendaAgendaService)
+    public $esVitrina = false;         // modo vitrina: se mira, no se compra
     public $habituales = [];           // lo que este comprador compra seguido (ultimos 12 meses)
     public $destacados = [];           // elegidos por el comercio (tienda_articu.destacado), en su orden
     public $promosPagina = [];         // codigo => [textos de promo] de los productos visibles
@@ -64,6 +65,7 @@ class Catalogo extends Component
 
         $this->nombreTienda = session('tienda_nombre');
         $this->modo = \App\Services\TiendaService::normalizarModo(session('tienda_modo'));
+        $this->esVitrina = \App\Services\TiendaService::esVitrina($this->modo);
         $this->carrito = session('tienda_carrito', []);
         $this->cantidadCarrito = count($this->carrito);
 
@@ -473,6 +475,9 @@ class Catalogo extends Component
 
     public function agregarAlCarrito($codigo, $cantidadAgregar = 1)
     {
+        if ($this->esVitrina) {
+            return;
+        }
         $this->setupClientDatabase();
 
         $cantidadAgregar = $this->permiteDecimal ? (float) $cantidadAgregar : (int) $cantidadAgregar;

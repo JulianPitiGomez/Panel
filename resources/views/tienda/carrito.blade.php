@@ -188,6 +188,12 @@
                             @if($compradorError)
                                 <p class="text-sm text-red-500 mt-2">{{ $compradorError }}</p>
                             @endif
+                            <div class="mt-2 text-[11px] text-gray-500 flex flex-wrap gap-x-3">
+                                <a href="{{ route('tienda.recuperar', $tiendaSlug) }}" class="underline">Olvidé mi contraseña</a>
+                                @if(\App\Services\TiendaService::permiteRegistro($modo))
+                                    <a href="{{ route('tienda.registro', $tiendaSlug) }}" class="underline font-semibold" style="color: {{ $colores['boton'] }}">¿Primera vez? Creá tu cuenta</a>
+                                @endif
+                            </div>
                         </div>
                     @endif
 

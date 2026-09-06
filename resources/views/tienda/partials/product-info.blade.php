@@ -20,10 +20,12 @@
                     @endforeach
                     <div class="flex items-center justify-between mt-1.5">
                         <span class="text-xs font-bold" style="color: {{ $colores['precio'] }}">${{ number_format($this->obtenerPrecio($h), 2, ',', '.') }}</span>
-                        <button wire:click="{{ $modoCantidad === 'modal' ? 'abrirModalCantidad' : 'agregarAlCarrito' }}('{{ $h->CODIGO }}')"
+                        @if(!$esVitrina)
+<button wire:click="{{ $modoCantidad === 'modal' ? 'abrirModalCantidad' : 'agregarAlCarrito' }}('{{ $h->CODIGO }}')"
                                 class="w-7 h-7 text-white text-xs rounded-md flex items-center justify-center" style="background-color: {{ $colores['boton'] }}">
                             <i class="fas fa-cart-plus"></i>
                         </button>
+@endif
                     </div>
                 </div>
             @endforeach
@@ -50,10 +52,12 @@
                     <p class="text-[11px] leading-tight line-clamp-2 flex-1" style="color: {{ $colores['texto'] }}">{{ $h->NOMBRE }}</p>
                     <div class="flex items-center justify-between mt-1.5">
                         <span class="text-xs font-bold" style="color: {{ $colores['precio'] }}">${{ number_format($this->obtenerPrecio($h), 2, ',', '.') }}</span>
-                        <button wire:click="{{ $modoCantidad === 'modal' ? 'abrirModalCantidad' : 'agregarAlCarrito' }}('{{ $h->CODIGO }}')"
+                        @if(!$esVitrina)
+<button wire:click="{{ $modoCantidad === 'modal' ? 'abrirModalCantidad' : 'agregarAlCarrito' }}('{{ $h->CODIGO }}')"
                                 class="w-7 h-7 text-white text-xs rounded-md flex items-center justify-center" style="background-color: {{ $colores['boton'] }}">
                             <i class="fas fa-cart-plus"></i>
                         </button>
+@endif
                     </div>
                 </div>
             @endforeach

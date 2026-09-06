@@ -131,6 +131,159 @@ class TiendaCompradorService
     public const LOGIN_CREDENCIALES = 'credenciales';   // mail o contrasena incorrectos (no se dice cual)
     public const LOGIN_PENDIENTE = 'pendiente';          // cuenta esperando aprobacion del comercio
     public const LOGIN_RECHAZADO = 'rechazado';
+    public const LOGIN_SIN_VALIDAR = 'sin_validar';      // registro web sin confirmar el mail
+
+    // ----------------------------------------------------------- registro (F5)
+
+    /**
+     * Registro abierto (tienda publica). El comprador queda sin validar hasta que
+     * confirma el mail; si el comercio pide aprobacion, ademas queda pendiente.
+     * Devuelve ['ok' => bool, 'error' => ?string, 'comprador' => ?object, 'token' => ?string].
+     */
+    public function registrar(string $email, string $password, string $nombre, ?string $telefono, bool $requiereAprobacion): array
+    {
+        $email = mb_strtolower(trim($email));
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['ok' => false, 'error' => 'Ingresá un mail válido.'];
+        }
+        if (mb_strlen($password) < 6) {
+            return ['ok' => false, 'error' => 'La contraseña tiene que tener al menos 6 caracteres.'];
+        }
+        if (trim($nombre) === '') {
+            return ['ok' => false, 'error' => 'Ingresá tu nombre.'];
+        }
+
+        $existente = $this->porEmail($email);
+        if ($existente) {
+            if (!$existente->email_validado) {
+                // Se registro y nunca valido: se le manda el mail de nuevo con contrasena nueva
+                $token = $this->nuevoToken((int) $existente->id);
+                $this->tabla('tienda_compradores')->where('id', $existente->id)->update([
+                    'password_hash' => Hash::make($password), 'nombre' => mb_substr(trim($nombre), 0, 100), 'telefono' => trim((string) $telefono) ?: null,
+                ]);
+                return ['ok' => true, 'error' => null, 'comprador' => $this->porEmail($email), 'token' => $token];
+            }
+            return ['ok' => false, 'error' => 'Ese mail ya tiene una cuenta. Si no recordás la contraseña, recuperala.'];
+        }
+
+        // Si el mail coincide con un cliente de gestion, se enlaza de entrada (con su lista de precios)
+        $codcli = $this->tabla('clientes')->whereRaw('LOWER(TRIM(MAIL)) = ?', [$email])->orderBy('CODIGO')->value('CODIGO');
+
+        $id = $this->tabla('tienda_compradores')->insertGetId([
+            'email' => $email,
+            'password_hash' => Hash::make($password),
+            'email_validado' => 0,
+            'nombre' => mb_substr(trim($nombre), 0, 100),
+            'telefono' => mb_substr(trim((string) $telefono), 0, 40) ?: null,
+            'estado' => $requiereAprobacion ? self::ESTADO_PENDIENTE : self::ESTADO_APROBADO,
+            'codcli' => $codcli ?: null,
+            'creado' => now(),
+        ]);
+        $token = $this->nuevoToken($id);
+
+        return ['ok' => true, 'error' => null, 'comprador' => $this->tabla('tienda_compradores')->where('id', $id)->first(), 'token' => $token];
+    }
+
+    /** Genera y guarda un token (validacion de mail o cambio de clave) valido por 48 hs. */
+    public function nuevoToken(int $id): string
+    {
+        $token = bin2hex(random_bytes(24));
+        $this->tabla('tienda_compradores')->where('id', $id)->update([
+            'token_validacion' => hash('sha256', $token),
+            'token_vence' => now()->addHours(48),
+        ]);
+        return $token;
+    }
+
+    /** Comprador con ese token vigente, o null. */
+    public function porToken(string $token): ?object
+    {
+        if ($token === '') {
+            return null;
+        }
+        return $this->tabla('tienda_compradores')
+            ->where('token_validacion', hash('sha256', $token))
+            ->where('token_vence', '>=', now())
+            ->first();
+    }
+
+    /** Confirma el mail con el token del enlace. Devuelve el comprador o null si el enlace no sirve. */
+    public function validarEmail(string $token): ?object
+    {
+        $c = $this->porToken($token);
+        if (!$c) {
+            return null;
+        }
+        $this->tabla('tienda_compradores')->where('id', $c->id)->update([
+            'email_validado' => 1, 'token_validacion' => null, 'token_vence' => null,
+        ]);
+        return $this->tabla('tienda_compradores')->where('id', $c->id)->first();
+    }
+
+    /** Cambia la contrasena con el token del enlace de recuperacion. */
+    public function cambiarClave(string $token, string $password): ?object
+    {
+        if (mb_strlen($password) < 6) {
+            return null;
+        }
+        $c = $this->porToken($token);
+        if (!$c) {
+            return null;
+        }
+        $this->tabla('tienda_compradores')->where('id', $c->id)->update([
+            'password_hash' => Hash::make($password), 'email_validado' => 1, 'token_validacion' => null, 'token_vence' => null,
+        ]);
+        return $this->tabla('tienda_compradores')->where('id', $c->id)->first();
+    }
+
+    /** Compradores que esperan aprobacion del comercio. */
+    public function pendientes(): array
+    {
+        return $this->tabla('tienda_compradores')->where('estado', self::ESTADO_PENDIENTE)->orderBy('creado')->get()->all();
+    }
+
+    public function cambiarEstado(int $id, string $estado, ?string $motivo = null): void
+    {
+        $this->tabla('tienda_compradores')->where('id', $id)->update([
+            'estado' => $estado,
+            'motivo_rechazo' => $estado === self::ESTADO_RECHAZADO ? mb_substr((string) $motivo, 0, 200) : null,
+        ]);
+    }
+
+    /**
+     * Primera compra de un comprador web sin cliente de gestion: se lo crea en clientes
+     * (consumidor final, lista 1) y se lo enlaza. Devuelve el CODIGO nuevo.
+     */
+    public function crearClienteGestion(object $comprador, array $direccion = []): int
+    {
+        $existente = $this->tabla('clientes')->whereRaw('LOWER(TRIM(MAIL)) = ?', [mb_strtolower($comprador->email)])->orderBy('CODIGO')->value('CODIGO');
+        if ($existente) {
+            $this->tabla('tienda_compradores')->where('id', $comprador->id)->update(['codcli' => $existente]);
+            return (int) $existente;
+        }
+
+        $codigo = (int) $this->tabla('clientes')->insertGetId([
+            'NOMBRE' => mb_substr(mb_strtoupper(trim($comprador->nombre)), 0, 50),
+            'DIRECCION' => mb_substr(trim(($direccion['calle'] ?? '') . ' ' . ($direccion['numero'] ?? '')), 0, 50),
+            'LOCALIDAD' => mb_substr(trim($direccion['localidad'] ?? ''), 0, 30),
+            'TELEFONO' => mb_substr(trim((string) $comprador->telefono), 0, 30),
+            'CUIT' => '',
+            'CONIVA' => 5,          // consumidor final
+            'VENDEDOR' => 0,
+            'DNI' => (int) preg_replace('/\D/', '', (string) ($comprador->documento ?? '')) ?: 0,
+            'SALDO' => 0,
+            'MAIL' => mb_substr($comprador->email, 0, 50),
+            'CODPOS' => mb_substr(trim($direccion['cp'] ?? ''), 0, 8) ?: null,
+            'FECING' => today()->toDateString(),
+            'LISPRE' => 1,
+            'LIMITE' => 0,
+            'USUARIO' => 'TIENDA',
+        ], 'CODIGO');
+
+        $this->tabla('tienda_compradores')->where('id', $comprador->id)->update(['codcli' => $codigo]);
+
+        return $codigo;
+    }
 
     /**
      * Valida mail + contrasena. Devuelve ['resultado' => LOGIN_*, 'comprador' => object|null].
@@ -143,6 +296,10 @@ class TiendaCompradorService
 
         if (!$comprador || !Hash::check($password, $comprador->password_hash)) {
             return ['resultado' => self::LOGIN_CREDENCIALES, 'comprador' => null];
+        }
+
+        if (!$comprador->email_validado) {
+            return ['resultado' => self::LOGIN_SIN_VALIDAR, 'comprador' => $comprador];
         }
 
         if ($comprador->estado === self::ESTADO_PENDIENTE) {
@@ -178,7 +335,7 @@ class TiendaCompradorService
 
         session([
             'tienda_comprador_web_id' => $comprador->id,
-            'tienda_comprador_id' => $comprador->codcli,
+            'tienda_comprador_id' => $comprador->codcli ?: null,
             'tienda_comprador_nombre' => $cliente->NOMBRE ?? $comprador->nombre,
             'tienda_comprador_email' => $comprador->email,
             'tienda_comprador_lispre' => $cliente->LISPRE ?? null,

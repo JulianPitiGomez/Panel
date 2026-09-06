@@ -619,6 +619,21 @@ class Carrito extends Component
 
         // Encabezado, detalle y satelite en una sola transaccion: o entra todo o no entra nada.
         // Lo que va a pedidos_encab / pedidos_det es exactamente lo de siempre (regla del proyecto).
+        // Primera compra de un comprador registrado por la web: se crea como cliente de gestion
+        if (!$compradorId && session('tienda_comprador_web_id')) {
+            $compradores = new \App\Services\TiendaCompradorService($this->tablePrefix);
+            $comprador = DB::connection('client_db')->table("{$this->tablePrefix}tienda_compradores")->where('id', session('tienda_comprador_web_id'))->first();
+            if ($comprador) {
+                $compradorId = $compradores->crearClienteGestion($comprador, $requiereDireccion ? $this->direccion : []);
+                $compradores->iniciarSesion($compradores->porEmail($comprador->email));
+                $compradorNombre = session('tienda_comprador_nombre');
+            }
+        }
+        if (!$compradorId) {
+            $this->pagoError = 'No pudimos identificar tu cuenta. Volvé a ingresar.';
+            return;
+        }
+
         $pagoRegistrado = [];
         $pedidoId = DB::connection('client_db')->transaction(function () use ($compradorId, $compradorNombre, $compradorVendedor, $vendedorNombre, $compradorDescuento, $resumenIva, $opcion, $entregaResumen, $requiereDireccion, $pagoMedio, $totalConEnvio, &$pagoRegistrado, $franjaTexto, $consumeCupo, $promoLineas, $promoDescuento) {
 

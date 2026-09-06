@@ -74,6 +74,17 @@
                                class="text-sm text-red-500 hover:text-red-700">
                                 <i class="fas fa-sign-out-alt"></i>
                             </a>
+                        @elseif(!\App\Services\TiendaService::esVitrina(session('tienda_modo')))
+                            <a href="{{ route('tienda.ingresar', session('tienda_slug')) }}"
+                               class="text-sm text-gray-500 hover:text-gray-700 transition">
+                                <i class="fas fa-user mr-1"></i><span class="hidden sm:inline">Ingresar</span>
+                            </a>
+                            @if(\App\Services\TiendaService::permiteRegistro(session('tienda_modo')))
+                                <a href="{{ route('tienda.registro', session('tienda_slug')) }}"
+                                   class="text-sm font-semibold px-3 py-1.5 rounded-lg text-white" style="background-color: {{ $datos['color_boton'] ?? '#FFAF22' }}">
+                                    Crear cuenta
+                                </a>
+                            @endif
                         @endif
                     </div>
                 </div>
@@ -168,6 +179,15 @@
             <div class="max-w-7xl mx-auto px-4 text-center text-sm">
                 @php $datos = session('tienda_datos', []); @endphp
                 <p class="font-semibold mb-2">{{ session('tienda_nombre', 'Tienda') }}</p>
+                @if(!empty($datos['razon_social']) || !empty($datos['cuit']))
+                    <p class="text-xs text-gray-400 mb-2">{{ $datos['razon_social'] ?? '' }}{{ !empty($datos['cuit']) ? ' · CUIT ' . $datos['cuit'] : '' }}</p>
+                @endif
+                <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-gray-400 mb-3">
+                    <a href="{{ route('tienda.legales', session('tienda_slug')) }}" class="hover:text-[#FFAF22]">Términos y privacidad</a>
+                    @if(!\App\Services\TiendaService::esVitrina(session('tienda_modo')))
+                        <a href="{{ route('tienda.arrepentimiento', session('tienda_slug')) }}" class="hover:text-[#FFAF22] font-semibold">Botón de arrepentimiento</a>
+                    @endif
+                </div>
                 <div class="flex items-center justify-center gap-4 text-gray-400">
                     @if(!empty($datos['instagram']))
                         <a href="https://instagram.com/{{ ltrim($datos['instagram'], '@') }}" target="_blank" class="hover:text-[#FFAF22] transition">

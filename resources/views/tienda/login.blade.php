@@ -75,6 +75,14 @@
                     Ingresar
                 </button>
             </form>
+
+            <div class="mt-6 text-center text-sm text-gray-500 space-y-2">
+                <p><a href="{{ route('tienda.recuperar', $tienda) }}" class="underline">Olvidé mi contraseña</a></p>
+                @if(!empty($permiteRegistro))
+                    <p>¿Primera vez? <a href="{{ route('tienda.registro', $tienda) }}" class="font-semibold underline" style="color: {{ $colorBoton }}">Creá tu cuenta</a></p>
+                @endif
+                <p><a href="{{ route('tienda.catalogo', $tienda) }}" class="text-gray-400 hover:text-gray-600"><i class="fas fa-arrow-left mr-1"></i>Seguir mirando el catálogo</a></p>
+            </div>
         </div>
     </div>
 </body>

@@ -101,6 +101,28 @@
                 </div>
             </div>
 
+            <!-- Compradores pendientes de aprobacion -->
+            @if(count($compradoresPendientes))
+            <div class="bg-white rounded-xl shadow-sm border border-amber-200 p-4 sm:p-6">
+                <h3 class="text-lg font-primary font-semibold text-gray-800 mb-1 flex items-center">
+                    <i class="fas fa-user-clock text-[#FFAF22] mr-2"></i> Compradores esperando tu aprobación
+                </h3>
+                <p class="text-xs text-gray-400 mb-3">Se registraron en la tienda y confirmaron su mail. Hasta que los apruebes no pueden comprar.</p>
+                <div class="space-y-2">
+                    @foreach($compradoresPendientes as $c)
+                        <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg" wire:key="cp-{{ $c['id'] }}">
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm text-gray-800">{{ $c['nombre'] }} <span class="text-xs text-gray-400">· {{ $c['email'] }}{{ $c['telefono'] ? ' · ' . $c['telefono'] : '' }}</span></p>
+                                <p class="text-[11px] text-gray-400">Registrado el {{ \Carbon\Carbon::parse($c['creado'])->format('d/m/Y') }}{{ $c['codcli'] ? ' · coincide con tu cliente #' . $c['codcli'] : '' }}{{ !$c['email_validado'] ? ' · mail sin confirmar' : '' }}</p>
+                            </div>
+                            <button wire:click="aprobarComprador({{ $c['id'] }})" class="px-3 py-1.5 bg-green-500 text-white rounded-lg text-xs font-semibold hover:bg-green-600"><i class="fas fa-check mr-1"></i>Aprobar</button>
+                            <button wire:click="rechazarComprador({{ $c['id'] }})" wire:confirm="¿Rechazar a {{ $c['nombre'] }}?" class="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg text-xs hover:bg-gray-300">Rechazar</button>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+
             <!-- Chequeo del catalogo -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
                 <h3 class="text-lg font-primary font-semibold text-gray-800 mb-1 flex items-center">
@@ -193,11 +215,20 @@
                         </div>
                         <p class="text-xs text-gray-400 mt-1">
                             @if($tiendaModo === \App\Services\TiendaService::MODO_PUBLICA)
-                                <i class="fas fa-unlock text-green-500 mr-1"></i> Cualquier persona con el enlace puede ver tu catálogo.
+                                <i class="fas fa-unlock text-green-500 mr-1"></i> Cualquiera ve el catálogo y se registra con su mail para comprar. En la primera compra queda cargado como cliente en gestión.
+                            @elseif($tiendaModo === \App\Services\TiendaService::MODO_VITRINA)
+                                <i class="fas fa-eye text-blue-500 mr-1"></i> Solo catálogo: sin carrito ni cuentas. Ideal para mostrar precios sin vender online.
                             @else
-                                <i class="fas fa-lock text-orange-500 mr-1"></i> Tus clientes deben iniciar sesión para ver el catálogo.
+                                <i class="fas fa-lock text-orange-500 mr-1"></i> Solo tus clientes registrados (los importás desde gestión) pueden ver y comprar.
                             @endif
                         </p>
+                        @if($tiendaModo === \App\Services\TiendaService::MODO_PUBLICA)
+                            <label class="flex items-center gap-2 mt-3 text-xs text-gray-600 cursor-pointer">
+                                <input type="checkbox" wire:model.live="datosComercio.tienda_registro_aprobacion" class="w-4 h-4 rounded text-[#FFAF22]">
+                                Los registros nuevos necesitan mi aprobación antes de comprar
+                            </label>
+                            <p class="text-[10px] text-gray-400 ml-6">Se guarda con el botón "Guardar datos" de abajo.</p>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -348,6 +379,30 @@
                         <input type="email" wire:model="datosComercio.email_comercio" placeholder="ventas@mitienda.com"
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent text-sm">
                         <p class="text-xs text-gray-400 mt-1">Recibiras un mail con el detalle de cada pedido nuevo.</p>
+                    </div>
+                </div>
+
+                {{-- Datos legales (F5): obligatorios para vender online --}}
+                <div class="mt-6 pt-5 border-t border-gray-100">
+                    <h4 class="text-sm font-semibold text-gray-700 mb-1"><i class="fas fa-balance-scale text-[#FFAF22] mr-1"></i> Datos legales de la tienda</h4>
+                    <p class="text-xs text-gray-400 mb-3">Se muestran en la página "Términos y privacidad" de la tienda, junto con el botón de arrepentimiento que exige la ley para ventas a distancia. Si dejás los textos vacíos, se usa uno genérico.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Razón social</label>
+                            <input type="text" wire:model="datosComercio.razon_social" maxlength="100" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">CUIT</label>
+                            <input type="text" wire:model="datosComercio.cuit" maxlength="13" placeholder="20-12345678-9" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Términos y condiciones <span class="text-gray-400 font-normal">(opcional)</span></label>
+                            <textarea wire:model="datosComercio.tienda_terminos" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="Condiciones de venta, cambios, garantías…"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Política de privacidad <span class="text-gray-400 font-normal">(opcional)</span></label>
+                            <textarea wire:model="datosComercio.tienda_privacidad" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="Qué hacés con los datos de tus clientes…"></textarea>
+                        </div>
                     </div>
                 </div>
             </div>

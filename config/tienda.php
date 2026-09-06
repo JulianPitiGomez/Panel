@@ -30,8 +30,9 @@ return [
     | config_clientes.codven, que es el vendedor comercial del CRM).
     */
     'modos' => [
-        'publica' => 'Acceso libre (cualquiera puede ver)',
-        'privada' => 'Privado (requiere usuario y contraseña)',
+        'vitrina' => 'Vitrina: cualquiera ve el catálogo, nadie compra por la web',
+        'privada' => 'Privada / mayorista: ven y compran solo tus clientes registrados',
+        'publica' => 'Pública: cualquiera ve, se registra con su mail y compra',
     ],
 
     'modo_default' => 'publica',

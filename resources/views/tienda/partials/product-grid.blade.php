@@ -46,7 +46,8 @@
                                 @if($sinStock)
                                     <span class="text-[10px] text-red-400 block"><i class="fas fa-circle text-[6px] mr-0.5"></i> Sin stock</span>
                                 @endif
-                                <button wire:click="{{ $modoCantidad === 'modal' ? 'abrirModalCantidad' : 'agregarAlCarrito' }}('{{ $producto->CODIGO }}')"
+                                @if(!$esVitrina)
+<button wire:click="{{ $modoCantidad === 'modal' ? 'abrirModalCantidad' : 'agregarAlCarrito' }}('{{ $producto->CODIGO }}')"
                                         @if(!$vendeSinStock && $this->disponibleDe($producto->CODIGO) <= 0) disabled title="Sin stock" @endif
                                         wire:loading.attr="disabled" wire:target="agregarAlCarrito('{{ $producto->CODIGO }}')"
                                         class="w-7 h-7 text-white text-xs rounded-md flex items-center justify-center transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
@@ -54,6 +55,7 @@
                                     <span wire:loading.remove wire:target="agregarAlCarrito('{{ $producto->CODIGO }}')"><i class="fas fa-cart-plus"></i></span>
                                     <span wire:loading wire:target="agregarAlCarrito('{{ $producto->CODIGO }}')"><i class="fas fa-spinner fa-spin"></i></span>
                                 </button>
+@endif
                             </div>
                         </div>
                     </div>
@@ -99,7 +101,8 @@
                                 @if($sinStock)
                                     <span class="text-[10px] text-red-400 block"><i class="fas fa-circle text-[6px] mr-0.5"></i> Sin stock</span>
                                 @endif
-                                <button wire:click="{{ $modoCantidad === 'modal' ? 'abrirModalCantidad' : 'agregarAlCarrito' }}('{{ $producto->CODIGO }}')"
+                                @if(!$esVitrina)
+<button wire:click="{{ $modoCantidad === 'modal' ? 'abrirModalCantidad' : 'agregarAlCarrito' }}('{{ $producto->CODIGO }}')"
                                         @if(!$vendeSinStock && $this->disponibleDe($producto->CODIGO) <= 0) disabled title="Sin stock" @endif
                                         wire:loading.attr="disabled" wire:target="agregarAlCarrito('{{ $producto->CODIGO }}')"
                                         class="w-full mt-2 py-2 text-white text-xs font-semibold rounded-lg transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1"
@@ -107,6 +110,7 @@
                                     <span wire:loading.remove wire:target="agregarAlCarrito('{{ $producto->CODIGO }}')"><i class="fas fa-cart-plus mr-1"></i> Agregar al carrito</span>
                                     <span wire:loading wire:target="agregarAlCarrito('{{ $producto->CODIGO }}')"><i class="fas fa-spinner fa-spin"></i></span>
                                 </button>
+@endif
                             </div>
                         </div>
                     </div>
@@ -144,7 +148,8 @@
                                 @if($sinStock)
                                     <span class="text-[10px] text-red-400 block"><i class="fas fa-circle text-[6px] mr-0.5"></i> Sin stock</span>
                                 @endif
-                                <button wire:click="{{ $modoCantidad === 'modal' ? 'abrirModalCantidad' : 'agregarAlCarrito' }}('{{ $producto->CODIGO }}')"
+                                @if(!$esVitrina)
+<button wire:click="{{ $modoCantidad === 'modal' ? 'abrirModalCantidad' : 'agregarAlCarrito' }}('{{ $producto->CODIGO }}')"
                                         @if(!$vendeSinStock && $this->disponibleDe($producto->CODIGO) <= 0) disabled title="Sin stock" @endif
                                         wire:loading.attr="disabled" wire:target="agregarAlCarrito('{{ $producto->CODIGO }}')"
                                         class="w-full mt-2 py-1.5 text-white text-xs font-semibold rounded-lg transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1"
@@ -152,6 +157,7 @@
                                     <span wire:loading.remove wire:target="agregarAlCarrito('{{ $producto->CODIGO }}')"><i class="fas fa-cart-plus"></i> Agregar</span>
                                     <span wire:loading wire:target="agregarAlCarrito('{{ $producto->CODIGO }}')"><i class="fas fa-spinner fa-spin"></i></span>
                                 </button>
+@endif
                             </div>
                         </div>
                     </div>

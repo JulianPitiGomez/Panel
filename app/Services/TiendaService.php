@@ -19,6 +19,21 @@ class TiendaService
 {
     public const MODO_PUBLICA = 'publica';
     public const MODO_PRIVADA = 'privada';
+    public const MODO_VITRINA = 'vitrina';
+
+    /** Clave del JSON de config web: el registro publico requiere aprobacion del comercio */
+    public const CLAVE_REGISTRO_APROBACION = 'tienda_registro_aprobacion';
+
+    public static function esVitrina(?string $modo): bool
+    {
+        return self::normalizarModo($modo) === self::MODO_VITRINA;
+    }
+
+    /** En modo publica cualquiera puede registrarse. */
+    public static function permiteRegistro(?string $modo): bool
+    {
+        return self::normalizarModo($modo) === self::MODO_PUBLICA;
+    }
 
     /** Claves dentro del JSON de config_clientes_web.configuracion */
     public const CLAVE_MODO = 'tienda_modo';
@@ -86,6 +101,10 @@ class TiendaService
 
         if ($modo === self::MODO_PUBLICA || $modo === 0 || $modo === '0') {
             return self::MODO_PUBLICA;
+        }
+
+        if ($modo === self::MODO_VITRINA) {
+            return self::MODO_VITRINA;
         }
 
         return config('tienda.modo_default', self::MODO_PUBLICA);

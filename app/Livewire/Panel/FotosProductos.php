@@ -59,6 +59,7 @@ class FotosProductos extends Component
         'modo_cantidad' => 'rapido',
         'permite_decimal' => false,
         'tienda_vende_sin_stock' => true,   // ver TiendaStockService
+        'tienda_registro_aprobacion' => false,   // F5: los registros web esperan aprobacion del comercio
     ];
 
     // Tienda config
@@ -91,6 +92,7 @@ class FotosProductos extends Component
         $this->calcularChequeo();
         $this->calcularAsistente();
         $this->cargarIa();
+        $this->cargarCompradoresPendientes();
     }
 
     private function setupClientDatabase()
@@ -366,6 +368,53 @@ class FotosProductos extends Component
             ->count();
 
         $this->totalSinFoto = $this->totalProductos - $this->totalConFoto;
+    }
+
+    // ------------------------------------------------ compradores pendientes (F5)
+
+    public $compradoresPendientes = [];
+
+    private function cargarCompradoresPendientes()
+    {
+        $this->setupClientDatabase();
+        try {
+            $this->compradoresPendientes = array_map(fn ($c) => (array) $c, (new \App\Services\TiendaCompradorService($this->tablePrefix))->pendientes());
+        } catch (\Throwable $e) {
+            $this->compradoresPendientes = [];
+        }
+    }
+
+    public function aprobarComprador($id)
+    {
+        $this->setupClientDatabase();
+        $srv = new \App\Services\TiendaCompradorService($this->tablePrefix);
+        $srv->cambiarEstado((int) $id, \App\Services\TiendaCompradorService::ESTADO_APROBADO);
+        $c = DB::connection('client_db')->table($this->tablePrefix . 'tienda_compradores')->where('id', (int) $id)->first();
+        if ($c) {
+            $this->avisarComprador($c, 'Tu cuenta fue aprobada', 'Ya podés ingresar a la tienda de ' . ($this->datosComercio['nombre_fantasia'] ?? session('cliente_nombre')) . ' y hacer tu pedido.');
+        }
+        $this->cargarCompradoresPendientes();
+    }
+
+    public function rechazarComprador($id)
+    {
+        $this->setupClientDatabase();
+        (new \App\Services\TiendaCompradorService($this->tablePrefix))->cambiarEstado((int) $id, \App\Services\TiendaCompradorService::ESTADO_RECHAZADO, 'Rechazado desde el panel');
+        $this->cargarCompradoresPendientes();
+    }
+
+    private function avisarComprador(object $c, string $titulo, string $texto): void
+    {
+        try {
+            \Illuminate\Support\Facades\Mail::send('emails.tienda-cuenta', [
+                'titulo' => $titulo, 'texto' => $texto, 'boton' => 'Ir a la tienda',
+                'url' => url('/web/' . $this->tiendaSlug),
+                'nombreTienda' => $this->datosComercio['nombre_fantasia'] ?? session('cliente_nombre') ?? 'Tienda',
+                'logoUrl' => $this->logoUrl, 'colorBoton' => $this->datosComercio['color_boton'] ?? '#FFAF22',
+            ], fn ($m) => $m->to($c->email)->subject($titulo));
+        } catch (\Throwable $e) {
+            Log::warning('Tienda: no se pudo avisar al comprador: ' . $e->getMessage());
+        }
     }
 
     // ------------------------------------------------ chequeo del catalogo y asistente (F4)

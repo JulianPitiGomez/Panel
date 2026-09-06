@@ -166,7 +166,7 @@
                 <i class="fab fa-whatsapp text-xl"></i>
             </a>
         @endif
-        @if($cantidadCarrito > 0)
+        @if($cantidadCarrito > 0 && !$esVitrina)
             <button wire:click="irAlCarrito"
                     class="text-white rounded-full w-14 h-14 flex items-center justify-center shadow-xl hover:scale-110 transition-transform relative"
                     style="background-color: {{ $colores['boton'] }}">

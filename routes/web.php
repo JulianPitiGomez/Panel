@@ -113,6 +113,19 @@ Route::prefix('web')->middleware([\App\Http\Middleware\TiendaMiddleware::class])
     Route::get('/{tienda}/carrito', \App\Livewire\Tienda\Carrito::class)->name('tienda.carrito');
     Route::get('/{tienda}/mis-pedidos', \App\Livewire\Tienda\MisPedidos::class)->name('tienda.mis-pedidos');
     Route::get('/{tienda}/pago/{pedido}', [TiendaController::class, 'pago'])->name('tienda.pago');
+    // Cuenta del comprador (F5)
+    Route::get('/{tienda}/ingresar', [TiendaController::class, 'ingresar'])->name('tienda.ingresar');
+    Route::get('/{tienda}/registro', [TiendaController::class, 'registroForm'])->name('tienda.registro');
+    Route::post('/{tienda}/registro', [TiendaController::class, 'registro'])->name('tienda.registro.post');
+    Route::get('/{tienda}/validar/{token}', [TiendaController::class, 'validar'])->name('tienda.validar');
+    Route::get('/{tienda}/recuperar', [TiendaController::class, 'recuperarForm'])->name('tienda.recuperar');
+    Route::post('/{tienda}/recuperar', [TiendaController::class, 'recuperar'])->name('tienda.recuperar.post');
+    Route::get('/{tienda}/nueva-clave/{token}', [TiendaController::class, 'nuevaClaveForm'])->name('tienda.nueva-clave');
+    Route::post('/{tienda}/nueva-clave/{token}', [TiendaController::class, 'nuevaClave'])->name('tienda.nueva-clave.post');
+    // Legales y boton de arrepentimiento (F5)
+    Route::get('/{tienda}/legales', [TiendaController::class, 'legales'])->name('tienda.legales');
+    Route::get('/{tienda}/arrepentimiento', [TiendaController::class, 'arrepentimientoForm'])->name('tienda.arrepentimiento');
+    Route::post('/{tienda}/arrepentimiento', [TiendaController::class, 'arrepentimiento'])->name('tienda.arrepentimiento.post');
 });
 
 // Rutas de Kiosco público (sin middleware de panel)
