@@ -220,6 +220,8 @@ class Catalogo extends Component
             ->table("{$this->tablePrefix}articu as a")
             ->leftJoin("{$this->tablePrefix}articu_fotos as f", 'a.CODIGO', '=', 'f.codigo')
             ->leftJoin("{$this->tablePrefix}ivas as i", 'a.IVA', '=', 'i.codigo')
+            ->leftJoin("{$this->tablePrefix}tienda_articu as ta", 'a.CODIGO', '=', 'ta.codigo')
+            ->whereRaw('COALESCE(ta.visible_web, 1) = 1')   // ocultos desde el panel
             ->where('a.NOSALE', 0)
             ->select('a.CODIGO', 'a.NOMBRE', 'a.PRECIOVEN', 'a.REVENTA', 'a.STOCKACT', 'a.DEPTO', 'a.RUBRO', 'a.MARCA', 'f.url as foto_url', 'i.tasa as tasa_iva');
 
@@ -387,6 +389,8 @@ class Catalogo extends Component
             ->table("{$this->tablePrefix}articu as a")
             ->leftJoin("{$this->tablePrefix}articu_fotos as f", 'a.CODIGO', '=', 'f.codigo')
             ->leftJoin("{$this->tablePrefix}ivas as i", 'a.IVA', '=', 'i.codigo')
+            ->leftJoin("{$this->tablePrefix}tienda_articu as ta", 'a.CODIGO', '=', 'ta.codigo')
+            ->whereRaw('COALESCE(ta.visible_web, 1) = 1')   // ocultos desde el panel
             ->whereIn('a.CODIGO', $frecuentes)
             ->where('a.NOSALE', 0)
             ->get(['a.CODIGO', 'a.NOMBRE', 'a.PRECIOVEN', 'a.REVENTA', 'a.STOCKACT', 'f.url as foto_url', 'i.tasa as tasa_iva'])
@@ -456,6 +460,8 @@ class Catalogo extends Component
             ->table("{$this->tablePrefix}articu as a")
             ->leftJoin("{$this->tablePrefix}articu_fotos as f", 'a.CODIGO', '=', 'f.codigo')
             ->leftJoin("{$this->tablePrefix}ivas as i", 'a.IVA', '=', 'i.codigo')
+            ->leftJoin("{$this->tablePrefix}tienda_articu as ta", 'a.CODIGO', '=', 'ta.codigo')
+            ->whereRaw('COALESCE(ta.visible_web, 1) = 1')   // ocultos desde el panel
             ->where('a.CODIGO', $codigo)
             ->select('a.CODIGO', 'a.NOMBRE', 'a.PRECIOVEN', 'a.REVENTA', 'a.STOCKACT', 'f.url as foto_url', 'i.tasa as tasa_iva')
             ->first();
@@ -526,6 +532,8 @@ class Catalogo extends Component
             ->table("{$this->tablePrefix}articu as a")
             ->leftJoin("{$this->tablePrefix}articu_fotos as f", 'a.CODIGO', '=', 'f.codigo')
             ->leftJoin("{$this->tablePrefix}ivas as i", 'a.IVA', '=', 'i.codigo')
+            ->leftJoin("{$this->tablePrefix}tienda_articu as ta", 'a.CODIGO', '=', 'ta.codigo')
+            ->whereRaw('COALESCE(ta.visible_web, 1) = 1')   // ocultos desde el panel
             ->where('a.CODIGO', $codigo)
             ->select('a.CODIGO', 'a.NOMBRE', 'a.PRECIOVEN', 'a.REVENTA', 'a.STOCKACT', 'f.url as foto_url', 'i.tasa as tasa_iva')
             ->first();

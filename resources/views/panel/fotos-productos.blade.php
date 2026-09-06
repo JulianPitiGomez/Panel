@@ -272,8 +272,8 @@
                 </div>
             </div>
 
-            <!-- Logo y Portada -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Logo, Portada y foto por defecto -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                 <!-- Logo -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
@@ -358,6 +358,55 @@
                             <span wire:loading.remove wire:target="subirPortada"><i class="fas fa-upload mr-1"></i> Guardar portada</span>
                             <span wire:loading wire:target="subirPortada"><i class="fas fa-spinner fa-spin mr-1"></i> Subiendo...</span>
                         </button>
+                    </div>
+                </div>
+
+                <!-- Foto por defecto -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+                    <h3 class="text-lg font-primary font-semibold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-box-open text-[#FFAF22] mr-2"></i> Foto por defecto
+                    </h3>
+                    <p class="text-xs text-gray-500 mb-4">Se muestra en los productos que no tienen foto propia. Formato recomendado: cuadrado, max 2MB.</p>
+
+                    @if($fotoDefaultUrl)
+                        <div class="mb-4 flex justify-center">
+                            <img src="{{ $fotoDefaultUrl }}" alt="Foto por defecto" class="w-32 h-32 object-contain rounded-lg border border-gray-200 bg-gray-50">
+                        </div>
+                    @else
+                        <div class="mb-4 flex justify-center">
+                            <div class="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
+                                <i class="fas fa-image text-gray-300 text-3xl"></i>
+                            </div>
+                        </div>
+                    @endif
+
+                    <div class="space-y-3">
+                        <input type="file" wire:model="fotoDefault" accept="image/*"
+                               class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#FFAF22] file:text-white hover:file:bg-[#E89B0A] cursor-pointer">
+                        @error('fotoDefault') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
+
+                        <div wire:loading wire:target="fotoDefault" class="flex items-center gap-2 text-sm text-gray-500">
+                            <i class="fas fa-spinner fa-spin text-[#FFAF22]"></i> Cargando...
+                        </div>
+
+                        @if($fotoDefault)
+                            <div class="flex justify-center">
+                                <img src="{{ $fotoDefault->temporaryUrl() }}" alt="Preview" class="w-24 h-24 object-contain rounded-lg border">
+                            </div>
+                        @endif
+
+                        <button wire:click="subirFotoDefault" wire:loading.attr="disabled" wire:target="subirFotoDefault"
+                                {{ !$fotoDefault ? 'disabled' : '' }}
+                                class="w-full py-2.5 bg-[#FFAF22] text-white rounded-lg hover:bg-[#E89B0A] transition font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span wire:loading.remove wire:target="subirFotoDefault"><i class="fas fa-upload mr-1"></i> Guardar foto por defecto</span>
+                            <span wire:loading wire:target="subirFotoDefault"><i class="fas fa-spinner fa-spin mr-1"></i> Subiendo...</span>
+                        </button>
+                        @if($fotoDefaultUrl)
+                            <button wire:click="quitarFotoDefault" wire:confirm="¿Quitar la foto por defecto? Los productos sin foto vuelven a mostrar el ícono gris."
+                                    class="w-full py-2 text-sm text-gray-500 hover:text-red-600">
+                                <i class="fas fa-times mr-1"></i> Quitar foto por defecto
+                            </button>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -742,6 +791,9 @@
                     <div>
                         <p class="text-sm font-secondary text-gray-500">Total Productos</p>
                         <p class="text-2xl font-primary font-bold text-gray-800">{{ number_format($totalProductos) }}</p>
+                        @if($totalOcultos)
+                            <p class="text-xs text-gray-400">{{ number_format($totalOcultos) }} ocultos en la tienda</p>
+                        @endif
                     </div>
                     <div class="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
                         <i class="fas fa-box text-blue-500 text-xl"></i>
@@ -785,7 +837,7 @@
                 </button>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                     <label class="block text-sm font-secondary font-medium text-gray-700 mb-2">Buscar por Codigo o Nombre</label>
                     <input type="text"
@@ -803,6 +855,15 @@
                     </select>
                 </div>
                 <div>
+                    <label class="block text-sm font-secondary font-medium text-gray-700 mb-2">En la tienda</label>
+                    <select wire:model.live="filtroVisible"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent font-secondary">
+                        <option value="">Visibles y ocultos</option>
+                        <option value="si">Solo visibles</option>
+                        <option value="no">Solo ocultos</option>
+                    </select>
+                </div>
+                <div>
                     <label class="block text-sm font-secondary font-medium text-gray-700 mb-2">Chequeo</label>
                     <select wire:model.live="filtroChequeo"
                             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22] focus:border-transparent font-secondary text-sm">
@@ -812,6 +873,17 @@
                         <option value="sin_peso">Sin peso</option>
                     </select>
                 </div>
+            </div>
+
+            <div class="mt-4 pt-4 border-t border-gray-100 flex flex-wrap items-center gap-2">
+                <span class="text-sm text-gray-600 mr-1"><i class="fas fa-eye text-gray-400 mr-1"></i>Qué se muestra en la tienda:</span>
+                <button wire:click="visibilidadMasiva('todos')" wire:confirm="¿Mostrar todos los productos en la tienda?"
+                        class="px-3 py-1.5 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">Mostrar todos</button>
+                <button wire:click="visibilidadMasiva('con_foto')" wire:confirm="¿Mostrar solo los productos que tienen foto? Los que no tienen foto quedan ocultos."
+                        class="px-3 py-1.5 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">Mostrar solo los que tienen foto</button>
+                <button wire:click="visibilidadMasiva('ninguno')" wire:confirm="¿Ocultar todos los productos? La tienda queda sin productos hasta que muestres alguno."
+                        class="px-3 py-1.5 text-sm rounded-lg border border-red-200 text-red-600 hover:bg-red-50">Ocultar todos</button>
+                <span class="text-xs text-gray-400 w-full sm:w-auto">Después ajustás uno por uno con el ojito de cada producto.</span>
             </div>
         </div>
 
@@ -905,6 +977,7 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio</th>
                             <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" title="Se muestra en la portada de la tienda">Dest.</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" title="Si se muestra o no en la tienda">Tienda</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" title="Para cotizar el correo">Peso (kg)</th>
                             <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Foto</th>
                             <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
@@ -920,6 +993,12 @@
                                     <button wire:click="toggleDestacado('{{ $producto->codigo }}')" title="{{ $producto->destacado ? 'Quitar de destacados' : 'Destacar en la portada' }}"
                                             class="text-lg {{ $producto->destacado ? 'text-[#FFAF22]' : 'text-gray-300 hover:text-[#FFAF22]' }}">
                                         <i class="{{ $producto->destacado ? 'fas' : 'far' }} fa-star"></i>
+                                    </button>
+                                </td>
+                                <td class="px-6 py-3 text-center">
+                                    <button wire:click="toggleVisible('{{ $producto->codigo }}')" title="{{ $producto->visible_web ? 'Se muestra en la tienda. Click para ocultar' : 'Oculto en la tienda. Click para mostrar' }}"
+                                            class="text-lg {{ $producto->visible_web ? 'text-green-500' : 'text-gray-300 hover:text-green-500' }}">
+                                        <i class="fas {{ $producto->visible_web ? 'fa-eye' : 'fa-eye-slash' }}"></i>
                                     </button>
                                 </td>
                                 <td class="px-6 py-3 whitespace-nowrap">
@@ -980,6 +1059,9 @@
                             <p class="text-xs text-green-600 font-semibold">${{ number_format($producto->precioven, 2) }}</p>
                         </div>
                         <div class="flex items-center gap-2 flex-shrink-0">
+                            <button wire:click="toggleVisible('{{ $producto->codigo }}')" class="p-2 text-lg {{ $producto->visible_web ? 'text-green-500' : 'text-gray-300' }}">
+                                <i class="fas {{ $producto->visible_web ? 'fa-eye' : 'fa-eye-slash' }}"></i>
+                            </button>
                             <button wire:click="seleccionarProducto('{{ $producto->codigo }}')"
                                     class="p-2 bg-[#FFAF22] text-white rounded-lg hover:bg-[#E89B0A] transition">
                                 <i class="fas fa-upload text-sm"></i>

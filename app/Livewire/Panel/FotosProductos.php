@@ -20,6 +20,7 @@ class FotosProductos extends Component
     // Filtros
     public $busqueda = '';
     public $filtroFoto = ''; // '', 'con', 'sin'
+    public $filtroVisible = ''; // '', 'si', 'no' (visible en la tienda)
 
     // Upload producto
     public $foto;
@@ -29,10 +30,12 @@ class FotosProductos extends Component
     // Upload logo y portada
     public $fotoLogo;
     public $fotoPortada;
+    public $fotoDefault;       // foto que se muestra cuando el producto no tiene
 
     // URLs actuales de logo y portada
     public $logoUrl = '';
     public $portadaUrl = '';
+    public $fotoDefaultUrl = '';
 
     // Datos del comercio (config_clientes_web)
     public $datosComercio = [
@@ -73,6 +76,7 @@ class FotosProductos extends Component
     public $totalProductos = 0;
     public $totalConFoto = 0;
     public $totalSinFoto = 0;
+    public $totalOcultos = 0;   // no se muestran en la tienda
 
     // Mensajes
     public $mensaje = '';
@@ -119,6 +123,7 @@ class FotosProductos extends Component
 
         $this->logoUrl = file_exists(public_path($logoPath)) ? asset($logoPath) . '?v=' . filemtime(public_path($logoPath)) : '';
         $this->portadaUrl = file_exists(public_path($portadaPath)) ? asset($portadaPath) . '?v=' . filemtime(public_path($portadaPath)) : '';
+        $this->fotoDefaultUrl = \App\Services\TiendaService::fotoDefaultUrl($clientId);
     }
 
     private function cargarDatosComercio()
@@ -275,6 +280,46 @@ class FotosProductos extends Component
         }
     }
 
+    /** Foto por defecto: la ve el comprador en los productos que no tienen foto propia. */
+    public function subirFotoDefault()
+    {
+        $this->validate([
+            'fotoDefault' => 'required|image|max:2048',
+        ], [
+            'fotoDefault.required' => 'Selecciona una imagen.',
+            'fotoDefault.image' => 'El archivo debe ser una imagen.',
+            'fotoDefault.max' => 'La imagen no puede superar los 2MB.',
+        ]);
+
+        try {
+            $directory = public_path('img/logos/' . session('client_id'));
+            if (!File::isDirectory($directory)) {
+                File::makeDirectory($directory, 0755, true);
+            }
+            copy($this->fotoDefault->getRealPath(), $directory . '/' . \App\Services\TiendaService::FOTO_DEFAULT_ARCHIVO);
+
+            $this->fotoDefault = null;
+            $this->cargarImagenesTienda();
+            $this->mensaje = 'Foto por defecto guardada. Se muestra en los productos que no tienen foto.';
+            $this->tipoMensaje = 'success';
+        } catch (\Exception $e) {
+            Log::error('Error subiendo foto por defecto: ' . $e->getMessage());
+            $this->mensaje = 'Error al subir la foto por defecto.';
+            $this->tipoMensaje = 'error';
+        }
+    }
+
+    public function quitarFotoDefault()
+    {
+        $ruta = public_path('img/logos/' . session('client_id') . '/' . \App\Services\TiendaService::FOTO_DEFAULT_ARCHIVO);
+        if (file_exists($ruta)) {
+            @unlink($ruta);
+        }
+        $this->cargarImagenesTienda();
+        $this->mensaje = 'Se quitó la foto por defecto. Los productos sin foto vuelven a mostrar el ícono gris.';
+        $this->tipoMensaje = 'success';
+    }
+
     public function subirPortada()
     {
         $this->validate([
@@ -322,7 +367,8 @@ class FotosProductos extends Component
                 'a.precioven',
                 'f.url as foto_url',
                 'ta.peso as peso',
-                'ta.destacado as destacado'
+                'ta.destacado as destacado',
+                DB::raw('COALESCE(ta.visible_web, 1) as visible_web')
             )
             ->where('a.NOSALE', 0);
 
@@ -337,6 +383,12 @@ class FotosProductos extends Component
             $query->whereNotNull('f.url');
         } elseif ($this->filtroFoto === 'sin') {
             $query->whereNull('f.url');
+        }
+
+        if ($this->filtroVisible === 'si') {
+            $query->whereRaw('COALESCE(ta.visible_web, 1) = 1');
+        } elseif ($this->filtroVisible === 'no') {
+            $query->where('ta.visible_web', 0);
         }
 
         // Filtros del chequeo del catalogo
@@ -370,6 +422,12 @@ class FotosProductos extends Component
             ->count();
 
         $this->totalSinFoto = $this->totalProductos - $this->totalConFoto;
+
+        $this->totalOcultos = DB::connection('client_db')
+            ->table($this->tablePrefix . 'articu as a')
+            ->join($this->tablePrefix . 'tienda_articu as ta', 'a.codigo', '=', 'ta.codigo')
+            ->where('a.NOSALE', 0)->where('ta.visible_web', 0)
+            ->count();
     }
 
     // ------------------------------------------------ metricas y cache (F5)
@@ -661,6 +719,47 @@ class FotosProductos extends Component
         $this->cargarDestacados();
     }
 
+    // ------------------------------------------------ visibilidad en la tienda (tienda_articu.visible_web)
+
+    /** Muestra u oculta un producto en la tienda. */
+    public function toggleVisible($codigo)
+    {
+        $this->setupClientDatabase();
+        $actual = DB::connection('client_db')->table($this->tablePrefix . 'tienda_articu')->where('codigo', $codigo)->value('visible_web');
+        $this->upsertTiendaArticu((string) $codigo, ['visible_web' => ($actual === null || (int) $actual === 1) ? 0 : 1]);
+        $this->invalidarCatalogo();
+        $this->calcularContadores();
+    }
+
+    /** Cambio masivo: 'todos' muestra todo, 'ninguno' oculta todo, 'con_foto' muestra solo los que tienen foto. */
+    public function visibilidadMasiva($modo)
+    {
+        $this->setupClientDatabase();
+        $p = $this->tablePrefix;
+        $db = DB::connection('client_db');
+
+        if ($modo === 'todos') {
+            $db->table("{$p}tienda_articu")->where('visible_web', 0)->update(['visible_web' => 1]);
+            $this->mensaje = 'Ahora se muestran todos los productos en la tienda.';
+        } else {
+            // Todos los articulos necesitan fila en tienda_articu para poder quedar ocultos
+            $db->statement("INSERT IGNORE INTO `{$p}tienda_articu` (codigo) SELECT CODIGO FROM `{$p}articu` WHERE NOSALE = 0");
+            if ($modo === 'ninguno') {
+                $db->table("{$p}tienda_articu")->update(['visible_web' => 0]);
+                $this->mensaje = 'Se ocultaron todos los productos. Podés ir mostrando los que quieras con el ojito.';
+            } elseif ($modo === 'con_foto') {
+                $db->statement("UPDATE `{$p}tienda_articu` ta SET ta.visible_web = EXISTS (SELECT 1 FROM `{$p}articu_fotos` f WHERE f.codigo = ta.codigo AND f.url IS NOT NULL AND f.url <> '')");
+                $this->mensaje = 'Ahora se muestran solo los productos que tienen foto.';
+            } else {
+                return;
+            }
+        }
+
+        $this->invalidarCatalogo();
+        $this->calcularContadores();
+        $this->resetPage();
+    }
+
     // ------------------------------------------------ peso y medidas (tienda_articu)
 
     public $planillaPesos = null;    // CSV subido
@@ -836,6 +935,7 @@ class FotosProductos extends Component
     {
         $this->setupClientDatabase();
         (new \App\Services\TiendaFotoService($this->tablePrefix))->eliminar((int) $id);
+        $this->invalidarCatalogo();
         $this->cargarGaleria();
         $this->calcularContadores();
     }
@@ -844,6 +944,7 @@ class FotosProductos extends Component
     {
         $this->setupClientDatabase();
         (new \App\Services\TiendaFotoService($this->tablePrefix))->principal((int) $id);
+        $this->invalidarCatalogo();
         $this->cargarGaleria();
     }
 
@@ -851,6 +952,7 @@ class FotosProductos extends Component
     {
         $this->setupClientDatabase();
         (new \App\Services\TiendaFotoService($this->tablePrefix))->mover((int) $id, $direccion);
+        $this->invalidarCatalogo();
         $this->cargarGaleria();
     }
 
@@ -877,13 +979,14 @@ class FotosProductos extends Component
     {
         $this->busqueda = '';
         $this->filtroFoto = '';
+        $this->filtroVisible = '';
         $this->resetPage();
         $this->calcularContadores();
     }
 
     public function updated($propertyName)
     {
-        if (in_array($propertyName, ['busqueda', 'filtroFoto'])) {
+        if (in_array($propertyName, ['busqueda', 'filtroFoto', 'filtroVisible'])) {
             $this->resetPage();
         }
     }

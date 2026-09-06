@@ -105,8 +105,8 @@
                         <!-- Fila superior: imagen + info + eliminar -->
                         <div class="flex gap-3 items-start">
                             <div class="w-14 h-14 sm:w-16 sm:h-16 bg-gray-100 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden">
-                                @if($item['foto_url'])
-                                    <img src="{{ $item['foto_url'] }}" alt="{{ $item['nombre'] }}" class="w-full h-full object-cover">
+                                @if($item['foto_url'] ?: session('tienda_foto_default'))
+                                    <img src="{{ $item['foto_url'] ?: session('tienda_foto_default') }}" alt="{{ $item['nombre'] }}" class="w-full h-full object-cover">
                                 @else
                                     <i class="fas fa-image text-gray-300"></i>
                                 @endif

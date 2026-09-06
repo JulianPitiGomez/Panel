@@ -214,8 +214,8 @@
                 @endif
                 <div class="flex items-center gap-3 mb-4">
                     <div class="w-16 h-16 bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0 {{ count($fotosFicha) ? 'hidden' : '' }}">
-                        @if($productoModal['foto_url'])
-                            <img src="{{ $productoModal['foto_url'] }}" alt="{{ $productoModal['nombre'] }}" class="max-w-full max-h-full object-contain">
+                        @if($productoModal['foto_url'] ?: session('tienda_foto_default'))
+                            <img src="{{ $productoModal['foto_url'] ?: session('tienda_foto_default') }}" alt="{{ $productoModal['nombre'] }}" class="max-w-full max-h-full object-contain">
                         @else
                             <i class="fas fa-image text-gray-300 text-2xl"></i>
                         @endif

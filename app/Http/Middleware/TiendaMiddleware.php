@@ -66,6 +66,7 @@ class TiendaMiddleware
             'tienda_base' => $cliente->base,
             'tienda_logo' => $logoUrl,
             'tienda_portada' => $portadaUrl,
+            'tienda_foto_default' => TiendaService::fotoDefaultUrl($cliente->id),
             'tienda_datos' => $datosComercio,
         ]);
 

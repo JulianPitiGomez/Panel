@@ -18,8 +18,8 @@
                 @case('compacta')
                     <div class="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow group flex flex-col">
                         <div class="aspect-square bg-gray-50 flex items-center justify-center overflow-hidden p-2">
-                            @if($producto->foto_url)
-                                <img src="{{ $producto->foto_url }}" alt="{{ $producto->NOMBRE }}"
+                            @if($producto->foto_url ?: session('tienda_foto_default'))
+                                <img src="{{ $producto->foto_url ?: session('tienda_foto_default') }}" alt="{{ $producto->NOMBRE }}"
                                      class="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300">
                             @else
                                 <div class="text-gray-300"><i class="fas fa-image text-2xl"></i></div>
@@ -65,8 +65,8 @@
                 @case('detallada')
                     <div class="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow group flex flex-col">
                         <div class="aspect-square bg-gray-50 flex items-center justify-center overflow-hidden p-3">
-                            @if($producto->foto_url)
-                                <img src="{{ $producto->foto_url }}" alt="{{ $producto->NOMBRE }}"
+                            @if($producto->foto_url ?: session('tienda_foto_default'))
+                                <img src="{{ $producto->foto_url ?: session('tienda_foto_default') }}" alt="{{ $producto->NOMBRE }}"
                                      class="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300">
                             @else
                                 <div class="text-gray-300"><i class="fas fa-image text-4xl"></i></div>
@@ -120,8 +120,8 @@
                 @default
                     <div class="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow group flex flex-col">
                         <div class="aspect-square bg-gray-50 flex items-center justify-center overflow-hidden p-2">
-                            @if($producto->foto_url)
-                                <img src="{{ $producto->foto_url }}" alt="{{ $producto->NOMBRE }}"
+                            @if($producto->foto_url ?: session('tienda_foto_default'))
+                                <img src="{{ $producto->foto_url ?: session('tienda_foto_default') }}" alt="{{ $producto->NOMBRE }}"
                                      class="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300">
                             @else
                                 <div class="text-gray-300"><i class="fas fa-image text-3xl"></i></div>

@@ -8,8 +8,8 @@
             @foreach($destacados as $h)
                 <div class="flex-shrink-0 w-40 bg-white rounded-xl shadow-sm p-2 flex flex-col">
                     <div class="aspect-square bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden mb-1.5">
-                        @if($h->foto_url)
-                            <img src="{{ $h->foto_url }}" alt="{{ $h->NOMBRE }}" class="max-w-full max-h-full object-contain">
+                        @if($h->foto_url ?: session('tienda_foto_default'))
+                            <img src="{{ $h->foto_url ?: session('tienda_foto_default') }}" alt="{{ $h->NOMBRE }}" class="max-w-full max-h-full object-contain">
                         @else
                             <i class="fas fa-image text-gray-300 text-2xl"></i>
                         @endif
@@ -43,8 +43,8 @@
             @foreach($habituales as $h)
                 <div class="flex-shrink-0 w-36 bg-white rounded-xl shadow-sm p-2 flex flex-col">
                     <div class="aspect-square bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden mb-1.5">
-                        @if($h->foto_url)
-                            <img src="{{ $h->foto_url }}" alt="{{ $h->NOMBRE }}" class="max-w-full max-h-full object-contain">
+                        @if($h->foto_url ?: session('tienda_foto_default'))
+                            <img src="{{ $h->foto_url ?: session('tienda_foto_default') }}" alt="{{ $h->NOMBRE }}" class="max-w-full max-h-full object-contain">
                         @else
                             <i class="fas fa-image text-gray-300 text-2xl"></i>
                         @endif

@@ -28,14 +28,14 @@ class TiendaFotoService
         return DB::connection('client_db')->table($this->prefijo . $nombre);
     }
 
-    /** Fotos de un articulo en orden (principal primero). */
+    /** Fotos de un articulo en orden. La primera es siempre la principal. */
     public function de($codigo): array
     {
         $this->adoptarExistente($codigo);
 
         return $this->tabla('tienda_fotos')
             ->where('codigo', $codigo)
-            ->orderByDesc('principal')->orderBy('orden')->orderBy('id')
+            ->orderBy('orden')->orderBy('id')
             ->get()->all();
     }
 
@@ -86,15 +86,8 @@ class TiendaFotoService
 
         $this->tabla('tienda_fotos')->where('id', $id)->delete();
 
-        // Si era la principal, pasa a serlo la primera que quede
-        if ($foto->principal) {
-            $siguiente = $this->tabla('tienda_fotos')->where('codigo', $foto->codigo)->orderBy('orden')->orderBy('id')->first();
-            if ($siguiente) {
-                $this->tabla('tienda_fotos')->where('id', $siguiente->id)->update(['principal' => 1]);
-            }
-        }
-
-        $this->sincronizarArticuFotos($foto->codigo);
+        // Se renumera y la que quede primera pasa a ser la principal
+        $this->reordenar($foto->codigo, $this->idsEnOrden($foto->codigo));
     }
 
     /** Borra todas las fotos de un articulo. */
@@ -105,34 +98,48 @@ class TiendaFotoService
         }
     }
 
+    /** Hace principal una foto: pasa al primer lugar de la galeria. */
     public function principal(int $id): void
     {
         $foto = $this->tabla('tienda_fotos')->where('id', $id)->first();
         if (!$foto) {
             return;
         }
-        $this->tabla('tienda_fotos')->where('codigo', $foto->codigo)->update(['principal' => 0]);
-        $this->tabla('tienda_fotos')->where('id', $id)->update(['principal' => 1]);
-        $this->sincronizarArticuFotos($foto->codigo);
+        $lista = $this->idsEnOrden($foto->codigo);
+        $lista = array_merge([$id], array_values(array_diff($lista, [$id])));
+        $this->reordenar($foto->codigo, $lista);
     }
 
-    /** Mueve una foto un lugar arriba o abajo dentro de su articulo. */
+    /** Mueve una foto un lugar antes o despues dentro de su articulo. Si queda primera, pasa a ser la principal. */
     public function mover(int $id, string $direccion): void
     {
         $foto = $this->tabla('tienda_fotos')->where('id', $id)->first();
         if (!$foto) {
             return;
         }
-        $lista = $this->tabla('tienda_fotos')->where('codigo', $foto->codigo)->orderBy('orden')->orderBy('id')->pluck('id')->all();
+        $lista = $this->idsEnOrden($foto->codigo);
         $i = array_search($id, $lista);
         $j = $direccion === 'arriba' ? $i - 1 : $i + 1;
         if ($i === false || $j < 0 || $j >= count($lista)) {
             return;
         }
         [$lista[$i], $lista[$j]] = [$lista[$j], $lista[$i]];
-        foreach ($lista as $orden => $fid) {
-            $this->tabla('tienda_fotos')->where('id', $fid)->update(['orden' => $orden + 1]);
+        $this->reordenar($foto->codigo, $lista);
+    }
+
+    /** IDs de las fotos del articulo en el orden en que se muestran. */
+    private function idsEnOrden($codigo): array
+    {
+        return $this->tabla('tienda_fotos')->where('codigo', $codigo)->orderBy('orden')->orderBy('id')->pluck('id')->map(fn ($v) => (int) $v)->all();
+    }
+
+    /** Graba el orden dado (1..n), marca principal a la primera y actualiza la foto de la grilla. */
+    private function reordenar($codigo, array $ids): void
+    {
+        foreach (array_values($ids) as $orden => $fid) {
+            $this->tabla('tienda_fotos')->where('id', $fid)->update(['orden' => $orden + 1, 'principal' => $orden === 0 ? 1 : 0]);
         }
+        $this->sincronizarArticuFotos($codigo);
     }
 
     /**
@@ -141,7 +148,7 @@ class TiendaFotoService
      */
     public function sincronizarArticuFotos($codigo): void
     {
-        $principal = $this->tabla('tienda_fotos')->where('codigo', $codigo)->orderByDesc('principal')->orderBy('orden')->orderBy('id')->first();
+        $principal = $this->tabla('tienda_fotos')->where('codigo', $codigo)->orderBy('orden')->orderBy('id')->first();
 
         if (!$principal) {
             $this->tabla('articu_fotos')->where('codigo', $codigo)->delete();

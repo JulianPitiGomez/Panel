@@ -42,6 +42,17 @@ class TiendaService
     /** Version del esquema satelite (docs/tienda/esquema-tienda-vN.sql) que espera este codigo */
     public const ESQUEMA_VERSION = 1;
 
+    /** Archivo (en public/img/logos/{id}/) con la foto que se muestra cuando el producto no tiene. */
+    public const FOTO_DEFAULT_ARCHIVO = 'sin-foto.png';
+
+    /** URL de la foto por defecto del comercio, o '' si no cargo ninguna. */
+    public static function fotoDefaultUrl($clienteId): string
+    {
+        $ruta = "img/logos/{$clienteId}/" . self::FOTO_DEFAULT_ARCHIVO;
+
+        return file_exists(public_path($ruta)) ? asset($ruta) . '?v=' . filemtime(public_path($ruta)) : '';
+    }
+
     /**
      * Habilitada para este cliente?
      * Mientras dure el piloto, solo los ids de TIENDA_CLIENTES_HABILITADOS.
