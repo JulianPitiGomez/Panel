@@ -22,7 +22,7 @@
 --                  tienda_articu, tienda_correo_tarifas (F2 correo y peso),
 --                  tienda_agenda, tienda_agenda_franjas, tienda_agenda_excepciones (F2 agenda);
 --                  F3: tienda_pedidos.descuento_promos / promos_aplicadas, tienda_pagos_config.forpag_*;
---                  F4: tienda_fotos (galeria)
+--                  F4: tienda_fotos (galeria); F5: tienda_metricas
 --                  tienda_pedidos.entrega_fecha / entrega_franja_id / entrega_franja / agenda_cupo
 --                  (F1 agrego comision_saldo a tienda_pedidos y tienda_eventos; v1 todavia no salio a produccion,
 --                   por eso se edita en lugar de crear v2)
@@ -300,4 +300,16 @@ CREATE TABLE IF NOT EXISTS `{p}tienda_fotos` (
   `creado`       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_{p}tienda_fotos_codigo` (`codigo`, `orden`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Metricas de la tienda (F5): contadores diarios por tipo y clave. Sin datos personales.
+--   visita                -> clave ''            (vistas del catalogo)
+--   vista_producto        -> clave = codigo      (aperturas de la ficha)
+--   busqueda_sin_resultado-> clave = termino     (lo que buscan y no encuentran)
+CREATE TABLE IF NOT EXISTS `{p}tienda_metricas` (
+  `fecha`    DATE         NOT NULL,
+  `tipo`     VARCHAR(30)  NOT NULL,
+  `clave`    VARCHAR(120) NOT NULL DEFAULT '',
+  `cantidad` INT UNSIGNED NOT NULL DEFAULT 0,
+  PRIMARY KEY (`fecha`, `tipo`, `clave`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

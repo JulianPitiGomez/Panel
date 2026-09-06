@@ -93,6 +93,7 @@ class FotosProductos extends Component
         $this->calcularAsistente();
         $this->cargarIa();
         $this->cargarCompradoresPendientes();
+        $this->cargarMetricas();
     }
 
     private function setupClientDatabase()
@@ -216,6 +217,7 @@ class FotosProductos extends Component
     public function guardarDatosComercio()
     {
         $clientId = session('client_id');
+        $this->invalidarCatalogo();
 
         $json = json_encode($this->datosComercio, JSON_UNESCAPED_UNICODE);
 
@@ -368,6 +370,28 @@ class FotosProductos extends Component
             ->count();
 
         $this->totalSinFoto = $this->totalProductos - $this->totalConFoto;
+    }
+
+    // ------------------------------------------------ metricas y cache (F5)
+
+    public $metricas = [];
+
+    private function cargarMetricas()
+    {
+        $this->setupClientDatabase();
+        try {
+            $this->metricas = (new \App\Services\TiendaMetricaService($this->tablePrefix))->resumen(30);
+        } catch (\Throwable $e) {
+            $this->metricas = [];
+        }
+    }
+
+    /** Algo del catalogo cambio desde el panel: las paginas cacheadas para visitantes dejan de valer. */
+    private function invalidarCatalogo(): void
+    {
+        if ($this->tablePrefix) {
+            \App\Services\TiendaMetricaService::invalidarCatalogo($this->tablePrefix);
+        }
     }
 
     // ------------------------------------------------ compradores pendientes (F5)
@@ -616,6 +640,7 @@ class FotosProductos extends Component
             $max = (int) DB::connection('client_db')->table($this->tablePrefix . 'tienda_articu')->where('destacado', 1)->max('orden');
             $this->upsertTiendaArticu((string) $codigo, ['destacado' => 1, 'orden' => $max + 1]);
         }
+        $this->invalidarCatalogo();
         $this->cargarDestacados();
     }
 
@@ -647,6 +672,7 @@ class FotosProductos extends Component
         $this->setupClientDatabase();
         $peso = is_numeric($valor) && (float) $valor >= 0 ? round((float) $valor, 3) : null;
         $this->upsertTiendaArticu((string) $codigo, ['peso' => $peso]);
+        $this->invalidarCatalogo();
     }
 
     private function upsertTiendaArticu(string $codigo, array $datos): void
@@ -793,6 +819,7 @@ class FotosProductos extends Component
                 $srv->agregar($this->productoSeleccionado, $archivo->getRealPath());
                 $ok++;
             }
+            $this->invalidarCatalogo();
             $this->mensajeGaleria = $ok === 1 ? 'Foto subida.' : "{$ok} fotos subidas.";
             $this->fotosNuevas = [];
             $this->cargarGaleria();

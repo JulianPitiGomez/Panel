@@ -123,6 +123,45 @@
             </div>
             @endif
 
+            <!-- Metricas de la tienda -->
+            @if(!empty($metricas))
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+                <h3 class="text-lg font-primary font-semibold text-gray-800 mb-1 flex items-center">
+                    <i class="fas fa-chart-line text-[#FFAF22] mr-2"></i> Cómo viene la tienda
+                </h3>
+                <p class="text-xs text-gray-400 mb-4">Últimos {{ $metricas['dias'] }} días.</p>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="p-3 rounded-xl bg-gray-50"><p class="text-2xl font-bold text-gray-800">{{ number_format($metricas['visitas'], 0, ',', '.') }}</p><p class="text-xs text-gray-500">Visitas al catálogo</p></div>
+                    <div class="p-3 rounded-xl bg-gray-50"><p class="text-2xl font-bold text-gray-800">{{ number_format($metricas['pedidos'], 0, ',', '.') }}</p><p class="text-xs text-gray-500">Pedidos web</p></div>
+                </div>
+                @php $maxV = max(1, max(array_column($metricas['serie'], 'visitas'))); $maxP = max(1, max(array_column($metricas['serie'], 'pedidos'))); @endphp
+                <div class="flex items-end gap-[2px] h-16 mb-1" title="Visitas por día">
+                    @foreach($metricas['serie'] as $d)
+                        <div class="flex-1 bg-[#FFAF22]/70 rounded-t" style="height: {{ (int) ($d['visitas'] * 100 / $maxV) }}%" title="{{ \Carbon\Carbon::parse($d['fecha'])->format('d/m') }}: {{ $d['visitas'] }} visitas, {{ $d['pedidos'] }} pedidos"></div>
+                    @endforeach
+                </div>
+                <p class="text-[10px] text-gray-400 mb-4">Visitas por día (pasá el mouse para ver el detalle).</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-xs font-semibold text-gray-700 mb-2">Más vistos</p>
+                        @forelse($metricas['mas_vistos'] as $m)
+                            <div class="flex justify-between text-xs py-1 border-t border-gray-100"><span class="text-gray-700 truncate pr-2">{{ $m['nombre'] }}</span><span class="text-gray-400 whitespace-nowrap">{{ $m['n'] }} vistas</span></div>
+                        @empty
+                            <p class="text-xs text-gray-400">Todavía nadie abrió una ficha.</p>
+                        @endforelse
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold text-gray-700 mb-2">Buscaron y no encontraron</p>
+                        @forelse($metricas['sin_resultado'] as $m)
+                            <div class="flex justify-between text-xs py-1 border-t border-gray-100"><span class="text-gray-700 truncate pr-2">"{{ $m['termino'] }}"</span><span class="text-gray-400 whitespace-nowrap">{{ $m['n'] }} veces</span></div>
+                        @empty
+                            <p class="text-xs text-gray-400">Sin búsquedas fallidas. Bien.</p>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+            @endif
+
             <!-- Chequeo del catalogo -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
                 <h3 class="text-lg font-primary font-semibold text-gray-800 mb-1 flex items-center">

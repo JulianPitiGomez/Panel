@@ -103,6 +103,9 @@ class Catalogo extends Component
         }
 
         $this->cargarFiltros();
+
+        // Metrica: una visita por carga del catalogo
+        (new \App\Services\TiendaMetricaService($this->tablePrefix))->registrar(\App\Services\TiendaMetricaService::VISITA);
     }
 
     private function setupClientDatabase()
@@ -124,31 +127,38 @@ class Catalogo extends Component
     {
         $this->setupClientDatabase();
 
-        $this->rubros = DB::connection('client_db')
-            ->table("{$this->tablePrefix}rubros")
-            ->orderBy('NOMBRE')
-            ->get(['CODIGO', 'NOMBRE'])
-            ->map(fn($r) => ['cod' => $r->CODIGO, 'nom' => $r->NOMBRE])
-            ->toArray();
+        // Las listas de filtros cambian poco: cacheadas para todos
+        $clave = \App\Services\TiendaMetricaService::claveCache($this->tablePrefix, 'filtros', []);
+        $listas = \Illuminate\Support\Facades\Cache::remember($clave, \App\Services\TiendaMetricaService::CACHE_TTL * 6, function () {
+            return ['rubros' => $this->consultarFiltro('rubros'), 'marcas' => $this->consultarFiltro('marcas'), 'deptos' => $this->consultarFiltro('deptos')];
+        });
+        $this->rubros = $listas['rubros'];
+        $this->marcas = $listas['marcas'];
+        $this->deptos = $listas['deptos'];
+    }
 
-        $this->marcas = DB::connection('client_db')
-            ->table("{$this->tablePrefix}marcas")
+    private function consultarFiltro(string $tabla): array
+    {
+        return DB::connection('client_db')
+            ->table("{$this->tablePrefix}{$tabla}")
             ->orderBy('NOMBRE')
             ->get(['CODIGO', 'NOMBRE'])
-            ->map(fn($m) => ['cod' => $m->CODIGO, 'nom' => $m->NOMBRE])
-            ->toArray();
-
-        $this->deptos = DB::connection('client_db')
-            ->table("{$this->tablePrefix}deptos")
-            ->orderBy('NOMBRE')
-            ->get(['CODIGO', 'NOMBRE'])
-            ->map(fn($d) => ['cod' => $d->CODIGO, 'nom' => $d->NOMBRE])
+            ->map(fn ($r) => ['cod' => $r->CODIGO, 'nom' => $r->NOMBRE])
             ->toArray();
     }
 
     public function updatedBusqueda()
     {
         $this->paginaActual = 1;
+        $this->busquedaRegistrada = '';
+    }
+
+    private $busquedaRegistrada = '';   // ultima busqueda sin resultado ya contada (evita contarla en cada render)
+
+    /** Visitante anonimo: sus consultas al catalogo se cachean (los logueados ven precios propios: sin cache). */
+    private function usaCache(): bool
+    {
+        return !session('tienda_comprador_web_id');
     }
 
     public function toggleFiltro($tipo, $valor)
@@ -250,7 +260,13 @@ class Catalogo extends Component
             $query->whereIn('a.CODIGO', $conPromo ?: ['-1']);
         }
 
-        $this->totalProductos = $query->count();
+        $this->totalProductos = $this->usaCache()
+            ? (int) \Illuminate\Support\Facades\Cache::remember(
+                \App\Services\TiendaMetricaService::claveCache($this->tablePrefix, 'total', [$this->busqueda, $this->rubrosSeleccionados, $this->marcasSeleccionadas, $this->deptosSeleccionados, $this->soloPromos]),
+                \App\Services\TiendaMetricaService::CACHE_TTL,
+                fn () => $query->count()
+            )
+            : $query->count();
 
         $ordenColumna = match($this->ordenDefecto) {
             'nombre_desc' => ['a.NOMBRE', 'desc'],
@@ -259,14 +275,35 @@ class Catalogo extends Component
             default => ['a.NOMBRE', 'asc'],
         };
 
-        $productos = $query
-            ->orderBy($ordenColumna[0], $ordenColumna[1])
-            ->skip(($this->paginaActual - 1) * $this->porPagina)
-            ->take($this->porPagina)
-            ->get();
+        $traer = function () use ($query, $ordenColumna) {
+            $productos = $query
+                ->orderBy($ordenColumna[0], $ordenColumna[1])
+                ->skip(($this->paginaActual - 1) * $this->porPagina)
+                ->take($this->porPagina)
+                ->get();
+            // Disponible real (STOCKACT - comprometido en pedidos abiertos): una sola consulta para la pagina
+            $disponibles = (new \App\Services\TiendaStockService($this->tablePrefix))->disponibleDe($productos);
+            return ['productos' => $productos, 'disponibles' => $disponibles];
+        };
 
-        // Disponible real (STOCKACT - comprometido en pedidos abiertos): una sola consulta para la pagina
-        $this->disponibles = (new \App\Services\TiendaStockService($this->tablePrefix))->disponibleDe($productos);
+        // Trafico anonimo: la pagina se cachea unos minutos para no pegarle a la base de gestion en cada visita
+        if ($this->usaCache()) {
+            $clave = \App\Services\TiendaMetricaService::claveCache($this->tablePrefix, 'pagina', [
+                $this->busqueda, $this->rubrosSeleccionados, $this->marcasSeleccionadas, $this->deptosSeleccionados,
+                $this->paginaActual, $this->porPagina, $this->ordenDefecto, $this->soloPromos,
+            ]);
+            $r = \Illuminate\Support\Facades\Cache::remember($clave, \App\Services\TiendaMetricaService::CACHE_TTL, $traer);
+        } else {
+            $r = $traer();
+        }
+        $productos = $r['productos'];
+        $this->disponibles = $r['disponibles'];
+
+        // Metrica: busqueda sin resultado (una vez por termino)
+        if ($this->busqueda && $this->totalProductos === 0 && $this->busquedaRegistrada !== $this->busqueda) {
+            $this->busquedaRegistrada = $this->busqueda;
+            (new \App\Services\TiendaMetricaService($this->tablePrefix))->registrar(\App\Services\TiendaMetricaService::BUSQUEDA_SIN_RESULTADO, mb_strtolower(trim($this->busqueda)));
+        }
 
         // Chips de promo de la pagina: solo las que valen para cualquier forma de pago de la tienda
         $this->promosPagina = $this->textosPromo($promoSrv, $productos->pluck('CODIGO')->all());
@@ -426,6 +463,8 @@ class Catalogo extends Component
         if (!$producto) return;
 
         $disponible = (new \App\Services\TiendaStockService($this->tablePrefix))->disponible($codigo) - $this->enCarrito($codigo);
+
+        (new \App\Services\TiendaMetricaService($this->tablePrefix))->registrar(\App\Services\TiendaMetricaService::VISTA_PRODUCTO, (string) $codigo);
 
         $this->productoModal = [
             'codigo' => $producto->CODIGO,
