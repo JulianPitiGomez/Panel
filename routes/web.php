@@ -104,6 +104,14 @@ Route::prefix('vendedores-empresas')->middleware(['client:vendedores_empresas'])
     });
 });
 
+// Dominio propio (F6): Caddy pregunta aca antes de pedir el certificado de un dominio
+Route::get('/tienda/dominio-permitido', function (\Illuminate\Http\Request $request) {
+    $dominio = \App\Services\TiendaDominioService::normalizar($request->query('domain'));
+    $ok = $dominio && \App\Services\TiendaDominioService::clientePorHost($dominio);
+
+    return response($ok ? 'ok' : 'no', $ok ? 200 : 404)->header('Content-Type', 'text/plain');
+})->name('tienda.dominio-permitido');
+
 // Rutas de Tienda Web (E-commerce)
 Route::prefix('web')->middleware([\App\Http\Middleware\TiendaMiddleware::class])->group(function () {
     Route::get('/{tienda}', [TiendaController::class, 'index'])->name('tienda.index');

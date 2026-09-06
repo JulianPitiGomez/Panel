@@ -92,6 +92,15 @@ return [
     'estados_comprometen_stock' => ['P', 'A'],
 
     /*
+    | Dominio propio (F6): a donde apuntan los CNAME de los comercios y las IPs
+    | del servidor web para registros A (dominio raiz). Los hosts propios son
+    | los nuestros: nunca se tratan como tienda. Ver docs/tienda/dominio-propio.md.
+    */
+    'dominio_cname' => env('TIENDA_DOMINIO_CNAME', ''),
+    'dominio_ips' => array_values(array_filter(array_map('trim', explode(',', (string) env('TIENDA_DOMINIO_IPS', ''))))),
+    'dominio_hosts_propios' => array_values(array_filter(array_map('trim', explode(',', (string) env('TIENDA_DOMINIO_HOSTS_PROPIOS', ''))))),
+
+    /*
     | Comision: plazo en dias desde el primer pedido con saldo para pagar la
     | cuenta (mismo criterio que resto).
     */

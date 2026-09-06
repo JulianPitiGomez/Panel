@@ -4,6 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\ClientMiddleware;
+use App\Http\Middleware\TiendaDominioMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -16,6 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'client' => ClientMiddleware::class,
         ]);
+
+        // Tienda con dominio propio (F6): resuelve el host antes de enrutar
+        $middleware->prepend(TiendaDominioMiddleware::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Manejo personalizado de sesión expirada

@@ -97,6 +97,7 @@ class FotosProductos extends Component
         $this->cargarImagenesTienda();
         $this->cargarDatosComercio();
         $this->cargarDatosTienda();
+        $this->cargarDominio();
         $this->cargarDestacados();
         $this->calcularChequeo();
         $this->calcularAsistente();
@@ -166,6 +167,48 @@ class FotosProductos extends Component
     public function setConfigCatalogo($key, $value)
     {
         $this->datosComercio[$key] = $value;
+    }
+
+    // ------------------------------------------------- dominio propio (F6)
+    public $dominioInput = '';
+    public $dominioEstado = [];
+    public $mensajeDominio = '';
+    public $tipoMensajeDominio = '';
+
+    private function cargarDominio()
+    {
+        $this->dominioEstado = \App\Services\TiendaDominioService::estado(\App\Services\TiendaService::configuracionWeb((int) session('client_id')));
+        $this->dominioInput = $this->dominioEstado['dominio'] ?? '';
+    }
+
+    public function guardarDominio()
+    {
+        $r = \App\Services\TiendaDominioService::guardar((int) session('client_id'), $this->dominioInput);
+        $this->mensajeDominio = $r['mensaje'];
+        $this->tipoMensajeDominio = $r['ok'] ? 'success' : 'error';
+        $this->cargarDominio();
+    }
+
+    public function verificarDominio()
+    {
+        $r = \App\Services\TiendaDominioService::verificar((int) session('client_id'));
+        $this->mensajeDominio = $r['mensaje'];
+        $this->tipoMensajeDominio = $r['ok'] ? 'success' : 'error';
+        $this->cargarDominio();
+    }
+
+    public function quitarDominio()
+    {
+        \App\Services\TiendaDominioService::quitar((int) session('client_id'));
+        $this->mensajeDominio = 'Dominio quitado. La tienda sigue en la URL interna.';
+        $this->tipoMensajeDominio = 'success';
+        $this->cargarDominio();
+    }
+
+    /** URL publica de la tienda: el dominio propio verificado o la interna. */
+    public function urlPublica(): ?string
+    {
+        return \App\Services\TiendaDominioService::urlPublica($this->tiendaSlug ?: null, \App\Services\TiendaService::configuracionWeb((int) session('client_id')));
     }
 
     public function guardarTiendaSlug()

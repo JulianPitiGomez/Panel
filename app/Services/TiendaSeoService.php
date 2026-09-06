@@ -111,7 +111,7 @@ class TiendaSeoService
             return '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>';
         }
 
-        $clave = "tienda_sitemap_{$this->prefijo}_" . TiendaMetricaService::versionCatalogo($this->prefijo);
+        $clave = "tienda_sitemap_{$this->prefijo}_" . TiendaMetricaService::versionCatalogo($this->prefijo) . '_' . md5(url('/'));
 
         return Cache::remember($clave, self::SITEMAP_TTL, function () use ($slug) {
             $hoy = now()->toDateString();

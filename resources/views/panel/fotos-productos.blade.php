@@ -199,7 +199,7 @@
                                     <i class="fas fa-globe mr-1"></i>
                                 </span>
                                 <input type="text" readonly
-                                       value="{{ url('/web/' . $tiendaSlug) }}"
+                                       value="{{ $this->urlPublica() }}"
                                        id="urlCatalogo"
                                        class="flex-1 min-w-0 px-3 py-2 text-xs sm:text-sm text-gray-800 bg-gray-50 border-0 focus:ring-0 cursor-text">
                             </div>
@@ -214,6 +214,50 @@
                 @else
                     <div class="mb-5 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
                         <i class="fas fa-exclamation-triangle mr-1"></i> Configurá un nombre de tienda para obtener la URL de tu catálogo.
+                    </div>
+                @endif
+
+                {{-- Dominio propio (F6) --}}
+                @if(!empty($tiendaSlug))
+                    <div class="mb-5 p-4 rounded-xl border {{ ($dominioEstado['verificado'] ?? false) ? 'border-green-200 bg-green-50/40' : 'border-gray-200 bg-gray-50' }}">
+                        <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
+                            <label class="text-sm font-medium text-gray-700"><i class="fas fa-link text-[#FFAF22] mr-1"></i> Dominio propio <span class="text-gray-400 font-normal">(opcional)</span></label>
+                            @if(!empty($dominioEstado['dominio']))
+                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full {{ $dominioEstado['verificado'] ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700' }}">
+                                    {{ $dominioEstado['verificado'] ? 'Verificado' . ($dominioEstado['fecha'] ? ' el ' . \Carbon\Carbon::parse($dominioEstado['fecha'])->format('d/m/Y') : '') : 'Falta verificar' }}
+                                </span>
+                            @endif
+                        </div>
+                        <p class="text-xs text-gray-500 mb-3">Tu tienda en tu propio dominio, con certificado seguro automático y sin costo. Cargalo, creá el registro en tu proveedor de dominio y verificalo.</p>
+                        <div class="flex items-center gap-2 min-w-0">
+                            <input type="text" wire:model="dominioInput" placeholder="tienda.tunegocio.com.ar" class="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFAF22]">
+                            <button wire:click="guardarDominio" wire:loading.attr="disabled" wire:target="guardarDominio" class="px-3 sm:px-4 py-2 bg-[#1E1B35] text-white rounded-lg hover:bg-[#2d2952] font-semibold text-sm whitespace-nowrap"><i class="fas fa-save"></i><span class="hidden sm:inline ml-1">Guardar</span></button>
+                            @if(!empty($dominioEstado['dominio']))
+                                <button wire:click="verificarDominio" wire:loading.attr="disabled" wire:target="verificarDominio" class="px-3 sm:px-4 py-2 bg-[#FFAF22] text-white rounded-lg hover:bg-[#E89B0A] font-semibold text-sm whitespace-nowrap">
+                                    <span wire:loading.remove wire:target="verificarDominio"><i class="fas fa-check-double"></i><span class="hidden sm:inline ml-1">Verificar</span></span>
+                                    <span wire:loading wire:target="verificarDominio"><i class="fas fa-spinner fa-spin"></i></span>
+                                </button>
+                                <button wire:click="quitarDominio" wire:confirm="¿Quitar el dominio propio? La tienda sigue en la URL interna." class="px-2 py-2 text-gray-400 hover:text-red-500" title="Quitar"><i class="fas fa-times"></i></button>
+                            @endif
+                        </div>
+                        @if($mensajeDominio)
+                            <p class="text-xs mt-2 {{ $tipoMensajeDominio === 'success' ? 'text-green-700' : 'text-red-600' }}">{{ $mensajeDominio }}</p>
+                        @endif
+                        @if(!empty($dominioEstado['dominio']) && !$dominioEstado['verificado'])
+                            <div class="mt-3 text-xs text-gray-600 bg-white rounded-lg border border-gray-200 p-3 space-y-1">
+                                <p class="font-semibold text-gray-700">Qué cargar en tu proveedor de dominio:</p>
+                                @if(!empty($dominioEstado['cname']))
+                                    <p>Si es un subdominio (ej. <span class="font-mono">tienda.tunegocio.com.ar</span>): registro <strong>CNAME</strong> con destino <span class="font-mono font-semibold">{{ $dominioEstado['cname'] }}</span></p>
+                                @endif
+                                @if(!empty($dominioEstado['ips']))
+                                    <p>Si es el dominio raíz (ej. <span class="font-mono">tunegocio.com.ar</span>): registro <strong>A</strong> con la IP <span class="font-mono font-semibold">{{ implode(', ', $dominioEstado['ips']) }}</span></p>
+                                @endif
+                                @if(empty($dominioEstado['cname']) && empty($dominioEstado['ips']))
+                                    <p class="text-amber-700">Todavía no tenemos configurado el destino de los dominios (falta TIENDA_DOMINIO_CNAME en el servidor). Avisanos y lo activamos.</p>
+                                @endif
+                                <p class="text-gray-400">Puede tardar hasta 24 horas en propagarse. Después apretá Verificar.</p>
+                            </div>
+                        @endif
                     </div>
                 @endif
 
