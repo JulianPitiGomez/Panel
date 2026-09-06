@@ -6,6 +6,7 @@ use App\Services\TiendaEstadoPedido;
 use App\Services\TiendaPagoService;
 use App\Services\TiendaPedidoService;
 use App\Services\TiendaSeguimientoService;
+use App\Services\TiendaCuentaService;
 use App\Services\TiendaService;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
@@ -33,6 +34,37 @@ class PedidosWeb extends Component
     {
         $this->conectar();
         $this->cargar();
+        $this->cargarPagosCuenta();
+    }
+
+    // ------------------------------------------------- pagos a cuenta del mayorista (F6)
+    public $pagosCuenta = [];
+
+    private function cargarPagosCuenta()
+    {
+        try {
+            $this->pagosCuenta = (new TiendaCuentaService($this->tablePrefix))->pendientesPanel();
+        } catch (\Throwable $e) {
+            $this->pagosCuenta = [];   // sin la tabla todavia
+        }
+    }
+
+    public function confirmarPagoCuenta($id)
+    {
+        $this->conectar();
+        (new TiendaCuentaService($this->tablePrefix))->confirmar((int) $id, session('cliente_nombre') ?: 'panel');
+        $this->mensaje = "Pago a cuenta #{$id} confirmado. Acordate de cargarlo en gestión como cobro para que baje el saldo del cliente.";
+        $this->tipoMensaje = 'success';
+        $this->cargarPagosCuenta();
+    }
+
+    public function rechazarPagoCuenta($id)
+    {
+        $this->conectar();
+        (new TiendaCuentaService($this->tablePrefix))->rechazar((int) $id, null, session('cliente_nombre') ?: 'panel');
+        $this->mensaje = "Pago a cuenta #{$id} rechazado.";
+        $this->tipoMensaje = 'success';
+        $this->cargarPagosCuenta();
     }
 
     private function conectar()

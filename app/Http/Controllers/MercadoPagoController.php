@@ -86,8 +86,12 @@ class MercadoPagoController extends Controller
                 $externalRef = $pago['external_reference'] ?? null;
                 $status = $pago['status'] ?? 'pending';
 
+                $refCuenta = \App\Services\TiendaCuentaService::parsearReferenciaMp($externalRef);
                 $refTienda = \App\Services\TiendaPagoService::parsearReferenciaMp($externalRef);
-                if ($refTienda) {
+                if ($refCuenta) {
+                    (new \App\Services\TiendaCuentaService($prefijoTienda))
+                        ->actualizarDesdeMercadoPago($refCuenta['pago_id'], $status, (string) $paymentId);
+                } elseif ($refTienda) {
                     (new \App\Services\TiendaPagoService($prefijoTienda))
                         ->actualizarDesdeMercadoPago($refTienda['pedido_id'], $status, (string) $paymentId);
                 } elseif ($externalRef) {
@@ -137,6 +141,25 @@ class MercadoPagoController extends Controller
     /**
      * Consultar estado del pago (para polling desde JS)
      */
+    /** Estado de un pago a cuenta de la tienda (F6), solo para el comprador dueño. */
+    public function consultarEstadoCuenta($clientId, $pago)
+    {
+        $cliente = Cliente::find($clientId);
+        if (!$cliente || (int) session('tienda_config_id') !== (int) $clientId) {
+            return response()->json(['status' => 'error'], 403);
+        }
+        Config::set('database.connections.client_db.database', $cliente->base);
+        DB::purge('client_db');
+        $prefijo = $cliente->getTablePrefix();
+
+        $fila = DB::connection('client_db')->table($prefijo . 'tienda_pagos_cuenta')->where('id', (int) $pago)->first(['comprador_id']);
+        if (!$fila || (int) $fila->comprador_id !== (int) session('tienda_comprador_web_id')) {
+            return response()->json(['status' => 'not_found'], 404);
+        }
+
+        return response()->json(['status' => (new \App\Services\TiendaCuentaService($prefijo))->consultarMercadoPago((int) $pago, (int) $clientId)]);
+    }
+
     public function consultarEstado($clientId, $reference)
     {
         $cliente = Cliente::find($clientId);

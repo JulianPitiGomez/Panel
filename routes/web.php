@@ -122,6 +122,8 @@ Route::prefix('web')->middleware([\App\Http\Middleware\TiendaMiddleware::class])
     Route::get('/{tienda}/sitemap.xml', [TiendaController::class, 'sitemap'])->name('tienda.sitemap');
     Route::get('/{tienda}/carrito', \App\Livewire\Tienda\Carrito::class)->name('tienda.carrito');
     Route::get('/{tienda}/mis-pedidos', \App\Livewire\Tienda\MisPedidos::class)->name('tienda.mis-pedidos');
+    Route::get('/{tienda}/mi-cuenta', \App\Livewire\Tienda\MiCuenta::class)->name('tienda.mi-cuenta');   // portal del mayorista (F6)
+    Route::get('/{tienda}/comprobante/{ticomp}/{letra}/{numero}', [TiendaController::class, 'comprobante'])->name('tienda.comprobante');
     Route::get('/{tienda}/pago/{pedido}', [TiendaController::class, 'pago'])->name('tienda.pago');
     // Cuenta del comprador (F5)
     Route::get('/{tienda}/ingresar', [TiendaController::class, 'ingresar'])->name('tienda.ingresar');
@@ -179,6 +181,8 @@ Route::get('/mp/status/{clientId}/{reference}', [MercadoPagoController::class, '
     ->name('mp.status');
 Route::get('/mp/status-tienda/{clientId}/{pedido}', [MercadoPagoController::class, 'consultarEstadoTienda'])
     ->name('mp.status-tienda');
+Route::get('/mp/status-cuenta/{clientId}/{pago}', [MercadoPagoController::class, 'consultarEstadoCuenta'])
+    ->name('mp.status-cuenta');
 Route::get('/mp/point-status/{clientId}/{deviceId}/{intentId}', [MercadoPagoController::class, 'consultarEstadoPoint'])
     ->name('mp.point-status');
 

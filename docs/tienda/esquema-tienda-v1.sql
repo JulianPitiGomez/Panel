@@ -22,7 +22,7 @@
 --                  tienda_articu, tienda_correo_tarifas (F2 correo y peso),
 --                  tienda_agenda, tienda_agenda_franjas, tienda_agenda_excepciones (F2 agenda);
 --                  F3: tienda_pedidos.descuento_promos / promos_aplicadas, tienda_pagos_config.forpag_*;
---                  F4: tienda_fotos (galeria); F5: tienda_metricas
+--                  F4: tienda_fotos (galeria); F5: tienda_metricas; F6: tienda_pagos_cuenta
 --                  tienda_pedidos.entrega_fecha / entrega_franja_id / entrega_franja / agenda_cupo
 --                  (F1 agrego comision_saldo a tienda_pedidos y tienda_eventos; v1 todavia no salio a produccion,
 --                   por eso se edita en lugar de crear v2)
@@ -312,4 +312,25 @@ CREATE TABLE IF NOT EXISTS `{p}tienda_metricas` (
   `clave`    VARCHAR(120) NOT NULL DEFAULT '',
   `cantidad` INT UNSIGNED NOT NULL DEFAULT 0,
   PRIMARY KEY (`fecha`, `tipo`, `clave`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- F6: pagos de la cuenta corriente hechos desde la tienda por el cliente mayorista.
+-- NO escribe en `pagos` de gestion: el comercio confirma aca y lo carga en gestion
+-- como cualquier cobro (caja y cierres siguen siendo de Fivewin).
+CREATE TABLE IF NOT EXISTS `{p}tienda_pagos_cuenta` (
+  `id`            INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+  `comprador_id`  INT UNSIGNED  NOT NULL,
+  `codcli`        INT           NOT NULL,                       -- clientes.CODIGO
+  `importe`       DECIMAL(12,2) NOT NULL,
+  `importe_unico` DECIMAL(12,2) DEFAULT NULL,                   -- transferencia: importe con centavos identificatorios
+  `medio`         VARCHAR(20)   NOT NULL,                       -- transferencia | mercadopago
+  `estado`        VARCHAR(20)   NOT NULL DEFAULT 'pendiente',   -- pendiente | aprobado | rechazado
+  `referencia`    VARCHAR(80)   DEFAULT NULL,                   -- pref:{id} / mp:{payment_id}
+  `comprobante`   VARCHAR(255)  DEFAULT NULL,                   -- URL del comprobante subido
+  `observa`       VARCHAR(255)  DEFAULT NULL,
+  `creado`        DATETIME      NOT NULL,
+  `confirmado`    DATETIME      DEFAULT NULL,
+  `usuario`       VARCHAR(60)   DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_codcli` (`codcli`, `estado`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

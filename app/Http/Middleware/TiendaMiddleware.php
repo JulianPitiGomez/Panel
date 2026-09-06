@@ -80,7 +80,7 @@ class TiendaMiddleware
         }
 
         // Vitrina: se mira, no se compra. Sin carrito, sin cuenta, sin registro.
-        $rutasCompra = ['tienda.carrito', 'tienda.mis-pedidos', 'tienda.pago', 'tienda.registro', 'tienda.registro.post', 'tienda.login'];
+        $rutasCompra = ['tienda.carrito', 'tienda.mis-pedidos', 'tienda.mi-cuenta', 'tienda.comprobante', 'tienda.pago', 'tienda.registro', 'tienda.registro.post', 'tienda.login'];
         if (TiendaService::esVitrina($modo) && in_array($routeName, $rutasCompra)) {
             return redirect()->route('tienda.catalogo', $tienda);
         }

@@ -80,6 +80,11 @@
                                class="text-sm text-gray-500 hover:text-gray-700 transition">
                                 <i class="fas fa-clipboard-list mr-1"></i><span class="hidden sm:inline">Mis Pedidos</span>
                             </a>
+                            @if(session('tienda_comprador_id'))
+                                <a href="{{ route('tienda.mi-cuenta', session('tienda_slug')) }}" class="text-sm text-gray-500 hover:text-gray-700 transition">
+                                    <i class="fas fa-wallet mr-1"></i><span class="hidden sm:inline">Mi cuenta</span>
+                                </a>
+                            @endif
                             <span class="text-sm text-gray-600 hidden sm:inline">
                                 <i class="fas fa-user mr-1"></i> {{ session('tienda_comprador_nombre') }}
                             </span>
@@ -150,6 +155,11 @@
                                 <a href="{{ route('tienda.mis-pedidos', session('tienda_slug')) }}" class="text-sm text-white/80 hover:text-white transition">
                                     <i class="fas fa-clipboard-list mr-1"></i><span class="hidden sm:inline">Mis Pedidos</span>
                                 </a>
+                                @if(session('tienda_comprador_id'))
+                                    <a href="{{ route('tienda.mi-cuenta', session('tienda_slug')) }}" class="text-sm text-white/80 hover:text-white transition">
+                                        <i class="fas fa-wallet mr-1"></i><span class="hidden sm:inline">Mi cuenta</span>
+                                    </a>
+                                @endif
                                 <span class="text-sm text-white/70 hidden sm:inline">
                                     <i class="fas fa-user mr-1"></i> {{ session('tienda_comprador_nombre') }}
                                 </span>

@@ -7,6 +7,38 @@
         </div>
     @endif
 
+    @php $pendientesCuenta = collect($pagosCuenta)->where('estado', 'pendiente'); @endphp
+    @if(count($pagosCuenta))
+        <div class="bg-white rounded-2xl shadow-sm border {{ $pendientesCuenta->count() ? 'border-amber-200' : 'border-gray-100' }} overflow-hidden">
+            <div class="px-4 py-3 flex items-center justify-between">
+                <h3 class="text-sm font-semibold text-gray-800"><i class="fas fa-hand-holding-usd text-[#FFAF22] mr-1"></i> Pagos a cuenta desde la tienda
+                    @if($pendientesCuenta->count())<span class="ml-2 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">{{ $pendientesCuenta->count() }} por confirmar</span>@endif
+                </h3>
+                <span class="text-[11px] text-gray-400">Al confirmar, cargalo en gestión como cobro: la tienda no toca la caja.</span>
+            </div>
+            <div class="divide-y divide-gray-100">
+                @foreach($pagosCuenta as $pc)
+                    <div class="px-4 py-2.5 flex items-center justify-between gap-3 flex-wrap text-sm">
+                        <div class="min-w-0">
+                            <p class="text-gray-800 font-semibold">{{ $pc['cliente'] ?: 'Cliente ' . $pc['codcli'] }} <span class="text-gray-400 font-normal text-xs">#{{ $pc['id'] }} · {{ \Carbon\Carbon::parse($pc['creado'])->format('d/m/Y H:i') }}</span></p>
+                            <p class="text-xs text-gray-500">{{ $this->etiquetaMedio($pc['medio']) }}{{ $pc['importe_unico'] ? ' · a transferir $' . number_format($pc['importe_unico'], 2, ',', '.') : '' }}{{ $pc['referencia'] ? ' · ' . $pc['referencia'] : '' }} · saldo del cliente ${{ number_format($pc['saldo_cliente'] ?? 0, 2, ',', '.') }}</p>
+                        </div>
+                        <p class="font-bold text-gray-800">${{ number_format($pc['importe'], 2, ',', '.') }}</p>
+                        <div class="flex items-center gap-2">
+                            @if($pc['comprobante'])<a href="{{ $pc['comprobante'] }}" target="_blank" class="px-2.5 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs hover:bg-gray-200"><i class="fas fa-paperclip mr-1"></i>Comprobante</a>@endif
+                            @if($pc['estado'] === 'pendiente')
+                                <button wire:click="confirmarPagoCuenta({{ $pc['id'] }})" wire:confirm="¿Confirmar que recibiste ${{ number_format($pc['importe'], 2, ',', '.') }} de {{ $pc['cliente'] }}?" class="px-3 py-1.5 bg-green-500 text-white rounded-lg text-xs font-semibold hover:bg-green-600"><i class="fas fa-check mr-1"></i>Confirmar</button>
+                                <button wire:click="rechazarPagoCuenta({{ $pc['id'] }})" wire:confirm="¿Rechazar este pago a cuenta?" class="text-xs text-red-500 hover:underline">Rechazar</button>
+                            @else
+                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full {{ $pc['estado'] === 'aprobado' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600' }}">{{ $pc['estado'] === 'aprobado' ? 'Confirmado' : 'Rechazado' }}</span>
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col sm:flex-row gap-3">
         <input type="text" wire:model.live.debounce.400ms="busqueda" placeholder="Buscar por nº de pedido, cliente o mail…"
                class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm">

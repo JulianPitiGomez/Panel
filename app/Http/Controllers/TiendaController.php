@@ -12,6 +12,37 @@ use App\Services\TiendaPagoService;
 
 class TiendaController extends Controller
 {
+    /** Copia del comprobante para el cliente (F6): HTML imprimible, o PDF con ?pdf=1. Solo los propios. */
+    public function comprobante($tienda, $ticomp, $letra, $numero)
+    {
+        $codcli = (int) session('tienda_comprador_id');
+        if (!session('tienda_comprador_web_id') || !$codcli) {
+            return redirect()->route('tienda.index', $tienda);
+        }
+        $srv = new \App\Services\TiendaCuentaService(session('tienda_prefix'));
+        $detalle = $srv->detalleComprobante($codcli, (string) $ticomp, (string) $letra, (string) $numero);
+        if (!$detalle) {
+            abort(404);
+        }
+        $datos = session('tienda_datos', []);
+        $vista = [
+            'nombreTienda'      => session('tienda_nombre'),
+            'razonSocial'       => $datos['razon_social'] ?? null,
+            'cuitComercio'      => $datos['cuit'] ?? null,
+            'direccionComercio' => trim(($datos['direccion'] ?? '') . (!empty($datos['localidad']) ? ', ' . $datos['localidad'] : '')),
+            'cliente'           => $srv->resumen($codcli),
+            'encab'             => $detalle['encab'],
+            'renglones'         => $detalle['renglones'],
+        ];
+        if (request()->boolean('pdf')) {
+            $nombre = preg_replace('/[^A-Za-z0-9-]/', '_', "{$ticomp}{$letra}-{$numero}") . '.pdf';
+
+            return \Barryvdh\DomPDF\Facade\Pdf::loadView('tienda.comprobante', $vista)->download($nombre);
+        }
+
+        return view('tienda.comprobante', $vista);
+    }
+
     /** sitemap.xml de la tienda (F6). La privada devuelve uno vacio. */
     public function sitemap($tienda)
     {
