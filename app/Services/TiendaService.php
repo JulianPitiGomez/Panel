@@ -42,6 +42,38 @@ class TiendaService
     /** Version del esquema satelite (docs/tienda/esquema-tienda-vN.sql) que espera este codigo */
     public const ESQUEMA_VERSION = 1;
 
+    /** Bloques que puede tener la portada del catalogo (F6), en su orden por defecto. */
+    public const PORTADA_BLOQUES = [
+        'bienvenida' => 'Texto de bienvenida',
+        'habituales' => 'Lo que compra habitualmente (solo clientes logueados)',
+        'destacados' => 'Destacados',
+        'promos'     => 'Promociones vigentes',
+        'categorias' => 'Categorías para entrar de un toque',
+    ];
+
+    /**
+     * Bloques de portada del comercio, en orden y con su estado. Lo guardado en el
+     * JSON (portada_bloques) manda; lo que falte se agrega al final, activo.
+     */
+    public static function portadaBloques(array $datos): array
+    {
+        $guardados = is_array($datos['portada_bloques'] ?? null) ? $datos['portada_bloques'] : [];
+        $out = [];
+        foreach ($guardados as $b) {
+            $tipo = $b['tipo'] ?? null;
+            if ($tipo && isset(self::PORTADA_BLOQUES[$tipo]) && !isset($out[$tipo])) {
+                $out[$tipo] = ['tipo' => $tipo, 'activo' => (bool) ($b['activo'] ?? true)];
+            }
+        }
+        foreach (self::PORTADA_BLOQUES as $tipo => $_) {
+            if (!isset($out[$tipo])) {
+                $out[$tipo] = ['tipo' => $tipo, 'activo' => true];
+            }
+        }
+
+        return array_values($out);
+    }
+
     /** Archivo (en public/img/logos/{id}/) con la foto que se muestra cuando el producto no tiene. */
     public const FOTO_DEFAULT_ARCHIVO = 'sin-foto.png';
 

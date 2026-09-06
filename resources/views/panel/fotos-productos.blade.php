@@ -494,6 +494,38 @@
                     </div>
                 </div>
 
+                {{-- Portada (F6): que se ve al entrar y en que orden --}}
+                <div class="mt-6 pt-5 border-t border-gray-100">
+                    <h4 class="text-sm font-semibold text-gray-700 mb-1"><i class="fas fa-home text-[#FFAF22] mr-1"></i> Portada de la tienda</h4>
+                    <p class="text-xs text-gray-400 mb-3">Lo primero que ve el que entra, antes de la lista de productos. Elegís qué bloques van y en qué orden. Se guarda con el botón "Guardar datos".</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Título de bienvenida <span class="text-gray-400 font-normal">(opcional)</span></label>
+                                <input type="text" wire:model="datosComercio.portada_titulo" maxlength="80" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="Ej: Bienvenido a Distribuidora López">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Texto de bienvenida <span class="text-gray-400 font-normal">(opcional)</span></label>
+                                <textarea wire:model="datosComercio.portada_texto" rows="4" maxlength="600" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="Ej: Pedidos hasta las 18 hs se entregan al día siguiente. Envío gratis desde $20.000 en Mercedes."></textarea>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Bloques y orden</label>
+                            <div class="space-y-1.5">
+                                @foreach($this->bloquesPortada as $i => $b)
+                                    <div class="flex items-center gap-2 px-3 py-2 rounded-lg border {{ $b['activo'] ? 'border-gray-200 bg-white' : 'border-dashed border-gray-200 bg-gray-50' }}" wire:key="pb-{{ $b['tipo'] }}">
+                                        <input type="checkbox" wire:click="togglePortadaBloque('{{ $b['tipo'] }}')" @checked($b['activo']) class="w-4 h-4 rounded text-[#FFAF22]">
+                                        <span class="flex-1 text-sm {{ $b['activo'] ? 'text-gray-700' : 'text-gray-400' }}">{{ \App\Services\TiendaService::PORTADA_BLOQUES[$b['tipo']] }}</span>
+                                        <button type="button" wire:click="moverPortadaBloque('{{ $b['tipo'] }}', 'arriba')" @disabled($i === 0) class="p-1 text-gray-400 hover:text-gray-700 disabled:opacity-30"><i class="fas fa-arrow-up text-xs"></i></button>
+                                        <button type="button" wire:click="moverPortadaBloque('{{ $b['tipo'] }}', 'abajo')" @disabled($i === count($this->bloquesPortada) - 1) class="p-1 text-gray-400 hover:text-gray-700 disabled:opacity-30"><i class="fas fa-arrow-down text-xs"></i></button>
+                                    </div>
+                                @endforeach
+                            </div>
+                            <p class="text-[11px] text-gray-400 mt-2">Las promociones salen solas de gestión; los destacados los marcás con la estrella en Fotos Productos.</p>
+                        </div>
+                    </div>
+                </div>
+
                 {{-- SEO (F6): como aparece la tienda en Google --}}
                 <div class="mt-6 pt-5 border-t border-gray-100">
                     <h4 class="text-sm font-semibold text-gray-700 mb-1"><i class="fab fa-google text-[#FFAF22] mr-1"></i> Cómo aparece tu tienda en Google</h4>

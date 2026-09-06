@@ -1,69 +1,74 @@
-{{-- Destacados: los elige el comercio (sin filtros) --}}
-@if(count($destacados))
-    <div class="mb-5">
-        <p class="text-sm font-semibold mb-2" style="color: {{ $colores['texto'] }}">
-            <i class="fas fa-star mr-1" style="color: {{ $colores['boton'] }}"></i> Destacados
-        </p>
-        <div class="flex gap-3 overflow-x-auto pb-2">
-            @foreach($destacados as $h)
-                <div class="flex-shrink-0 w-40 bg-white rounded-xl shadow-sm p-2 flex flex-col">
-                    <div class="aspect-square bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden mb-1.5">
-                        @if($h->foto_url ?: session('tienda_foto_default'))
-                            <img src="{{ $h->foto_url ?: session('tienda_foto_default') }}" alt="{{ $h->NOMBRE }}" class="max-w-full max-h-full object-contain">
-                        @else
-                            <i class="fas fa-image text-gray-300 text-2xl"></i>
-                        @endif
-                    </div>
-                    <p class="text-[11px] leading-tight line-clamp-2 flex-1" style="color: {{ $colores['texto'] }}">{{ $h->NOMBRE }}</p>
-                    @foreach($this->promosDe($h->CODIGO) as $pc)
-                        <span class="inline-block text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 mt-1 self-start"><i class="fas fa-tag mr-0.5"></i>{{ $pc }}</span>
-                    @endforeach
-                    <div class="flex items-center justify-between mt-1.5">
-                        <span class="text-xs font-bold" style="color: {{ $colores['precio'] }}">${{ number_format($this->obtenerPrecio($h), 2, ',', '.') }}</span>
-                        @if(!$esVitrina)
-<button wire:click="{{ $modoCantidad === 'modal' ? 'abrirModalCantidad' : 'agregarAlCarrito' }}('{{ $h->CODIGO }}')"
-                                class="w-7 h-7 text-white text-xs rounded-md flex items-center justify-center" style="background-color: {{ $colores['boton'] }}">
-                            <i class="fas fa-cart-plus"></i>
-                        </button>
-@endif
-                    </div>
+{{-- Portada (F6): los bloques y su orden los define el comercio en Mi Tienda. Solo sin filtros. --}}
+@foreach($portadaBloques as $bloque)
+    @switch($bloque)
+        @case('bienvenida')
+            @if($portadaTitulo || $portadaTexto)
+                <div class="mb-5 bg-white rounded-xl shadow-sm p-4 sm:p-5">
+                    @if($portadaTitulo)<h2 class="text-lg sm:text-xl font-bold leading-tight" style="color: {{ $colores['texto'] }}">{{ $portadaTitulo }}</h2>@endif
+                    @if($portadaTexto)<p class="text-sm text-gray-600 mt-1 whitespace-pre-line">{{ $portadaTexto }}</p>@endif
                 </div>
-            @endforeach
-        </div>
-    </div>
-@endif
+            @endif
+            @break
 
-{{-- Lo que comprás habitualmente (solo comprador logueado, sin filtros) --}}
-@if(count($habituales))
-    <div class="mb-5">
-        <p class="text-sm font-semibold mb-2" style="color: {{ $colores['texto'] }}">
-            <i class="fas fa-history mr-1" style="color: {{ $colores['boton'] }}"></i> Lo que comprás habitualmente
-        </p>
-        <div class="flex gap-3 overflow-x-auto pb-2">
-            @foreach($habituales as $h)
-                <div class="flex-shrink-0 w-36 bg-white rounded-xl shadow-sm p-2 flex flex-col">
-                    <div class="aspect-square bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden mb-1.5">
-                        @if($h->foto_url ?: session('tienda_foto_default'))
-                            <img src="{{ $h->foto_url ?: session('tienda_foto_default') }}" alt="{{ $h->NOMBRE }}" class="max-w-full max-h-full object-contain">
-                        @else
-                            <i class="fas fa-image text-gray-300 text-2xl"></i>
-                        @endif
-                    </div>
-                    <p class="text-[11px] leading-tight line-clamp-2 flex-1" style="color: {{ $colores['texto'] }}">{{ $h->NOMBRE }}</p>
-                    <div class="flex items-center justify-between mt-1.5">
-                        <span class="text-xs font-bold" style="color: {{ $colores['precio'] }}">${{ number_format($this->obtenerPrecio($h), 2, ',', '.') }}</span>
-                        @if(!$esVitrina)
-<button wire:click="{{ $modoCantidad === 'modal' ? 'abrirModalCantidad' : 'agregarAlCarrito' }}('{{ $h->CODIGO }}')"
-                                class="w-7 h-7 text-white text-xs rounded-md flex items-center justify-center" style="background-color: {{ $colores['boton'] }}">
-                            <i class="fas fa-cart-plus"></i>
-                        </button>
-@endif
+        @case('categorias')
+            @if(!empty($categoriasPortada['items']))
+                <div class="mb-5">
+                    <p class="text-sm font-semibold mb-2" style="color: {{ $colores['texto'] }}"><i class="fas fa-th-large mr-1" style="color: {{ $colores['boton'] }}"></i> Categorías</p>
+                    <div class="flex gap-2 overflow-x-auto pb-2 sm:flex-wrap">
+                        @foreach($categoriasPortada['items'] as $cat)
+                            <button wire:click="toggleFiltro('{{ $categoriasPortada['tipo'] }}', '{{ $cat['cod'] }}')"
+                                    class="flex-shrink-0 px-3 py-2 bg-white rounded-full shadow-sm text-xs font-medium border border-gray-100 hover:shadow transition" style="color: {{ $colores['texto'] }}">
+                                {{ $cat['nom'] }}
+                            </button>
+                        @endforeach
                     </div>
                 </div>
-            @endforeach
-        </div>
-    </div>
-@endif
+            @endif
+            @break
+
+        @case('promos')
+            @if(count($promosPortada))
+                <div class="mb-5">
+                    <p class="text-sm font-semibold mb-2" style="color: {{ $colores['texto'] }}"><i class="fas fa-tag mr-1" style="color: {{ $colores['boton'] }}"></i> Promociones</p>
+                    <div class="flex gap-3 overflow-x-auto pb-2">
+                        @foreach($promosPortada as $h)
+                            @include('tienda.partials.tarjeta-mini', ['h' => $h, 'ancho' => 'w-40'])
+                        @endforeach
+                    </div>
+                    @if($hayPromos)
+                        <button wire:click="toggleSoloPromos" class="text-xs font-semibold hover:underline" style="color: {{ $colores['boton'] }}">Ver todas las promociones <i class="fas fa-arrow-right ml-1"></i></button>
+                    @endif
+                </div>
+            @endif
+            @break
+
+        @case('destacados')
+            @if(count($destacados))
+                <div class="mb-5">
+                    <p class="text-sm font-semibold mb-2" style="color: {{ $colores['texto'] }}"><i class="fas fa-star mr-1" style="color: {{ $colores['boton'] }}"></i> Destacados</p>
+                    <div class="flex gap-3 overflow-x-auto pb-2">
+                        @foreach($destacados as $h)
+                            @include('tienda.partials.tarjeta-mini', ['h' => $h, 'ancho' => 'w-40'])
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+            @break
+
+        @case('habituales')
+            @if(count($habituales))
+                <div class="mb-5">
+                    <p class="text-sm font-semibold mb-2" style="color: {{ $colores['texto'] }}"><i class="fas fa-history mr-1" style="color: {{ $colores['boton'] }}"></i> Lo que comprás habitualmente</p>
+                    <div class="flex gap-3 overflow-x-auto pb-2">
+                        @foreach($habituales as $h)
+                            @include('tienda.partials.tarjeta-mini', ['h' => $h, 'ancho' => 'w-36'])
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+            @break
+    @endswitch
+@endforeach
 
 <div class="flex items-center justify-between mb-4">
     <p class="text-sm" style="color: {{ $colores['texto'] }}80">

@@ -89,15 +89,46 @@
 
     {{-- ===== LAYOUT: TOP (actual/default) ===== --}}
     @else
-        {{-- Buscador --}}
-        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
-            <div class="relative">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fas fa-search"></i></span>
-                <input type="text" wire:model.live.debounce.300ms="busqueda" placeholder="Buscar productos..."
-                       class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 outline-none"
-                       style="--tw-ring-color: {{ $colores['boton'] }}">
+        @php $hayFiltrosTop = $filtrosVisibles['depto'] || $filtrosVisibles['rubro'] || $filtrosVisibles['marca']; @endphp
+        <div x-data="{ filtrosOpen: false }">
+        {{-- Buscador: en el celular queda fijo arriba, con el boton de filtros al lado (F6) --}}
+        <div class="bg-white rounded-xl shadow-sm p-3 sm:p-4 mb-4 sticky md:static top-[3.75rem] z-30">
+            <div class="flex gap-2">
+                <div class="relative flex-1">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fas fa-search"></i></span>
+                    <input type="text" wire:model.live.debounce.300ms="busqueda" placeholder="Buscar productos..."
+                           class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 outline-none"
+                           style="--tw-ring-color: {{ $colores['boton'] }}">
+                </div>
+                @if($hayFiltrosTop)
+                    <button @click="filtrosOpen = true" class="md:hidden px-3 py-2.5 text-white rounded-lg text-sm font-semibold flex items-center gap-1.5" style="background-color: {{ $colores['boton'] }}">
+                        <i class="fas fa-sliders-h"></i>
+                        @php $totalFiltrosTop = count($deptosSeleccionados) + count($rubrosSeleccionados) + count($marcasSeleccionadas); @endphp
+                        @if($totalFiltrosTop > 0)
+                            <span class="bg-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center" style="color: {{ $colores['boton'] }}">{{ $totalFiltrosTop }}</span>
+                        @endif
+                    </button>
+                @endif
             </div>
         </div>
+
+        {{-- Drawer de filtros (celular) --}}
+        @if($hayFiltrosTop)
+            <div x-show="filtrosOpen" x-transition.opacity @click="filtrosOpen = false" class="fixed inset-0 bg-black/40 z-40 md:hidden" style="display: none;"></div>
+            <div x-show="filtrosOpen"
+                 x-transition:enter="transition ease-out duration-300" x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0"
+                 x-transition:leave="transition ease-in duration-200" x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full"
+                 class="fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-xl md:hidden overflow-y-auto" style="display: none;">
+                <div class="p-4 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-semibold text-gray-700"><i class="fas fa-filter mr-1" style="color: {{ $colores['boton'] }}"></i> Filtros</span>
+                        <button @click="filtrosOpen = false" class="p-1 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+                    </div>
+                    @include('tienda.partials.sidebar-filters')
+                    <button @click="filtrosOpen = false" class="w-full py-2.5 text-white rounded-lg text-sm font-semibold" style="background-color: {{ $colores['boton'] }}">Ver {{ $totalProductos }} producto{{ $totalProductos != 1 ? 's' : '' }}</button>
+                </div>
+            </div>
+        @endif
 
         {{-- Filtros colapsables multi-select --}}
         @if($filtrosVisibles['depto'] || $filtrosVisibles['rubro'] || $filtrosVisibles['marca'])
@@ -110,7 +141,7 @@
             <div x-data="{ abierto: null }" class="mb-4 space-y-2">
                 @include('tienda.partials.active-filters')
 
-                <div class="flex gap-2 flex-wrap">
+                <div class="hidden md:flex gap-2 flex-wrap">
                     @foreach(['depto' => ['deptosSeleccionados', $deptos, 'fa-layer-group', 'Departamento'], 'rubro' => ['rubrosSeleccionados', $rubros, 'fa-tags', 'Rubro'], 'marca' => ['marcasSeleccionadas', $marcas, 'fa-bookmark', 'Marca']] as $tipo => $cfg)
                         @if($filtrosVisibles[$tipo] && count($cfg[1]) > 0)
                             <div class="relative" x-data>
@@ -155,6 +186,7 @@
 
         @include('tienda.partials.product-info')
         @include('tienda.partials.product-grid')
+        </div>
     @endif
 
     {{-- Botones flotantes --}}
@@ -184,9 +216,9 @@
 
     {{-- Modal: elegir cantidad --}}
     @if($modalCantidadAbierto && $productoModal)
-        <div class="fixed inset-0 z-[60] flex items-center justify-center p-4" wire:click="cerrarModalCantidad">
+        <div class="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4" wire:click="cerrarModalCantidad">
             <div class="absolute inset-0 bg-black/50"></div>
-            <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6" wire:click.stop>
+            <div class="relative bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-5 sm:p-6 max-h-[92vh] overflow-y-auto safe-bottom" wire:click.stop>
                 <button wire:click="cerrarModalCantidad" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 p-1">
                     <i class="fas fa-times"></i>
                 </button>

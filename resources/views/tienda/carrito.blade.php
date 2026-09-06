@@ -155,8 +155,8 @@
             </div>
 
             <!-- Panel de checkout (1/3) -->
-            <div class="lg:col-span-1">
-                <div class="bg-white rounded-xl shadow-sm p-6 sticky top-20">
+            <div class="lg:col-span-1" id="checkout">
+                <div class="bg-white rounded-xl shadow-sm p-6 lg:sticky lg:top-20">
                     <h3 class="text-lg font-bold mb-4" style="color: {{ $colores['texto'] }}">Resumen del pedido</h3>
 
                     <!-- Validación de email (solo modo público) -->
@@ -435,6 +435,19 @@
                     @endif
                 </div>
             </div>
+
+            {{-- Celular (F6): barra fija con el total y el boton; lleva al resumen para confirmar en un solo scroll --}}
+            <div class="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200 px-4 py-3 safe-bottom flex items-center justify-between gap-3 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
+                <div>
+                    <p class="text-[11px] text-gray-400 leading-none">Total</p>
+                    <p class="text-lg font-bold leading-tight" style="color: {{ $colores['precio'] }}">${{ number_format($totalConEnvio ?? 0, 2, ',', '.') }}</p>
+                </div>
+                <a href="#checkout" class="px-5 py-2.5 rounded-lg text-white font-semibold text-sm" style="background-color: {{ $colores['boton'] }}">
+                    {{ $compradorValidado ? 'Confirmar pedido' : 'Continuar' }} <i class="fas fa-arrow-down ml-1"></i>
+                </a>
+            </div>
+            <div class="lg:hidden h-20"></div>
+            <div class="hidden">            </div>
         </div>
     @endif
 

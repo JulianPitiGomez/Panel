@@ -47,6 +47,11 @@ class Catalogo extends Component
     public $cerradaSinPedidos = false; // agenda: cerrada y sin 'recibe cerrada' -> no se agrega al carrito
     public $habituales = [];           // lo que este comprador compra seguido (ultimos 12 meses)
     public $destacados = [];           // elegidos por el comercio (tienda_articu.destacado), en su orden
+    public $promosPortada = [];        // articulos con promo vigente, para la vitrina de la portada (F6)
+    public $categoriasPortada = [];    // ['tipo' => depto|rubro, 'items' => [cod, nom]] para entrar de un toque (F6)
+    public $portadaBloques = [];       // bloques activos de la portada, en orden (TiendaService::portadaBloques)
+    public $portadaTitulo = '';
+    public $portadaTexto = '';
     public $promosPagina = [];         // codigo => [textos de promo] de los productos visibles
     public $soloPromos = false;        // seccion Promociones: solo articulos con promo vigente
     public $hayPromos = false;         // hay alguna promo vigente en la tienda
@@ -92,6 +97,9 @@ class Catalogo extends Component
         $this->modoCantidad = $datos['modo_cantidad'] ?? 'rapido';
         $this->permiteDecimal = (bool) ($datos['permite_decimal'] ?? false);
         $this->vendeSinStock = \App\Services\TiendaStockService::vendeSinStock($datos);
+        $this->portadaBloques = array_map(fn ($b) => $b['tipo'], array_filter(\App\Services\TiendaService::portadaBloques($datos), fn ($b) => $b['activo']));
+        $this->portadaTitulo = trim((string) ($datos['portada_titulo'] ?? ''));
+        $this->portadaTexto = trim((string) ($datos['portada_texto'] ?? ''));
 
         try {
             $ag = (new \App\Services\TiendaAgendaService($this->tablePrefix))->config();
@@ -375,6 +383,47 @@ class Catalogo extends Component
     }
 
     /** Destacados del comercio, en su orden, con precio y foto de hoy. */
+    /** Vitrina de promociones de la portada: articulos con promo vigente para cualquier forma de pago. */
+    private function cargarPromosPortada()
+    {
+        $this->promosPortada = [];
+        if (!in_array('promos', $this->portadaBloques, true)) {
+            return;
+        }
+        if (empty($this->tiposFp)) {
+            $this->tiposFp = (new \App\Services\TiendaPagoService($this->tablePrefix))->tiposFpActivos();
+        }
+        $codigos = (new \App\Services\TiendaPromoService($this->tablePrefix))->codigosConPromo($this->tiposFp);
+        if (empty($codigos)) {
+            return;
+        }
+        $this->promosPortada = DB::connection('client_db')
+            ->table("{$this->tablePrefix}articu as a")
+            ->leftJoin("{$this->tablePrefix}articu_fotos as f", 'a.CODIGO', '=', 'f.codigo')
+            ->leftJoin("{$this->tablePrefix}ivas as i", 'a.IVA', '=', 'i.codigo')
+            ->leftJoin("{$this->tablePrefix}tienda_articu as ta", 'a.CODIGO', '=', 'ta.codigo')
+            ->whereIn('a.CODIGO', array_slice($codigos, 0, 200))
+            ->where('a.NOSALE', 0)->whereRaw('COALESCE(ta.visible_web, 1) = 1')
+            ->orderBy('a.NOMBRE')
+            ->limit(12)
+            ->get(['a.CODIGO', 'a.NOMBRE', 'a.PRECIOVEN', 'a.REVENTA', 'a.STOCKACT', 'f.url as foto_url', 'i.tasa as tasa_iva'])
+            ->all();
+    }
+
+    /** Categorias de la portada: departamentos si el comercio los muestra, si no rubros. */
+    private function cargarCategoriasPortada()
+    {
+        $this->categoriasPortada = [];
+        if (!in_array('categorias', $this->portadaBloques, true)) {
+            return;
+        }
+        if ($this->filtrosVisibles['depto'] && count($this->deptos)) {
+            $this->categoriasPortada = ['tipo' => 'depto', 'items' => array_slice($this->deptos, 0, 24)];
+        } elseif ($this->filtrosVisibles['rubro'] && count($this->rubros)) {
+            $this->categoriasPortada = ['tipo' => 'rubro', 'items' => array_slice($this->rubros, 0, 24)];
+        }
+    }
+
     private function cargarDestacados()
     {
         $this->destacados = DB::connection('client_db')
@@ -643,12 +692,18 @@ class Catalogo extends Component
         if ($sinFiltros) {
             $this->cargarHabituales();
             $this->cargarDestacados();
+            $this->cargarPromosPortada();
+            $this->cargarCategoriasPortada();
             // los destacados tambien muestran su chip de promo
             $extra = $this->textosPromo(new \App\Services\TiendaPromoService($this->tablePrefix), array_map(fn ($d) => $d->CODIGO, $this->destacados));
             $this->promosPagina = $this->promosPagina + $extra;
+            $extraPromos = $this->textosPromo(new \App\Services\TiendaPromoService($this->tablePrefix), array_map(fn ($d) => $d->CODIGO, $this->promosPortada));
+            $this->promosPagina = $this->promosPagina + $extraPromos;
         } else {
             $this->habituales = [];
             $this->destacados = [];
+            $this->promosPortada = [];
+            $this->categoriasPortada = [];
         }
 
         return view('tienda.catalogo', [

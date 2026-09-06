@@ -62,6 +62,9 @@ class FotosProductos extends Component
         'modo_cantidad' => 'rapido',
         'permite_decimal' => false,
         'tienda_vende_sin_stock' => true,   // ver TiendaStockService
+        'portada_titulo' => '',
+        'portada_texto' => '',
+        'portada_bloques' => [],
         'tienda_meta_titulo' => '',
         'tienda_meta_descripcion' => '',
         'tienda_registro_aprobacion' => false,   // F5: los registros web esperan aprobacion del comercio
@@ -219,6 +222,37 @@ class FotosProductos extends Component
 
         $this->mensaje = 'Modo de acceso actualizado correctamente.';
         $this->tipoMensaje = 'success';
+    }
+
+    // ------------------------------------------------- portada (F6)
+
+    /** Bloques de la portada en orden, completando los que falten. Se guardan con "Guardar datos". */
+    public function getBloquesPortadaProperty(): array
+    {
+        return \App\Services\TiendaService::portadaBloques($this->datosComercio);
+    }
+
+    public function togglePortadaBloque($tipo)
+    {
+        $bloques = $this->bloquesPortada;
+        foreach ($bloques as &$b) {
+            if ($b['tipo'] === $tipo) {
+                $b['activo'] = !$b['activo'];
+            }
+        }
+        $this->datosComercio['portada_bloques'] = $bloques;
+    }
+
+    public function moverPortadaBloque($tipo, $direccion)
+    {
+        $bloques = $this->bloquesPortada;
+        $i = array_search($tipo, array_column($bloques, 'tipo'), true);
+        $j = $direccion === 'arriba' ? $i - 1 : $i + 1;
+        if ($i === false || $j < 0 || $j >= count($bloques)) {
+            return;
+        }
+        [$bloques[$i], $bloques[$j]] = [$bloques[$j], $bloques[$i]];
+        $this->datosComercio['portada_bloques'] = array_values($bloques);
     }
 
     public function guardarDatosComercio()
