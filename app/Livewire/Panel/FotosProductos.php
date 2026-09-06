@@ -681,7 +681,7 @@ class FotosProductos extends Component
             ->table($this->tablePrefix . 'tienda_articu as ta')
             ->join($this->tablePrefix . 'articu as a', 'a.codigo', '=', 'ta.codigo')
             ->leftJoin($this->tablePrefix . 'articu_fotos as f', 'a.codigo', '=', 'f.codigo')
-            ->where('ta.destacado', 1)
+            ->where('ta.destacado', 1)->where('a.NOSALE', 0)
             ->orderBy('ta.orden')->orderBy('a.nombre')
             ->get(['a.codigo', 'a.nombre', 'f.url as foto_url', 'ta.orden'])
             ->map(fn ($d) => (array) $d)->all();
@@ -834,7 +834,7 @@ class FotosProductos extends Component
         $iPeso = $col('peso_kg'); $iAlto = $col('alto_cm'); $iAncho = $col('ancho_cm'); $iLargo = $col('largo_cm'); $iBultos = $col('bultos'); $iAntic = $col('anticipacion_horas');
         $num = fn ($v) => ($v === null || trim((string) $v) === '') ? null : (is_numeric(str_replace(',', '.', trim($v))) ? (float) str_replace(',', '.', trim($v)) : null);
 
-        $codigosValidos = DB::connection('client_db')->table($this->tablePrefix . 'articu')->pluck('codigo')->map(fn ($c) => (string) $c)->flip();
+        $codigosValidos = DB::connection('client_db')->table($this->tablePrefix . 'articu')->where('NOSALE', 0)->pluck('codigo')->map(fn ($c) => (string) $c)->flip();
         $ok = 0; $saltadas = 0;
 
         foreach (array_slice($lineas, 1) as $linea) {

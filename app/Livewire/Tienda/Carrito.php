@@ -554,6 +554,26 @@ class Carrito extends Component
             return;
         }
 
+        // Lo que dejo de venderse (NOSALE) o el comercio oculto desde que se armo el carrito, se saca
+        $codigos = array_values(array_unique(array_map(fn ($i) => (string) $i['codigo'], array_filter($this->carrito, fn ($i) => ($i['cantidad'] ?? 0) > 0))));
+        if (!empty($codigos)) {
+            $vendibles = DB::connection('client_db')
+                ->table("{$this->tablePrefix}articu as a")
+                ->leftJoin("{$this->tablePrefix}tienda_articu as ta", 'a.CODIGO', '=', 'ta.codigo')
+                ->whereIn('a.CODIGO', $codigos)
+                ->where('a.NOSALE', 0)
+                ->whereRaw('COALESCE(ta.visible_web, 1) = 1')
+                ->pluck('a.CODIGO')->map(fn ($c) => (string) $c)->all();
+            $noVendibles = array_diff($codigos, $vendibles);
+            if (!empty($noVendibles)) {
+                $nombres = collect($this->carrito)->whereIn('codigo', $noVendibles)->pluck('nombre')->unique()->implode(', ');
+                $this->carrito = array_values(array_filter($this->carrito, fn ($i) => !in_array((string) $i['codigo'], $noVendibles)));
+                session(['tienda_carrito' => $this->carrito]);
+                session()->flash('error', "Estos productos ya no están disponibles y se quitaron del carrito: {$nombres}. Revisá el pedido y confirmá de nuevo.");
+                return;
+            }
+        }
+
         // Revalidar stock al confirmar: entre armar el carrito y confirmar pueden pasar horas
         if (!\App\Services\TiendaStockService::vendeSinStock(session('tienda_datos', []))) {
             $faltantes = (new \App\Services\TiendaStockService($this->tablePrefix))->faltantes($this->carrito);

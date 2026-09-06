@@ -55,7 +55,7 @@ class TiendaIaService
     {
         return $this->tabla('tienda_articu as ta')
             ->join($this->prefijo . 'articu as a', 'a.CODIGO', '=', 'ta.codigo')
-            ->whereNotNull('ta.ia_sugerencia')
+            ->whereNotNull('ta.ia_sugerencia')->where('a.NOSALE', 0)
             ->orderBy('ta.ia_fecha')
             ->limit($limite)
             ->get(['ta.codigo', 'a.NOMBRE as nombre', 'ta.ia_sugerencia', 'ta.ia_fecha'])
