@@ -99,7 +99,7 @@
                     </div>
                 @endif
             </div>
-            <p class="text-[11px] text-gray-400 mt-2">El PDF es una copia del detalle para tu control. El comprobante fiscal original te lo entrega el comercio.</p>
+            <p class="text-[11px] text-gray-400 mt-2">El PDF tiene el mismo formato que el comprobante que emite el comercio.</p>
         @endif
 
         {{-- Cuenta corriente --}}

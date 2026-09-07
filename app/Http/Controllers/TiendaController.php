@@ -61,35 +61,39 @@ class TiendaController extends Controller
         return redirect()->route('tienda.carrito', $tienda);
     }
 
-    /** Copia del comprobante para el cliente (F6): HTML imprimible, o PDF con ?pdf=1. Solo los propios. */
+    /**
+     * Comprobante del cliente con el formato A4 de gestion (ventas.prg: PrintFactuElec /
+     * FacturaNoFiscal). HTML imprimible, o PDF con ?pdf=1. Solo los propios.
+     */
     public function comprobante($tienda, $ticomp, $letra, $numero)
     {
         $codcli = (int) session('tienda_comprador_id');
         if (!session('tienda_comprador_web_id') || !$codcli) {
             return redirect()->route('tienda.index', $tienda);
         }
-        $srv = new \App\Services\TiendaCuentaService(session('tienda_prefix'));
-        $detalle = $srv->detalleComprobante($codcli, (string) $ticomp, (string) $letra, (string) $numero);
-        if (!$detalle) {
+        $srv = new \App\Services\TiendaFacturaService(session('tienda_prefix'));
+        $f = $srv->datos($codcli, (string) $ticomp, (string) $letra, (string) $numero);
+        if (!$f) {
             abort(404);
         }
-        $datos = session('tienda_datos', []);
+        $pdf = request()->boolean('pdf');
+        $clienteId = (int) session('tienda_config_id');
+        $logoPath = public_path("img/logos/{$clienteId}/logo.png");
+        $arcaPath = public_path('img/arca.jpg');
         $vista = [
-            'nombreTienda'      => session('tienda_nombre'),
-            'razonSocial'       => $datos['razon_social'] ?? null,
-            'cuitComercio'      => $datos['cuit'] ?? null,
-            'direccionComercio' => trim(($datos['direccion'] ?? '') . (!empty($datos['localidad']) ? ', ' . $datos['localidad'] : '')),
-            'cliente'           => $srv->resumen($codcli),
-            'encab'             => $detalle['encab'],
-            'renglones'         => $detalle['renglones'],
+            'f'    => $f,
+            'pdf'  => $pdf,
+            'logo' => file_exists($logoPath) ? ($pdf ? $logoPath : asset("img/logos/{$clienteId}/logo.png")) : null,
+            'arca' => file_exists($arcaPath) ? ($pdf ? $arcaPath : asset('img/arca.jpg')) : null,
+            'qr'   => \App\Services\TiendaFacturaService::qrDataUri($f['qr_url']),
         ];
-        if (request()->boolean('pdf')) {
+        if ($pdf) {
             $nombre = preg_replace('/[^A-Za-z0-9-]/', '_', "{$ticomp}{$letra}-{$numero}") . '.pdf';
 
-            return \Barryvdh\DomPDF\Facade\Pdf::loadView('tienda.comprobante', $vista)->download($nombre);
+            return \Barryvdh\DomPDF\Facade\Pdf::loadView('tienda.factura', $vista)->setPaper('a4', 'portrait')->download($nombre);
         }
 
-        return view('tienda.comprobante', $vista);
+        return view('tienda.factura', $vista);
     }
 
     /** sitemap.xml de la tienda (F6). La privada devuelve uno vacio. */
