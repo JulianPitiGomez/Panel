@@ -13,7 +13,7 @@
         @case('categorias')
             @if(!empty($categoriasPortada['items']))
                 <div class="mb-6">
-                    <div class="t-section"><span class="t-section-ico"><i class="fas fa-th-large"></i></span><h2>Categorías</h2></div>
+                    <div class="t-section"><span class="t-section-ico"><i class="fas fa-th-large"></i></span><h2>{{ $portadaTitulos['categorias'] ?? 'Categorías' }}</h2></div>
                     <div class="t-strip sm:flex-wrap">
                         @foreach($categoriasPortada['items'] as $cat)
                             <button wire:click="toggleFiltro('{{ $categoriasPortada['tipo'] }}', '{{ $cat['cod'] }}')" class="t-pill">{{ \App\Services\TiendaEstiloService::nombreBonito($cat['nom']) }}</button>
@@ -27,7 +27,7 @@
             @if(count($promosPortada))
                 <div class="mb-6 relative" x-data>
                     <div class="t-section">
-                        <span class="t-section-ico"><i class="fas fa-tag"></i></span><h2>Promociones</h2>
+                        <span class="t-section-ico"><i class="fas fa-tag"></i></span><h2>{{ $portadaTitulos['promos'] ?? 'Promociones' }}</h2>
                         @if($hayPromos)<button wire:click="toggleSoloPromos" class="t-section-link t-link">Ver todas <i class="fas fa-arrow-right text-xs ml-0.5"></i></button>@endif
                     </div>
                     <button type="button" class="t-strip-arrow -left-3" @click="$refs.tiraPromos.scrollBy({left: -320, behavior: 'smooth'})"><i class="fas fa-chevron-left text-xs"></i></button>
@@ -44,7 +44,7 @@
         @case('destacados')
             @if(count($destacados))
                 <div class="mb-6 relative" x-data>
-                    <div class="t-section"><span class="t-section-ico"><i class="fas fa-star"></i></span><h2>Destacados</h2></div>
+                    <div class="t-section"><span class="t-section-ico"><i class="fas fa-star"></i></span><h2>{{ $portadaTitulos['destacados'] ?? 'Destacados' }}</h2></div>
                     <button type="button" class="t-strip-arrow -left-3" @click="$refs.tiraDest.scrollBy({left: -320, behavior: 'smooth'})"><i class="fas fa-chevron-left text-xs"></i></button>
                     <button type="button" class="t-strip-arrow -right-3" @click="$refs.tiraDest.scrollBy({left: 320, behavior: 'smooth'})"><i class="fas fa-chevron-right text-xs"></i></button>
                     <div class="t-strip" x-ref="tiraDest">
@@ -59,7 +59,7 @@
         @case('habituales')
             @if(count($habituales))
                 <div class="mb-6 relative" x-data>
-                    <div class="t-section"><span class="t-section-ico"><i class="fas fa-history"></i></span><h2>Lo que comprás habitualmente</h2></div>
+                    <div class="t-section"><span class="t-section-ico"><i class="fas fa-history"></i></span><h2>{{ $portadaTitulos['habituales'] ?? 'Lo que comprás habitualmente' }}</h2></div>
                     <button type="button" class="t-strip-arrow -left-3" @click="$refs.tiraHab.scrollBy({left: -320, behavior: 'smooth'})"><i class="fas fa-chevron-left text-xs"></i></button>
                     <button type="button" class="t-strip-arrow -right-3" @click="$refs.tiraHab.scrollBy({left: 320, behavior: 'smooth'})"><i class="fas fa-chevron-right text-xs"></i></button>
                     <div class="t-strip" x-ref="tiraHab">

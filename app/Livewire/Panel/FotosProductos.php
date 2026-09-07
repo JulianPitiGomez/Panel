@@ -66,6 +66,10 @@ class FotosProductos extends Component
         'portada_titulo' => '',
         'portada_texto' => '',
         'portada_bloques' => [],
+        'portada_titulo_promos' => '',
+        'portada_titulo_destacados' => '',
+        'portada_titulo_habituales' => '',
+        'portada_titulo_categorias' => '',
         'tienda_meta_titulo' => '',
         'tienda_meta_descripcion' => '',
         'tienda_registro_aprobacion' => false,   // F5: los registros web esperan aprobacion del comercio

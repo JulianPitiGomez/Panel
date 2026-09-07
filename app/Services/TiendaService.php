@@ -51,6 +51,22 @@ class TiendaService
         'categorias' => 'Categorías para entrar de un toque',
     ];
 
+    /** Titulo por defecto de cada bloque; el comercio puede cambiarlo (portada_titulo_{tipo} en el JSON). */
+    public const PORTADA_TITULOS = [
+        'habituales' => 'Lo que comprás habitualmente',
+        'destacados' => 'Destacados',
+        'promos'     => 'Promociones',
+        'categorias' => 'Categorías',
+    ];
+
+    /** Titulo del bloque para mostrar: el del comercio o el de siempre. */
+    public static function portadaTitulo(array $datos, string $tipo): string
+    {
+        $propio = trim((string) ($datos['portada_titulo_' . $tipo] ?? ''));
+
+        return $propio !== '' ? mb_substr($propio, 0, 60) : (self::PORTADA_TITULOS[$tipo] ?? ucfirst($tipo));
+    }
+
     /**
      * Bloques de portada del comercio, en orden y con su estado. Lo guardado en el
      * JSON (portada_bloques) manda; lo que falte se agrega al final, activo.

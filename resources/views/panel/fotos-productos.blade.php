@@ -559,13 +559,18 @@
                                 @foreach($this->bloquesPortada as $i => $b)
                                     <div class="flex items-center gap-2 px-3 py-2 rounded-lg border {{ $b['activo'] ? 'border-gray-200 bg-white' : 'border-dashed border-gray-200 bg-gray-50' }}" wire:key="pb-{{ $b['tipo'] }}">
                                         <input type="checkbox" wire:click="togglePortadaBloque('{{ $b['tipo'] }}')" @checked($b['activo']) class="w-4 h-4 rounded text-[#FFAF22]">
-                                        <span class="flex-1 text-sm {{ $b['activo'] ? 'text-gray-700' : 'text-gray-400' }}">{{ \App\Services\TiendaService::PORTADA_BLOQUES[$b['tipo']] }}</span>
+                                        <div class="flex-1 min-w-0">
+                                            <span class="block text-xs {{ $b['activo'] ? 'text-gray-500' : 'text-gray-400' }}">{{ \App\Services\TiendaService::PORTADA_BLOQUES[$b['tipo']] }}</span>
+                                            @if(isset(\App\Services\TiendaService::PORTADA_TITULOS[$b['tipo']]))
+                                                <input type="text" wire:model="datosComercio.portada_titulo_{{ $b['tipo'] }}" maxlength="60" placeholder="{{ \App\Services\TiendaService::PORTADA_TITULOS[$b['tipo']] }}" title="Título que ve el comprador. Vacío: el de siempre." class="w-full mt-0.5 px-2 py-1 border border-gray-200 rounded text-sm text-gray-800 placeholder-gray-400">
+                                            @endif
+                                        </div>
                                         <button type="button" wire:click="moverPortadaBloque('{{ $b['tipo'] }}', 'arriba')" @disabled($i === 0) class="p-1 text-gray-400 hover:text-gray-700 disabled:opacity-30"><i class="fas fa-arrow-up text-xs"></i></button>
                                         <button type="button" wire:click="moverPortadaBloque('{{ $b['tipo'] }}', 'abajo')" @disabled($i === count($this->bloquesPortada) - 1) class="p-1 text-gray-400 hover:text-gray-700 disabled:opacity-30"><i class="fas fa-arrow-down text-xs"></i></button>
                                     </div>
                                 @endforeach
                             </div>
-                            <p class="text-[11px] text-gray-400 mt-2">Las promociones salen solas de gestión; los destacados los marcás con la estrella en Fotos Productos.</p>
+                            <p class="text-[11px] text-gray-400 mt-2">Podés cambiarle el título a cada bloque (por ejemplo, "Ofertas de la semana"). Las promociones salen solas de gestión; los destacados los marcás con la estrella en Fotos Productos.</p>
                         </div>
                     </div>
                 </div>

@@ -53,6 +53,7 @@ class Catalogo extends Component
     public $categoriasPortada = [];    // ['tipo' => depto|rubro, 'items' => [cod, nom]] para entrar de un toque (F6)
     public $portadaBloques = [];       // bloques activos de la portada, en orden (TiendaService::portadaBloques)
     public $portadaTitulo = '';
+    public $portadaTitulos = [];      // tipo => titulo de cada bloque (el del comercio o el default)
     public $portadaTexto = '';
     public $promosPagina = [];         // codigo => [textos de promo] de los productos visibles
     public $soloPromos = false;        // seccion Promociones: solo articulos con promo vigente
@@ -105,6 +106,9 @@ class Catalogo extends Component
         $this->vendeSinStock = \App\Services\TiendaStockService::vendeSinStock($datos);
         $this->portadaBloques = array_map(fn ($b) => $b['tipo'], array_filter(\App\Services\TiendaService::portadaBloques($datos), fn ($b) => $b['activo']));
         $this->portadaTitulo = trim((string) ($datos['portada_titulo'] ?? ''));
+        foreach (array_keys(\App\Services\TiendaService::PORTADA_TITULOS) as $tipoBloque) {
+            $this->portadaTitulos[$tipoBloque] = \App\Services\TiendaService::portadaTitulo($datos, $tipoBloque);
+        }
         $this->portadaTexto = trim((string) ($datos['portada_texto'] ?? ''));
 
         try {
