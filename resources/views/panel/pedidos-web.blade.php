@@ -105,8 +105,8 @@
                             <span class="block text-xs text-gray-400 mt-0.5">Gestión: {{ $this->etiquetaEstadoGestion($p['estado']) }}</span>
                         </td>
                         <td class="px-4 py-3 text-right whitespace-nowrap" wire:click.stop>
-                            @if($p['pago_medio'] === 'transferencia' && $p['pago_estado'] === 'pendiente')
-                                <button wire:click="confirmarPago({{ $p['idpedido'] }})" wire:confirm="¿Confirmar que llegó la transferencia del pedido #{{ $p['idpedido'] }}?"
+                            @if(in_array($p['pago_medio'], ['transferencia', 'debin']) && $p['pago_estado'] === 'pendiente')
+                                <button wire:click="confirmarPago({{ $p['idpedido'] }})" wire:confirm="¿Confirmar que se acreditó el pago del pedido #{{ $p['idpedido'] }}?"
                                         class="px-3 py-1.5 bg-green-500 text-white rounded-lg text-xs font-semibold hover:bg-green-600">
                                     <i class="fas fa-check mr-1"></i>Confirmar pago
                                 </button>
@@ -175,7 +175,7 @@
                                             @endif
                                             <p class="text-[11px] text-gray-400 mt-2">Cada avance le llega al comprador por mail.</p>
                                         </div>
-                                        @if($p['pago_medio'] === 'transferencia' && $p['pago_estado'] === 'pendiente')
+                                        @if(in_array($p['pago_medio'], ['transferencia', 'debin']) && $p['pago_estado'] === 'pendiente')
                                             <button wire:click="rechazarPago({{ $p['idpedido'] }})" wire:confirm="¿Marcar el pago del pedido #{{ $p['idpedido'] }} como rechazado?" class="mt-3 text-xs text-red-500 hover:underline">Marcar pago como rechazado</button>
                                         @endif
                                     </div>

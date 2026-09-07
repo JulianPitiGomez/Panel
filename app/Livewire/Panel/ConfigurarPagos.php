@@ -40,8 +40,8 @@ class ConfigurarPagos extends Component
         $cfg = $srvPagos->config();
         unset($cfg['id']);
         $this->formasGestion = array_map(fn ($f) => ['CODIGO' => (int) $f->CODIGO, 'NOMBRE' => trim($f->NOMBRE), 'TIPO' => (int) $f->TIPO], $srvPagos->formasPagoGestion());
-        foreach (['transferencia_activa', 'cuenta_corriente_activa', 'mercadopago_activa', 'a_convenir_activa'] as $b) {
-            $cfg[$b] = (bool) $cfg[$b];
+        foreach (['transferencia_activa', 'cuenta_corriente_activa', 'mercadopago_activa', 'a_convenir_activa', 'debin_activa'] as $b) {
+            $cfg[$b] = (bool) ($cfg[$b] ?? false);
         }
         $this->config = $cfg;
 

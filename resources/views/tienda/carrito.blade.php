@@ -19,6 +19,8 @@
                             @else
                                 <p class="text-sm rounded-xl p-3" style="background-color: var(--twarn-soft); color: var(--twarn);">No pudimos iniciar el pago con Mercado Pago. Tu pedido quedó registrado: podés pagarlo desde <strong>Mis pedidos</strong>.</p>
                             @endif
+                        @elseif($pagoInfo['medio'] === 'debin')
+                            <p class="text-sm t-soft text-center"><i class="fas fa-university mr-1"></i> Te va a llegar un pedido de débito (DEBIN) de {{ $nombreTienda }} para aprobar en tu home banking. Cuando lo apruebes, el comercio prepara tu pedido.</p>
                         @elseif($pagoInfo['medio'] === 'cuenta_corriente')
                             <p class="text-sm t-soft text-center"><i class="fas fa-book mr-1"></i> El importe de ${{ number_format($pagoInfo['total'], 2, ',', '.') }} se suma a tu cuenta corriente con el comercio.</p>
                         @else
@@ -248,7 +250,7 @@
 
                     {{-- Paso: pago --}}
                     @if($paso === 'pago')
-                        @php $iconosPago = ['mercadopago' => 'fa-credit-card', 'transferencia' => 'fa-university', 'cuenta_corriente' => 'fa-book', 'a_convenir' => 'fa-handshake']; @endphp
+                        @php $iconosPago = ['mercadopago' => 'fa-credit-card', 'transferencia' => 'fa-university', 'debin' => 'fa-bolt', 'cuenta_corriente' => 'fa-book', 'a_convenir' => 'fa-handshake']; @endphp
                         <p class="t-label">¿Cómo pagás?</p>
                         <div class="grid sm:grid-cols-2 gap-2.5">
                             @foreach($opcionesPago as $op)
@@ -262,6 +264,16 @@
                                 </label>
                             @endforeach
                         </div>
+                        @if($pagoMedio === 'debin')
+                            <div class="mt-4 rounded-xl p-4 space-y-2.5" style="background-color: var(--tp-tint);">
+                                <p class="t-label !mb-0"><i class="fas fa-university mr-1" style="color: var(--tp);"></i> Datos para el débito</p>
+                                <div class="grid sm:grid-cols-2 gap-2">
+                                    <input type="text" wire:model.blur="debinCuit" placeholder="CUIT / CUIL (11 números)" inputmode="numeric" class="t-input !py-2.5 text-sm">
+                                    <input type="text" wire:model.blur="debinCbu" placeholder="CBU (22 números) o alias" class="t-input !py-2.5 text-sm">
+                                </div>
+                                <p class="text-[11px] t-muted">El comercio genera el pedido de débito desde su banco. Te va a llegar para aprobar en tu home banking; el pedido se prepara cuando se acredita.</p>
+                            </div>
+                        @endif
                         @if($pagoError)<p class="text-sm mt-3" style="color: var(--tdanger);"><i class="fas fa-exclamation-circle mr-1"></i>{{ $pagoError }}</p>@endif
                     @endif
 

@@ -25,6 +25,7 @@ class TiendaPagoService
     public const MEDIO_TRANSFERENCIA    = 'transferencia';
     public const MEDIO_CUENTA_CORRIENTE = 'cuenta_corriente';
     public const MEDIO_A_CONVENIR       = 'a_convenir';
+    public const MEDIO_DEBIN            = 'debin';   // F7: debito inmediato (lo pide el comercio desde su banco)
 
     public const ESTADO_PENDIENTE = 'pendiente';
     public const ESTADO_APROBADO  = 'aprobado';
@@ -51,7 +52,8 @@ class TiendaPagoService
             'transferencia_activa' => 1, 'transferencia_titular' => null, 'transferencia_banco' => null,
             'transferencia_cbu' => null, 'transferencia_alias' => null, 'transferencia_texto' => null,
             'cuenta_corriente_activa' => 0, 'mercadopago_activa' => 0, 'a_convenir_activa' => 1,
-            'forpag_mercadopago' => null, 'forpag_transferencia' => null, 'forpag_cuenta_corriente' => null, 'forpag_a_convenir' => null,
+            'debin_activa' => 0, 'debin_texto' => null,
+            'forpag_mercadopago' => null, 'forpag_transferencia' => null, 'forpag_cuenta_corriente' => null, 'forpag_a_convenir' => null, 'forpag_debin' => null,
         ];
     }
 
@@ -84,7 +86,7 @@ class TiendaPagoService
     {
         $cfg = $this->config();
         $tipos = [];
-        foreach (['mercadopago', 'transferencia', 'cuenta_corriente', 'a_convenir'] as $m) {
+        foreach (['mercadopago', 'transferencia', 'cuenta_corriente', 'a_convenir', 'debin'] as $m) {
             if (!empty($cfg[$m . '_activa']) && !empty($cfg['forpag_' . $m])) {
                 $t = $this->tabla('forpag')->where('CODIGO', (int) $cfg['forpag_' . $m])->value('TIPO');
                 if ($t !== null) {
@@ -105,7 +107,7 @@ class TiendaPagoService
     public function guardarConfig(array $datos): void
     {
         $datos = array_intersect_key($datos, self::configDefault());
-        foreach (['transferencia_activa', 'cuenta_corriente_activa', 'mercadopago_activa', 'a_convenir_activa'] as $b) {
+        foreach (['transferencia_activa', 'cuenta_corriente_activa', 'mercadopago_activa', 'a_convenir_activa', 'debin_activa'] as $b) {
             if (array_key_exists($b, $datos)) {
                 $datos[$b] = $datos[$b] ? 1 : 0;
             }
@@ -136,6 +138,7 @@ class TiendaPagoService
             self::MEDIO_TRANSFERENCIA => 'Transferencia',
             self::MEDIO_CUENTA_CORRIENTE => 'Cuenta corriente',
             self::MEDIO_A_CONVENIR => 'A convenir',
+            self::MEDIO_DEBIN => 'Débito inmediato (DEBIN)',
             default => 'Sin definir',
         };
     }
@@ -173,6 +176,13 @@ class TiendaPagoService
             $out[self::MEDIO_TRANSFERENCIA] = [
                 'medio' => self::MEDIO_TRANSFERENCIA, 'etiqueta' => 'Transferencia bancaria',
                 'detalle' => 'Al confirmar te mostramos los datos y el importe exacto a transferir.', 'disponible' => true,
+            ];
+        }
+
+        if (!empty($cfg['debin_activa'])) {
+            $out[self::MEDIO_DEBIN] = [
+                'medio' => self::MEDIO_DEBIN, 'etiqueta' => 'Débito inmediato (DEBIN)',
+                'detalle' => trim((string) ($cfg['debin_texto'] ?? '')) ?: 'Nos dejás tu CUIT/CUIL y tu CBU o alias. El comercio te pide el débito y lo aprobás desde tu home banking.', 'disponible' => true,
             ];
         }
 
@@ -240,6 +250,7 @@ class TiendaPagoService
                 $datos['pago_importe_unico'] = self::importeUnico($total, $pedidoId);
                 break;
             case self::MEDIO_MERCADOPAGO:
+            case self::MEDIO_DEBIN:
                 $datos['pago_estado'] = self::ESTADO_PENDIENTE;
                 break;
             default:

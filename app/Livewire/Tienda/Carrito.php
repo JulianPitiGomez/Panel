@@ -57,6 +57,8 @@ class Carrito extends Component
     public $opcionesPago = [];
     public $pagoError = '';
     public $pagoInfo = [];   // para la pantalla de exito: medio, importe unico, datos de transferencia, aviso MP
+    public $debinCuit = '';   // DEBIN (F7): CUIT/CUIL y CBU o alias del comprador
+    public $debinCbu = '';
 
     public $colores = [];
 
@@ -149,10 +151,42 @@ class Carrito extends Component
                 }
                 return ($this->parafecha && $this->parafecha >= date('Y-m-d')) ? null : 'Elegí una fecha de entrega de hoy en adelante.';
             case 'pago':
-                return ($this->pagoMedio && !empty($this->opcionesPago[$this->pagoMedio]['disponible'])) ? null : 'Elegí cómo vas a pagar.';
+                if (!$this->pagoMedio || empty($this->opcionesPago[$this->pagoMedio]['disponible'])) {
+                    return 'Elegí cómo vas a pagar.';
+                }
+                if ($this->pagoMedio === \App\Services\TiendaPagoService::MEDIO_DEBIN) {
+                    return $this->errorDebin();
+                }
+                return null;
         }
 
         return null;
+    }
+
+    /** Datos del DEBIN: CUIT/CUIL de 11 digitos y CBU de 22 digitos o alias de 6 a 20 caracteres. */
+    private function errorDebin(): ?string
+    {
+        $cuit = preg_replace('/\D/', '', (string) $this->debinCuit);
+        $cbu = trim((string) $this->debinCbu);
+        if (strlen($cuit) !== 11) {
+            return 'Ingresá tu CUIT o CUIL (11 números) para el débito.';
+        }
+        $esCbu = preg_match('/^\d{22}$/', preg_replace('/[\s-]/', '', $cbu));
+        $esAlias = preg_match('/^[a-zA-Z0-9.\-]{6,20}$/', $cbu);
+        if (!$esCbu && !$esAlias) {
+            return 'Ingresá el CBU (22 números) o el alias de tu cuenta.';
+        }
+
+        return null;
+    }
+
+    /** Texto que queda como referencia del pago en el satelite cuando paga por DEBIN. */
+    private function referenciaDebin(): string
+    {
+        $cuit = preg_replace('/\D/', '', (string) $this->debinCuit);
+        $cbu = preg_replace('/[\s-]/', '', trim((string) $this->debinCbu));
+
+        return mb_substr('DEBIN CUIT ' . $cuit . ' ' . (preg_match('/^\d{22}$/', $cbu) ? 'CBU ' : 'alias ') . $cbu, 0, 80);
     }
 
     /** Primer paso que falta completar (el ultimo es 'confirmar'). */
@@ -785,6 +819,11 @@ class Carrito extends Component
             return;
         }
         $pagoMedio = $this->pagoMedio;
+        if ($pagoMedio === \App\Services\TiendaPagoService::MEDIO_DEBIN && ($e = $this->errorDebin())) {
+            $this->pagoError = $e;
+            $this->paso = 'pago';
+            return;
+        }
         $totalConEnvio = round($this->getTotalConPromos() + (float) $this->envioImporte, 2);
         $promoLineas = $this->promoLineas;
         $promoDescuento = (float) $this->promoDescuento;
@@ -881,6 +920,7 @@ class Carrito extends Component
             'agenda_cupo'       => $consumeCupo ? 1 : 0,
             'descuento_promos'  => $promoDescuento,
             'promos_aplicadas'  => $promoLineas ? json_encode($promoLineas, JSON_UNESCAPED_UNICODE) : null,
+            'pago_referencia'   => $pagoMedio === \App\Services\TiendaPagoService::MEDIO_DEBIN ? $this->referenciaDebin() : null,
         ]);
 
         if ($requiereDireccion) {

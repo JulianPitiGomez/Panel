@@ -85,6 +85,16 @@
             </div>
         </label>
         <label class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100">
+            <input type="checkbox" wire:model.live="config.debin_activa" class="mt-1 w-4 h-4 rounded text-[#FFAF22] focus:ring-[#FFAF22]">
+            <div class="flex-1">
+                <span class="text-sm font-medium text-gray-700">Débito inmediato (DEBIN)</span>
+                <p class="text-xs text-gray-400">El comprador deja su CUIT y su CBU o alias. Vos generás el pedido de débito desde el home banking de tu empresa, él lo aprueba y confirmás el pago acá. No hace falta cuenta en ninguna plataforma.</p>
+                @if(!empty($config['debin_activa']))
+                    <input type="text" wire:model="config.debin_texto" maxlength="255" placeholder="Aclaración para el comprador (opcional)" class="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                @endif
+            </div>
+        </label>
+        <label class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100">
             <input type="checkbox" wire:model.live="config.a_convenir_activa" class="mt-1 w-4 h-4 rounded text-[#FFAF22] focus:ring-[#FFAF22]">
             <div>
                 <span class="text-sm font-medium text-gray-700">Pago al recibir / a convenir</span>
@@ -99,7 +109,7 @@
         <h3 class="font-primary font-semibold text-gray-800 mb-1"><i class="fas fa-link text-[#FFAF22] mr-2"></i>Equivalencia con tus formas de pago de gestión</h3>
         <p class="text-xs text-gray-400 mb-4">Las promociones y los descuentos por forma de pago que cargás en gestión dependen de la forma de pago. Decinos a cuál corresponde cada medio de la tienda para que apliquen igual.</p>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            @foreach([['mercadopago', 'Mercado Pago'], ['transferencia', 'Transferencia'], ['cuenta_corriente', 'Cuenta corriente'], ['a_convenir', 'Pago al recibir / a convenir']] as [$medio, $etiqueta])
+            @foreach([['mercadopago', 'Mercado Pago'], ['transferencia', 'Transferencia'], ['cuenta_corriente', 'Cuenta corriente'], ['a_convenir', 'Pago al recibir / a convenir'], ['debin', 'Débito inmediato (DEBIN)']] as [$medio, $etiqueta])
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">{{ $etiqueta }}</label>
                     <select wire:model="config.forpag_{{ $medio }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">

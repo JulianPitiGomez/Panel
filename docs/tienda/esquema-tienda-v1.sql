@@ -175,12 +175,15 @@ CREATE TABLE IF NOT EXISTS `{p}tienda_pagos_config` (
   `cuenta_corriente_activa` TINYINT(1)   NOT NULL DEFAULT 0,     -- solo compradores enlazados a clientes con LIMITE
   `mercadopago_activa`      TINYINT(1)   NOT NULL DEFAULT 0,     -- requiere tienda_integraciones.mercadopago
   `a_convenir_activa`       TINYINT(1)   NOT NULL DEFAULT 1,     -- "pago al recibir / lo arreglamos"
+  `debin_activa`            TINYINT(1)   NOT NULL DEFAULT 0,     -- F7: debito inmediato; el comprador deja CUIT y CBU, el comercio pide el DEBIN desde su banco
+  `debin_texto`             VARCHAR(255) DEFAULT NULL,           -- F7: aclaracion para el comprador
   -- forma de pago de GESTION (forpag.CODIGO) equivalente a cada medio: define que promos aplican
   -- (promociones.formapago por forpag.TIPO) y el descuento por forma de pago (forpag_desc por CODIGO)
   `forpag_mercadopago`      INT          DEFAULT NULL,
   `forpag_transferencia`    INT          DEFAULT NULL,
   `forpag_cuenta_corriente` INT          DEFAULT NULL,
   `forpag_a_convenir`       INT          DEFAULT NULL,
+  `forpag_debin`            INT          DEFAULT NULL,           -- F7
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
