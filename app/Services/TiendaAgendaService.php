@@ -42,7 +42,7 @@ class TiendaAgendaService
     {
         return [
             'activa' => 0, 'anticipacion_min_horas' => 0, 'anticipacion_max_dias' => 14, 'margen_minutos' => 0,
-            'hora_corte' => null, 'cupo_diario' => null, 'abierta' => 1, 'recibe_cerrada' => 1,
+            'hora_corte' => null, 'cupo_diario' => null, 'cupo_unidades_diario' => null, 'abierta' => 1, 'recibe_cerrada' => 1,
             'muestra_cerrada' => 1, 'permite_lo_antes_posible' => 1,
         ];
     }
@@ -73,8 +73,10 @@ class TiendaAgendaService
         if (array_key_exists('anticipacion_max_dias', $datos) && $datos['anticipacion_max_dias'] < 1) {
             $datos['anticipacion_max_dias'] = 1;
         }
-        if (array_key_exists('cupo_diario', $datos)) {
-            $datos['cupo_diario'] = is_numeric($datos['cupo_diario']) && (int) $datos['cupo_diario'] > 0 ? (int) $datos['cupo_diario'] : null;
+        foreach (['cupo_diario', 'cupo_unidades_diario'] as $c) {
+            if (array_key_exists($c, $datos)) {
+                $datos[$c] = is_numeric($datos[$c]) && (int) $datos[$c] > 0 ? (int) $datos[$c] : null;
+            }
         }
         if (array_key_exists('hora_corte', $datos)) {
             $datos['hora_corte'] = preg_match('/^\d{1,2}:\d{2}/', (string) $datos['hora_corte']) ? substr($datos['hora_corte'], 0, 5) . ':00' : null;
@@ -122,6 +124,7 @@ class TiendaAgendaService
                 'hora_desde'  => $desde,
                 'hora_hasta'  => $hasta,
                 'cupo_franja' => is_numeric($f['cupo_franja'] ?? null) && (int) $f['cupo_franja'] > 0 ? (int) $f['cupo_franja'] : null,
+                'cupo_unidades' => is_numeric($f['cupo_unidades'] ?? null) && (int) $f['cupo_unidades'] > 0 ? (int) $f['cupo_unidades'] : null,
                 'vale_envio'  => !empty($f['vale_envio']) ? 1 : 0,
                 'vale_retiro' => !empty($f['vale_retiro']) ? 1 : 0,
                 'activa'      => !empty($f['activa']) ? 1 : 0,
@@ -186,6 +189,24 @@ class TiendaAgendaService
         return $horas;
     }
 
+    /** Unidades del carrito que consumen cupo (F7): suma de cantidades de los articulos con consume_cupo. */
+    public function unidadesCupo(array $carrito): float
+    {
+        $codigos = array_values(array_unique(array_map(fn ($i) => (string) $i['codigo'], $carrito)));
+        if (empty($codigos)) {
+            return 0.0;
+        }
+        $sinCupo = array_map('strval', $this->tabla('tienda_articu')->whereIn('codigo', $codigos)->where('consume_cupo', 0)->pluck('codigo')->all());
+        $total = 0.0;
+        foreach ($carrito as $i) {
+            if (!in_array((string) $i['codigo'], $sinCupo, true)) {
+                $total += (float) ($i['cantidad'] ?? 0);
+            }
+        }
+
+        return $total;
+    }
+
     /** El carrito consume cupo si alguno de sus articulos lo consume (default si). */
     public function carritoConsumeCupo(array $carrito): bool
     {
@@ -248,6 +269,9 @@ class TiendaAgendaService
         $excepciones = collect($this->excepciones(true))->keyBy('fecha');
         $ocupacion = $this->ocupacion($primerDia->toDateString(), $primerDia->copy()->addDays((int) $cfg['anticipacion_max_dias'])->toDateString());
         $cupoDiario = $cfg['cupo_diario'] ? (int) $cfg['cupo_diario'] : null;
+        $cupoUnidadesDia = !empty($cfg['cupo_unidades_diario']) ? (int) $cfg['cupo_unidades_diario'] : null;
+        $unidadesCarrito = $this->unidadesCupo($carrito);
+        $out['unidades_carrito'] = $unidadesCarrito;
 
         for ($d = 0; $d < (int) $cfg['anticipacion_max_dias']; $d++) {
             $dia = $primerDia->copy()->addDays($d);
@@ -263,7 +287,11 @@ class TiendaAgendaService
             }
 
             $usadosDia = (int) ($ocupacion['dia'][$fecha] ?? 0);
-            $diaLleno = $cupoDiario !== null && $usadosDia >= $cupoDiario;
+            $unidadesDia = (float) ($ocupacion['unidades_dia'][$fecha] ?? 0);
+            $diaLleno = ($cupoDiario !== null && $usadosDia >= $cupoDiario)
+                || ($cupoUnidadesDia !== null && $unidadesCarrito > 0 && $unidadesDia + $unidadesCarrito > $cupoUnidadesDia);
+            $motivoDia = ($cupoUnidadesDia !== null && $unidadesCarrito > 0 && $unidadesDia + $unidadesCarrito > $cupoUnidadesDia && !($cupoDiario !== null && $usadosDia >= $cupoDiario))
+                ? 'No queda lugar para esta cantidad ese día' : 'Día completo';
             $listaFranjas = [];
             $algunaDisponible = false;
 
@@ -275,9 +303,11 @@ class TiendaAgendaService
                 if ($fin->lte($minimo)) {
                     $motivo = 'Ya no llegamos con la anticipación necesaria';
                 } elseif ($diaLleno) {
-                    $motivo = 'Día completo';
+                    $motivo = $motivoDia;
                 } elseif ($f->cupo_franja !== null && $usadosFranja >= (int) $f->cupo_franja) {
                     $motivo = 'Franja completa';
+                } elseif (!empty($f->cupo_unidades) && $unidadesCarrito > 0 && (float) ($ocupacion['unidades_franja'][$fecha][$f->id] ?? 0) + $unidadesCarrito > (int) $f->cupo_unidades) {
+                    $motivo = 'No queda lugar para esta cantidad en esa franja';
                 }
                 $disponible = $motivo === null;
                 $algunaDisponible = $algunaDisponible || $disponible;
@@ -368,11 +398,30 @@ class TiendaAgendaService
             ->selectRaw('t.entrega_fecha AS fecha, t.entrega_franja_id AS franja, COUNT(*) AS n')
             ->get();
 
-        $out = ['dia' => [], 'franja' => []];
+        $out = ['dia' => [], 'franja' => [], 'unidades_dia' => [], 'unidades_franja' => []];
         foreach ($filas as $f) {
             $out['dia'][$f->fecha] = ($out['dia'][$f->fecha] ?? 0) + (int) $f->n;
             $out['franja'][$f->fecha][(int) $f->franja] = (int) $f->n;
         }
+
+        // Unidades (F7): cantidades de los renglones de esos pedidos, sin los articulos que no consumen cupo
+        $unidades = $this->tabla('tienda_pedidos as t')
+            ->join($this->prefijo . 'pedidos_encab as e', 'e.id', '=', 't.idpedido')
+            ->join($this->prefijo . 'pedidos_det as d', 'd.idpedido', '=', 't.idpedido')
+            ->leftJoin($this->prefijo . 'tienda_articu as ta', 'ta.codigo', '=', 'd.codart')
+            ->whereBetween('t.entrega_fecha', [$desde, $hasta])
+            ->where('t.agenda_cupo', 1)
+            ->whereRaw('COALESCE(ta.consume_cupo, 1) = 1')
+            ->where('d.cantidad', '>', 0)
+            ->when(!empty($anulados), fn ($q) => $q->whereNotIn('e.estado', $anulados))
+            ->groupBy('t.entrega_fecha', 't.entrega_franja_id')
+            ->selectRaw('t.entrega_fecha AS fecha, t.entrega_franja_id AS franja, SUM(d.cantidad) AS u')
+            ->get();
+        foreach ($unidades as $f) {
+            $out['unidades_dia'][$f->fecha] = ($out['unidades_dia'][$f->fecha] ?? 0) + (float) $f->u;
+            $out['unidades_franja'][$f->fecha][(int) $f->franja] = (float) $f->u;
+        }
+
         return $out;
     }
 

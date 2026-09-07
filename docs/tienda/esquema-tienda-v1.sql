@@ -254,6 +254,7 @@ CREATE TABLE IF NOT EXISTS `{p}tienda_agenda` (
   `margen_minutos`           INT        NOT NULL DEFAULT 0,      -- minutos antes del inicio de la franja en que deja de ofrecerse
   `hora_corte`               TIME       DEFAULT NULL,            -- pedidos despues de esta hora van al dia siguiente
   `cupo_diario`              INT        DEFAULT NULL,            -- pedidos por dia (null = sin tope)
+  `cupo_unidades_diario`     INT        DEFAULT NULL,            -- F7: unidades por dia de los articulos que consumen cupo (tortas, no pedidos)
   `abierta`                  TINYINT(1) NOT NULL DEFAULT 1,      -- cierre manual de la tienda
   `recibe_cerrada`           TINYINT(1) NOT NULL DEFAULT 1,      -- cerrada: sigue tomando pedidos (con aviso) o no
   `muestra_cerrada`          TINYINT(1) NOT NULL DEFAULT 1,      -- cerrada: mostrar el aviso en la tienda
@@ -268,6 +269,7 @@ CREATE TABLE IF NOT EXISTS `{p}tienda_agenda_franjas` (
   `hora_desde`  TIME       NOT NULL,
   `hora_hasta`  TIME       NOT NULL,
   `cupo_franja` INT        DEFAULT NULL,                         -- pedidos por franja (null = sin tope)
+  `cupo_unidades` INT      DEFAULT NULL,                         -- F7: unidades por franja
   `vale_envio`  TINYINT(1) NOT NULL DEFAULT 1,
   `vale_retiro` TINYINT(1) NOT NULL DEFAULT 1,
   `activa`      TINYINT(1) NOT NULL DEFAULT 1,

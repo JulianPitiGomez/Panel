@@ -44,7 +44,7 @@ class ConfigurarAgenda extends Component
 
         $this->franjas = array_map(fn ($f) => [
             'id' => $f->id, 'dia_semana' => $f->dia_semana, 'hora_desde' => $f->hora_desde, 'hora_hasta' => $f->hora_hasta,
-            'cupo_franja' => $f->cupo_franja, 'vale_envio' => (bool) $f->vale_envio, 'vale_retiro' => (bool) $f->vale_retiro, 'activa' => (bool) $f->activa,
+            'cupo_franja' => $f->cupo_franja, 'cupo_unidades' => $f->cupo_unidades ?? null, 'vale_envio' => (bool) $f->vale_envio, 'vale_retiro' => (bool) $f->vale_retiro, 'activa' => (bool) $f->activa,
         ], $srv->franjas());
 
         $this->excepciones = array_map(fn ($e) => [
@@ -54,7 +54,7 @@ class ConfigurarAgenda extends Component
 
     public function agregarFranja($dia = 1)
     {
-        $this->franjas[] = ['id' => 0, 'dia_semana' => (int) $dia, 'hora_desde' => '09:00', 'hora_hasta' => '13:00', 'cupo_franja' => null, 'vale_envio' => true, 'vale_retiro' => true, 'activa' => true];
+        $this->franjas[] = ['id' => 0, 'dia_semana' => (int) $dia, 'hora_desde' => '09:00', 'hora_hasta' => '13:00', 'cupo_franja' => null, 'cupo_unidades' => null, 'vale_envio' => true, 'vale_retiro' => true, 'activa' => true];
     }
 
     public function copiarFranjasA($diaOrigen, $diaDestino)

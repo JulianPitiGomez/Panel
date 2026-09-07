@@ -55,6 +55,11 @@
                 <label class="block text-xs font-medium text-gray-700 mb-1">Cupo de pedidos por día</label>
                 <input type="number" min="0" wire:model="config.cupo_diario" placeholder="sin tope" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
             </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Cupo de unidades por día</label>
+                <input type="number" min="0" wire:model="config.cupo_unidades_diario" placeholder="sin tope" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                <p class="text-[10px] text-gray-400 mt-1">Para el que cuenta tortas y no pedidos: suma las cantidades de los artículos que consumen cupo.</p>
+            </div>
             <label class="col-span-2 md:col-span-5 flex items-center gap-2 text-xs text-gray-600">
                 <input type="checkbox" wire:model="config.permite_lo_antes_posible" class="w-4 h-4 rounded text-[#FFAF22]"> Ofrecer también "lo antes posible" (toma la primera franja libre)
             </label>
@@ -64,7 +69,7 @@
     {{-- Franjas por dia --}}
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6" x-show="$wire.config.activa" x-transition>
         <h3 class="font-primary font-semibold text-gray-800 mb-1"><i class="fas fa-clock text-[#FFAF22] mr-2"></i>Días y franjas de entrega</h3>
-        <p class="text-xs text-gray-400 mb-4">Un día sin franjas no se ofrece. El cupo por franja es opcional.</p>
+        <p class="text-xs text-gray-400 mb-4">Un día sin franjas no se ofrece. Los cupos por franja son opcionales: por cantidad de pedidos o por unidades.</p>
 
         <div class="space-y-3">
             @foreach($dias as $num => $nombre)
@@ -84,7 +89,10 @@
                             <div class="grid grid-cols-2 sm:grid-cols-6 gap-2 items-center py-1.5 border-t border-gray-100" wire:key="franja-{{ $i }}">
                                 <input type="time" wire:model="franjas.{{ $i }}.hora_desde" class="px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
                                 <input type="time" wire:model="franjas.{{ $i }}.hora_hasta" class="px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
-                                <input type="number" min="0" wire:model="franjas.{{ $i }}.cupo_franja" placeholder="Cupo" class="px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+                                <div class="flex gap-1">
+                                    <input type="number" min="0" wire:model="franjas.{{ $i }}.cupo_franja" placeholder="Pedidos" title="Cupo de pedidos de la franja" class="w-1/2 px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+                                    <input type="number" min="0" wire:model="franjas.{{ $i }}.cupo_unidades" placeholder="Unid." title="Cupo de unidades de la franja" class="w-1/2 px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+                                </div>
                                 <label class="flex items-center gap-1 text-xs text-gray-600"><input type="checkbox" wire:model="franjas.{{ $i }}.vale_envio" class="w-4 h-4 rounded text-[#FFAF22]"> Envío</label>
                                 <label class="flex items-center gap-1 text-xs text-gray-600"><input type="checkbox" wire:model="franjas.{{ $i }}.vale_retiro" class="w-4 h-4 rounded text-[#FFAF22]"> Retiro</label>
                                 <div class="flex items-center justify-between gap-2">
