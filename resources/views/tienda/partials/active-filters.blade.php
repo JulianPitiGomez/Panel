@@ -6,29 +6,14 @@
 @endphp
 
 @if($hayFiltrosActivos)
-    <div class="flex items-center gap-2 flex-wrap mb-3">
-        <span class="text-xs font-medium" style="color: {{ $colores['texto'] }}80">Filtros:</span>
-        @foreach($deptosSeleccionados as $cod)
-            <button wire:click="quitarFiltro('depto', '{{ $cod }}')"
-                    class="inline-flex items-center gap-1 px-2.5 py-1 text-white text-xs rounded-full transition-opacity hover:opacity-80"
-                    style="background-color: {{ $colores['boton'] }}">
-                {{ $deptoNombres[$cod] ?? $cod }} <i class="fas fa-times text-[10px]"></i>
-            </button>
+    <div class="flex items-center gap-2 flex-wrap mb-4">
+        @foreach(['depto' => [$deptosSeleccionados, $deptoNombres], 'rubro' => [$rubrosSeleccionados, $rubroNombres], 'marca' => [$marcasSeleccionadas, $marcaNombres]] as $tipo => [$seleccion, $nombres])
+            @foreach($seleccion as $cod)
+                <button wire:click="quitarFiltro('{{ $tipo }}', '{{ $cod }}')" class="t-chip !py-1.5 !px-3 !text-xs hover:opacity-80">
+                    {{ \App\Services\TiendaEstiloService::nombreBonito($nombres[$cod] ?? $cod) }} <i class="fas fa-times text-[10px]"></i>
+                </button>
+            @endforeach
         @endforeach
-        @foreach($rubrosSeleccionados as $cod)
-            <button wire:click="quitarFiltro('rubro', '{{ $cod }}')"
-                    class="inline-flex items-center gap-1 px-2.5 py-1 text-white text-xs rounded-full transition-opacity hover:opacity-80"
-                    style="background-color: {{ $colores['boton'] }}">
-                {{ $rubroNombres[$cod] ?? $cod }} <i class="fas fa-times text-[10px]"></i>
-            </button>
-        @endforeach
-        @foreach($marcasSeleccionadas as $cod)
-            <button wire:click="quitarFiltro('marca', '{{ $cod }}')"
-                    class="inline-flex items-center gap-1 px-2.5 py-1 text-white text-xs rounded-full transition-opacity hover:opacity-80"
-                    style="background-color: {{ $colores['boton'] }}">
-                {{ $marcaNombres[$cod] ?? $cod }} <i class="fas fa-times text-[10px]"></i>
-            </button>
-        @endforeach
-        <button wire:click="limpiarFiltros" class="text-xs text-gray-400 hover:text-gray-600 ml-1">Limpiar todo</button>
+        <button wire:click="limpiarFiltros" class="text-xs t-muted hover:underline ml-1">Limpiar todo</button>
     </div>
 @endif

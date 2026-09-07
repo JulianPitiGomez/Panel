@@ -119,6 +119,7 @@ Route::prefix('web')->middleware([\App\Http\Middleware\TiendaMiddleware::class])
     Route::get('/{tienda}/logout', [TiendaController::class, 'logout'])->name('tienda.logout');
     Route::get('/{tienda}/catalogo', \App\Livewire\Tienda\Catalogo::class)->name('tienda.catalogo');
     Route::get('/{tienda}/p/{codigo}', \App\Livewire\Tienda\Catalogo::class)->name('tienda.producto');   // ficha con URL propia (SEO, F6)
+    Route::get('/{tienda}/favoritos', \App\Livewire\Tienda\Catalogo::class)->name('tienda.favoritos');   // el corazon
     Route::get('/{tienda}/sitemap.xml', [TiendaController::class, 'sitemap'])->name('tienda.sitemap');
     Route::get('/{tienda}/carrito', \App\Livewire\Tienda\Carrito::class)->name('tienda.carrito');
     Route::get('/{tienda}/mis-pedidos', \App\Livewire\Tienda\MisPedidos::class)->name('tienda.mis-pedidos');

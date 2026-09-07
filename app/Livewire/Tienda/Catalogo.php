@@ -44,7 +44,9 @@ class Catalogo extends Component
     public $vendeSinStock = true;      // config web del comercio (TiendaStockService)
     public $mensajeCerrada = null;     // aviso de tienda cerrada (TiendaAgendaService)
     public $esVitrina = false;         // modo vitrina: se mira, no se compra
-    public $cerradaSinPedidos = false; // agenda: cerrada y sin 'recibe cerrada' -> no se agrega al carrito
+    public $cerradaSinPedidos = false;
+    public $favoritos = [];            // codigos marcados con el corazon (TiendaFavoritoService)
+    public $soloFavoritos = false;     // /favoritos: solo lo marcado // agenda: cerrada y sin 'recibe cerrada' -> no se agrega al carrito
     public $habituales = [];           // lo que este comprador compra seguido (ultimos 12 meses)
     public $destacados = [];           // elegidos por el comercio (tienda_articu.destacado), en su orden
     public $promosPortada = [];        // articulos con promo vigente, para la vitrina de la portada (F6)
@@ -68,6 +70,10 @@ class Catalogo extends Component
     {
         $this->tiendaSlug = $tienda;
         $this->fichaCodigo = $codigo;   // /p/{codigo}: la ficha abre sola y la pagina lleva sus metadatos (F6)
+        $this->soloFavoritos = request()->routeIs('tienda.favoritos');
+        if (request()->filled('q')) {
+            $this->busqueda = mb_substr(trim((string) request('q')), 0, 80);   // buscador del header
+        }
         $this->setupClientDatabase();
 
         $this->nombreTienda = session('tienda_nombre');
@@ -114,6 +120,7 @@ class Catalogo extends Component
         }
 
         $this->cargarFiltros();
+        $this->favoritos = (new \App\Services\TiendaFavoritoService($this->tablePrefix))->codigos();
 
         // Metrica: una visita por carga del catalogo
         (new \App\Services\TiendaMetricaService($this->tablePrefix))->registrar(\App\Services\TiendaMetricaService::VISITA);
@@ -142,6 +149,23 @@ class Catalogo extends Component
         }
 
         return \App\Services\TiendaSeoService::metaTienda($datos, $nombre, $this->modo, route('tienda.catalogo', $this->tiendaSlug));
+    }
+
+    /** El corazon: marca o desmarca. Anonimo queda en sesion; logueado en su cuenta. */
+    public function toggleFavorito($codigo)
+    {
+        $this->setupClientDatabase();
+        (new \App\Services\TiendaFavoritoService($this->tablePrefix))->alternar((string) $codigo);
+        $this->favoritos = (new \App\Services\TiendaFavoritoService($this->tablePrefix))->codigos();
+        if ($this->soloFavoritos) {
+            $this->paginaActual = 1;
+        }
+    }
+
+    /** Desde "Tus favoritos" vacio o con el pill "Ver todo": vuelve al catalogo completo. */
+    public function verTodos()
+    {
+        return redirect()->route('tienda.catalogo', $this->tiendaSlug);
     }
 
     public function urlProducto($codigo): string
@@ -199,7 +223,7 @@ class Catalogo extends Component
     /** Visitante anonimo: sus consultas al catalogo se cachean (los logueados ven precios propios: sin cache). */
     private function usaCache(): bool
     {
-        return !session('tienda_comprador_web_id');
+        return !session('tienda_comprador_web_id') && !$this->soloFavoritos;
     }
 
     public function toggleFiltro($tipo, $valor)
@@ -301,6 +325,9 @@ class Catalogo extends Component
         $this->hayPromos = !empty($conPromo);
         if ($this->soloPromos) {
             $query->whereIn('a.CODIGO', $conPromo ?: ['-1']);
+        }
+        if ($this->soloFavoritos) {
+            $query->whereIn('a.CODIGO', $this->favoritos ?: ['-1']);
         }
 
         $this->totalProductos = $this->usaCache()
@@ -675,7 +702,7 @@ class Catalogo extends Component
         session(['tienda_carrito' => $this->carrito]);
         $this->cantidadCarrito = count($this->carrito);
 
-        $this->dispatch('producto-agregado');
+        $this->dispatch('producto-agregado', nombre: \App\Services\TiendaEstiloService::nombreBonito($producto->NOMBRE, $producto->CODIGO), foto: $producto->foto_url ?: (session('tienda_foto_default') ?: ''));
     }
 
     public function irAlCarrito()

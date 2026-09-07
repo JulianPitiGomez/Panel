@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $nombreTienda }} - Iniciar Sesion</title>
     <link href="{{ asset('images/logo.ico') }}" rel="shortcut icon" />
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    @include('tienda.partials.estilo')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 @php
@@ -15,7 +14,7 @@
     $colorBoton = $datos['color_boton'] ?? '#FFAF22';
     $colorTexto = $datos['color_texto'] ?? '#1f2937';
 @endphp
-<body class="font-sans antialiased min-h-screen flex items-center justify-center px-4" style="background-color: {{ $colorFondo }}">
+<body class="t-body font-sans antialiased min-h-screen flex items-center justify-center px-4" style="background-color: {{ $colorFondo }}">
     <div class="w-full max-w-md">
         <div class="bg-white rounded-2xl shadow-2xl p-8">
             <!-- Logo / Nombre -->
@@ -23,7 +22,7 @@
                 @if(session('tienda_logo'))
                     <img src="{{ session('tienda_logo') }}" alt="{{ $nombreTienda }}" class="w-20 h-20 object-contain rounded-2xl mx-auto mb-4">
                 @else
-                    <div class="bg-[#1E1B35] text-white font-bold rounded-2xl w-20 h-20 flex items-center justify-center text-3xl mx-auto mb-4">
+                    <div class="font-bold rounded-2xl w-20 h-20 flex items-center justify-center text-3xl mx-auto mb-4" style="background-color: var(--tp); color: var(--tp-ink);">
                         {{ strtoupper(substr($nombreTienda, 0, 1)) }}
                     </div>
                 @endif
@@ -73,7 +72,7 @@
                     </div>
                 </div>
                 <button type="submit"
-                        class="w-full mt-6 py-3 text-white font-semibold rounded-lg transition-opacity hover:opacity-90 shadow-lg"
+                        class="t-btn t-btn-lg w-full mt-6"
                         style="background-color: {{ $colorBoton }}">
                     Ingresar
                 </button>

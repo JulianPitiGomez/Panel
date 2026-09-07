@@ -9,3 +9,117 @@
     --font-sans: 'Montserrat', 'Poppins', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+/* =====================================================================
+   Tienda web (F6): sistema visual. Las variables --t* las publica
+   App\Services\TiendaEstiloService::cssVariables() en el <head> de cada
+   pagina de la tienda, derivadas de los 4 colores que elige el comercio.
+   ===================================================================== */
+@layer components {
+    .t-body { background-color: var(--tf); color: var(--tt); font-family: var(--tfont); }
+    .t-titulos, .t-h { font-family: var(--tfont-titulos); }
+
+    /* Superficies */
+    .t-card { background-color: var(--tcard); border: 1px solid var(--tborde); border-radius: 1rem; box-shadow: 0 1px 2px rgb(0 0 0 / 0.04); }
+    .t-card-hover { transition: transform .2s ease, box-shadow .2s ease; }
+    .t-card-hover:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -12px rgb(0 0 0 / 0.25); }
+    .t-img { background-color: var(--timg); }
+
+    /* Texto */
+    .t-text { color: var(--tt); }
+    .t-soft { color: var(--tt-soft); }
+    .t-muted { color: var(--tt-muted); }
+    .t-precio { color: var(--tprecio); font-family: var(--tfont-titulos); font-weight: 800; letter-spacing: -0.01em; }
+    .t-link { color: var(--tp-dark); font-weight: 600; }
+    .t-link:hover { text-decoration: underline; }
+    .t-primario { color: var(--tp); }
+
+    /* Titulo de seccion: icono en circulo + texto */
+    .t-section { display: flex; align-items: center; gap: .6rem; margin-bottom: .75rem; }
+    .t-section .t-section-ico { width: 2rem; height: 2rem; border-radius: 9999px; background-color: var(--tp-soft); color: var(--tp-dark); display: flex; align-items: center; justify-content: center; font-size: .85rem; flex-shrink: 0; }
+    .t-section h2 { font-family: var(--tfont-titulos); font-weight: 700; font-size: 1.05rem; color: var(--tt); line-height: 1.2; }
+    .t-section .t-section-link { margin-left: auto; font-size: .8rem; }
+
+    /* Botones */
+    .t-btn { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; background-color: var(--tp); color: var(--tp-ink); font-weight: 600; border-radius: .75rem; padding: .65rem 1rem; line-height: 1.2; transition: background-color .15s ease, transform .1s ease, box-shadow .15s ease; box-shadow: 0 1px 2px rgb(0 0 0 / 0.08); cursor: pointer; }
+    .t-btn:hover { background-color: var(--tp-dark); box-shadow: 0 6px 14px -8px var(--tp-dark); }
+    .t-btn:active { transform: scale(.98); }
+    .t-btn:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+    .t-btn-sm { padding: .45rem .8rem; font-size: .8rem; border-radius: .6rem; }
+    .t-btn-lg { padding: .9rem 1.4rem; font-size: 1rem; border-radius: .9rem; }
+    .t-btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; border: 1.5px solid var(--tp-border); color: var(--tp-dark); background: transparent; font-weight: 600; border-radius: .75rem; padding: .6rem 1rem; line-height: 1.2; transition: background-color .15s ease, border-color .15s ease; cursor: pointer; }
+    .t-btn-outline:hover { background-color: var(--tp-tint); border-color: var(--tp); }
+    .t-btn-ghost { display: inline-flex; align-items: center; gap: .35rem; color: var(--tt-soft); font-weight: 500; border-radius: .6rem; padding: .45rem .7rem; transition: background-color .15s ease, color .15s ease; cursor: pointer; }
+    .t-btn-ghost:hover { background-color: var(--tp-tint); color: var(--tt); }
+    .t-btn-dark { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; background-color: var(--tprecio); color: #fff; font-weight: 600; border-radius: .75rem; padding: .65rem 1rem; line-height: 1.2; transition: opacity .15s ease; cursor: pointer; }
+    .t-btn-dark:hover { opacity: .9; }
+    .t-icon-btn { width: 2.25rem; height: 2.25rem; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; color: var(--tt-soft); transition: background-color .15s ease, color .15s ease; cursor: pointer; }
+    .t-icon-btn:hover { background-color: var(--tp-tint); color: var(--tp-dark); }
+
+    /* Corazon de favoritos */
+    .t-heart { width: 2rem; height: 2rem; border-radius: 9999px; background-color: rgb(255 255 255 / 0.92); box-shadow: 0 1px 3px rgb(0 0 0 / 0.15); display: inline-flex; align-items: center; justify-content: center; color: #9ca3af; transition: transform .15s ease, color .15s ease; cursor: pointer; }
+    .t-heart:hover { transform: scale(1.1); color: #ef4444; }
+    .t-heart.is-on { color: #ef4444; }
+    .t-heart.is-on i { animation: t-pop .3s ease; }
+    @keyframes t-pop { 0% { transform: scale(.6); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }
+
+    /* Chips y badges */
+    .t-chip { display: inline-flex; align-items: center; gap: .3rem; border-radius: 9999px; padding: .2rem .6rem; font-size: .7rem; font-weight: 600; line-height: 1.2; background-color: var(--tp-soft); color: var(--tp-dark); }
+    .t-chip-ok { background-color: var(--tok-soft); color: var(--tok); }
+    .t-chip-warn { background-color: var(--twarn-soft); color: var(--twarn); }
+    .t-chip-neutral { background-color: var(--tborde); color: var(--tt-soft); }
+    .t-badge-promo { position: absolute; top: .5rem; left: .5rem; background-color: var(--tp); color: var(--tp-ink); font-size: .65rem; font-weight: 700; padding: .2rem .5rem; border-radius: .5rem; box-shadow: 0 1px 3px rgb(0 0 0 / 0.2); max-width: 70%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .t-badge-stock { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background-color: rgb(255 255 255 / 0.65); }
+    .t-badge-stock span { background-color: #374151; color: #fff; font-size: .7rem; font-weight: 700; padding: .3rem .7rem; border-radius: 9999px; }
+    .t-pill { display: inline-flex; align-items: center; gap: .4rem; border-radius: 9999px; padding: .5rem .9rem; font-size: .8rem; font-weight: 600; background-color: var(--tcard); border: 1px solid var(--tborde); color: var(--tt); transition: background-color .15s ease, border-color .15s ease, color .15s ease; cursor: pointer; white-space: nowrap; }
+    .t-pill:hover, .t-pill.is-on { background-color: var(--tp-soft); border-color: var(--tp-border); color: var(--tp-dark); }
+
+    /* Formularios */
+    .t-input { width: 100%; background-color: var(--tcard); border: 1.5px solid var(--tborde); border-radius: .75rem; padding: .7rem .9rem; font-size: .9rem; color: var(--tt); outline: none; transition: border-color .15s ease, box-shadow .15s ease; }
+    .t-input:focus { border-color: var(--tp); box-shadow: 0 0 0 3px var(--tp-soft); }
+    .t-input::placeholder { color: var(--tt-muted); }
+    .t-label { display: block; font-size: .8rem; font-weight: 600; color: var(--tt-soft); margin-bottom: .3rem; }
+
+    /* Opcion seleccionable (entrega, pago) */
+    .t-option { display: flex; align-items: flex-start; gap: .75rem; padding: .8rem .9rem; border-radius: .9rem; border: 1.5px solid var(--tborde); background-color: var(--tcard); cursor: pointer; transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease; }
+    .t-option:hover { border-color: var(--tp-border); }
+    .t-option.is-on { border-color: var(--tp); background-color: var(--tp-tint); box-shadow: 0 0 0 3px var(--tp-soft); }
+    .t-option.is-off { opacity: .55; cursor: not-allowed; }
+    .t-option .t-option-ico { width: 2.4rem; height: 2.4rem; border-radius: .75rem; background-color: var(--tp-soft); color: var(--tp-dark); display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+    .t-option.is-on .t-option-ico { background-color: var(--tp); color: var(--tp-ink); }
+
+    /* Pasos del checkout */
+    .t-step { display: flex; align-items: center; gap: .4rem; }
+    .t-step-n { width: 1.6rem; height: 1.6rem; border-radius: 9999px; font-size: .7rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; background-color: var(--tborde); color: var(--tt-muted); }
+    .t-step.is-on .t-step-n, .t-step.is-done .t-step-n { background-color: var(--tp); color: var(--tp-ink); }
+    .t-step-line { flex: 1; height: 2px; background-color: var(--tborde); min-width: .75rem; border-radius: 2px; }
+    .t-step-line.is-done { background-color: var(--tp); }
+
+    /* Tiras horizontales con scroll y flechas */
+    .t-strip { display: flex; gap: .75rem; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: .5rem; scrollbar-width: none; }
+    .t-strip::-webkit-scrollbar { display: none; }
+    .t-strip > * { scroll-snap-align: start; }
+    .t-strip-arrow { position: absolute; top: 40%; width: 2.2rem; height: 2.2rem; border-radius: 9999px; background-color: var(--tcard); border: 1px solid var(--tborde); box-shadow: 0 2px 8px rgb(0 0 0 / 0.12); display: none; align-items: center; justify-content: center; color: var(--tt); z-index: 5; cursor: pointer; }
+    .t-strip-arrow:hover { background-color: var(--tp-tint); }
+    @media (min-width: 768px) { .t-strip-arrow { display: flex; } }
+
+    /* Hero */
+    .t-hero-overlay { background: linear-gradient(180deg, rgb(0 0 0 / 0.35) 0%, rgb(0 0 0 / 0.55) 60%, var(--tf) 100%); }
+    .t-hero-pill { display: inline-flex; align-items: center; gap: .4rem; background-color: rgb(0 0 0 / 0.28); color: #fff; border-radius: 9999px; padding: .35rem .8rem; font-size: .8rem; }
+
+    /* Toast */
+    .t-toast { display: flex; align-items: center; gap: .75rem; background-color: #1f2937; color: #fff; border-radius: .9rem; padding: .6rem .9rem; box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.5); }
+
+    /* Carga */
+    .t-loading { position: relative; }
+    .t-loading::after { content: ''; position: absolute; inset: 0; background-color: rgb(255 255 255 / 0.5); border-radius: 1rem; }
+    .t-progress { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--tp), var(--tp-dark)); z-index: 100; animation: t-slide 1s linear infinite; background-size: 200% 100%; }
+    @keyframes t-slide { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    /* Estado vacio */
+    .t-empty { text-align: center; padding: 3rem 1.5rem; }
+    .t-empty .t-empty-ico { width: 4.5rem; height: 4.5rem; border-radius: 9999px; background-color: var(--tp-soft); color: var(--tp-dark); display: inline-flex; align-items: center; justify-content: center; font-size: 1.75rem; margin-bottom: 1rem; }
+
+    /* Exito */
+    .t-success-ico { width: 5.5rem; height: 5.5rem; border-radius: 9999px; background-color: var(--tok-soft); color: var(--tok); display: inline-flex; align-items: center; justify-content: center; font-size: 2.4rem; animation: t-pop .5s ease; }
+}

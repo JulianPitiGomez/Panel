@@ -3,23 +3,20 @@
     @switch($bloque)
         @case('bienvenida')
             @if($portadaTitulo || $portadaTexto)
-                <div class="mb-5 bg-white rounded-xl shadow-sm p-4 sm:p-5">
-                    @if($portadaTitulo)<h2 class="text-lg sm:text-xl font-bold leading-tight" style="color: {{ $colores['texto'] }}">{{ $portadaTitulo }}</h2>@endif
-                    @if($portadaTexto)<p class="text-sm text-gray-600 mt-1 whitespace-pre-line">{{ $portadaTexto }}</p>@endif
+                <div class="t-card mb-6 p-5 sm:p-6 border-l-4" style="border-left-color: var(--tp);">
+                    @if($portadaTitulo)<h2 class="t-h text-xl sm:text-2xl font-bold leading-tight t-text">{{ $portadaTitulo }}</h2>@endif
+                    @if($portadaTexto)<p class="text-sm sm:text-[15px] t-soft mt-1.5 whitespace-pre-line leading-relaxed">{{ $portadaTexto }}</p>@endif
                 </div>
             @endif
             @break
 
         @case('categorias')
             @if(!empty($categoriasPortada['items']))
-                <div class="mb-5">
-                    <p class="text-sm font-semibold mb-2" style="color: {{ $colores['texto'] }}"><i class="fas fa-th-large mr-1" style="color: {{ $colores['boton'] }}"></i> Categorías</p>
-                    <div class="flex gap-2 overflow-x-auto pb-2 sm:flex-wrap">
+                <div class="mb-6">
+                    <div class="t-section"><span class="t-section-ico"><i class="fas fa-th-large"></i></span><h2>Categorías</h2></div>
+                    <div class="t-strip sm:flex-wrap">
                         @foreach($categoriasPortada['items'] as $cat)
-                            <button wire:click="toggleFiltro('{{ $categoriasPortada['tipo'] }}', '{{ $cat['cod'] }}')"
-                                    class="flex-shrink-0 px-3 py-2 bg-white rounded-full shadow-sm text-xs font-medium border border-gray-100 hover:shadow transition" style="color: {{ $colores['texto'] }}">
-                                {{ $cat['nom'] }}
-                            </button>
+                            <button wire:click="toggleFiltro('{{ $categoriasPortada['tipo'] }}', '{{ $cat['cod'] }}')" class="t-pill">{{ \App\Services\TiendaEstiloService::nombreBonito($cat['nom']) }}</button>
                         @endforeach
                     </div>
                 </div>
@@ -28,27 +25,31 @@
 
         @case('promos')
             @if(count($promosPortada))
-                <div class="mb-5">
-                    <p class="text-sm font-semibold mb-2" style="color: {{ $colores['texto'] }}"><i class="fas fa-tag mr-1" style="color: {{ $colores['boton'] }}"></i> Promociones</p>
-                    <div class="flex gap-3 overflow-x-auto pb-2">
+                <div class="mb-6 relative" x-data>
+                    <div class="t-section">
+                        <span class="t-section-ico"><i class="fas fa-tag"></i></span><h2>Promociones</h2>
+                        @if($hayPromos)<button wire:click="toggleSoloPromos" class="t-section-link t-link">Ver todas <i class="fas fa-arrow-right text-xs ml-0.5"></i></button>@endif
+                    </div>
+                    <button type="button" class="t-strip-arrow -left-3" @click="$refs.tiraPromos.scrollBy({left: -320, behavior: 'smooth'})"><i class="fas fa-chevron-left text-xs"></i></button>
+                    <button type="button" class="t-strip-arrow -right-3" @click="$refs.tiraPromos.scrollBy({left: 320, behavior: 'smooth'})"><i class="fas fa-chevron-right text-xs"></i></button>
+                    <div class="t-strip" x-ref="tiraPromos">
                         @foreach($promosPortada as $h)
-                            @include('tienda.partials.tarjeta-mini', ['h' => $h, 'ancho' => 'w-40'])
+                            @include('tienda.partials.tarjeta-mini', ['h' => $h, 'ancho' => 'w-40 sm:w-44', 'bloque' => 'promo'])
                         @endforeach
                     </div>
-                    @if($hayPromos)
-                        <button wire:click="toggleSoloPromos" class="text-xs font-semibold hover:underline" style="color: {{ $colores['boton'] }}">Ver todas las promociones <i class="fas fa-arrow-right ml-1"></i></button>
-                    @endif
                 </div>
             @endif
             @break
 
         @case('destacados')
             @if(count($destacados))
-                <div class="mb-5">
-                    <p class="text-sm font-semibold mb-2" style="color: {{ $colores['texto'] }}"><i class="fas fa-star mr-1" style="color: {{ $colores['boton'] }}"></i> Destacados</p>
-                    <div class="flex gap-3 overflow-x-auto pb-2">
+                <div class="mb-6 relative" x-data>
+                    <div class="t-section"><span class="t-section-ico"><i class="fas fa-star"></i></span><h2>Destacados</h2></div>
+                    <button type="button" class="t-strip-arrow -left-3" @click="$refs.tiraDest.scrollBy({left: -320, behavior: 'smooth'})"><i class="fas fa-chevron-left text-xs"></i></button>
+                    <button type="button" class="t-strip-arrow -right-3" @click="$refs.tiraDest.scrollBy({left: 320, behavior: 'smooth'})"><i class="fas fa-chevron-right text-xs"></i></button>
+                    <div class="t-strip" x-ref="tiraDest">
                         @foreach($destacados as $h)
-                            @include('tienda.partials.tarjeta-mini', ['h' => $h, 'ancho' => 'w-40'])
+                            @include('tienda.partials.tarjeta-mini', ['h' => $h, 'ancho' => 'w-40 sm:w-44', 'bloque' => 'dest'])
                         @endforeach
                     </div>
                 </div>
@@ -57,11 +58,13 @@
 
         @case('habituales')
             @if(count($habituales))
-                <div class="mb-5">
-                    <p class="text-sm font-semibold mb-2" style="color: {{ $colores['texto'] }}"><i class="fas fa-history mr-1" style="color: {{ $colores['boton'] }}"></i> Lo que comprás habitualmente</p>
-                    <div class="flex gap-3 overflow-x-auto pb-2">
+                <div class="mb-6 relative" x-data>
+                    <div class="t-section"><span class="t-section-ico"><i class="fas fa-history"></i></span><h2>Lo que comprás habitualmente</h2></div>
+                    <button type="button" class="t-strip-arrow -left-3" @click="$refs.tiraHab.scrollBy({left: -320, behavior: 'smooth'})"><i class="fas fa-chevron-left text-xs"></i></button>
+                    <button type="button" class="t-strip-arrow -right-3" @click="$refs.tiraHab.scrollBy({left: 320, behavior: 'smooth'})"><i class="fas fa-chevron-right text-xs"></i></button>
+                    <div class="t-strip" x-ref="tiraHab">
                         @foreach($habituales as $h)
-                            @include('tienda.partials.tarjeta-mini', ['h' => $h, 'ancho' => 'w-36'])
+                            @include('tienda.partials.tarjeta-mini', ['h' => $h, 'ancho' => 'w-36 sm:w-40', 'bloque' => 'hab'])
                         @endforeach
                     </div>
                 </div>
@@ -70,15 +73,19 @@
     @endswitch
 @endforeach
 
-<div class="flex items-center justify-between mb-4">
-    <p class="text-sm" style="color: {{ $colores['texto'] }}80">
-        {{ $totalProductos }} producto{{ $totalProductos != 1 ? 's' : '' }}{{ $soloPromos ? ' en promoción' : '' }}
+<div class="flex items-center justify-between mb-3 gap-2">
+    <p class="text-sm t-soft">
+        @if($soloFavoritos)
+            <i class="fas fa-heart mr-1" style="color: #ef4444;"></i><span class="font-semibold t-text">Tus favoritos</span> · {{ $totalProductos }} producto{{ $totalProductos != 1 ? 's' : '' }}
+        @else
+            {{ $totalProductos }} producto{{ $totalProductos != 1 ? 's' : '' }}{{ $soloPromos ? ' en promoción' : '' }}
+        @endif
     </p>
-    @if($hayPromos)
-        <button wire:click="toggleSoloPromos"
-                class="text-xs font-semibold px-3 py-1.5 rounded-full border transition {{ $soloPromos ? 'text-white border-transparent' : 'bg-green-50 text-green-700 border-green-200' }}"
-                style="{{ $soloPromos ? 'background-color: ' . $colores['precio'] : '' }}">
-            <i class="fas fa-tag mr-1"></i> {{ $soloPromos ? 'Ver todo' : 'Promociones' }}
-        </button>
-    @endif
+    <div class="flex items-center gap-2">
+        @if($soloFavoritos)
+            <button wire:click="verTodos" class="t-pill is-on"><i class="fas fa-times text-xs"></i> Ver todo</button>
+        @elseif($hayPromos)
+            <button wire:click="toggleSoloPromos" class="t-pill {{ $soloPromos ? 'is-on' : '' }}"><i class="fas fa-tag text-xs"></i> {{ $soloPromos ? 'Ver todo' : 'Promociones' }}</button>
+        @endif
+    </div>
 </div>

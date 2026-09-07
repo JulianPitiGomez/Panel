@@ -22,7 +22,7 @@
 --                  tienda_articu, tienda_correo_tarifas (F2 correo y peso),
 --                  tienda_agenda, tienda_agenda_franjas, tienda_agenda_excepciones (F2 agenda);
 --                  F3: tienda_pedidos.descuento_promos / promos_aplicadas, tienda_pagos_config.forpag_*;
---                  F4: tienda_fotos (galeria); F5: tienda_metricas; F6: tienda_pagos_cuenta, tienda_links
+--                  F4: tienda_fotos (galeria); F5: tienda_metricas; F6: tienda_pagos_cuenta, tienda_links, tienda_favoritos
 --                  tienda_pedidos.entrega_fecha / entrega_franja_id / entrega_franja / agenda_cupo
 --                  (F1 agrego comision_saldo a tienda_pedidos y tienda_eventos; v1 todavia no salio a produccion,
 --                   por eso se edita en lugar de crear v2)
@@ -356,4 +356,13 @@ CREATE TABLE IF NOT EXISTS `{p}tienda_links` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_token` (`token`),
   KEY `idx_borrador` (`idpedido_borrador`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- F6 (estetica): favoritos del comprador (el corazon). Los anonimos van en sesion
+-- y pasan aca al ingresar.
+CREATE TABLE IF NOT EXISTS `{p}tienda_favoritos` (
+  `comprador_id` INT UNSIGNED NOT NULL,
+  `codigo`       BIGINT       NOT NULL,       -- articu.CODIGO
+  `creado`       DATETIME     NOT NULL,
+  PRIMARY KEY (`comprador_id`, `codigo`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

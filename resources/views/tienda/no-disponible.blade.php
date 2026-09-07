@@ -6,8 +6,7 @@
     <meta name="robots" content="noindex">
     <title>Tienda no disponible</title>
     <link href="{{ asset('images/logo.ico') }}" rel="shortcut icon" />
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    @include('tienda.partials.estilo')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-gray-50 flex items-center justify-center px-4" style="font-family: 'Poppins', sans-serif;">

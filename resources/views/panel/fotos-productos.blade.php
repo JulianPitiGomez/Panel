@@ -594,9 +594,70 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Colores -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
-                    <h3 class="text-lg font-primary font-semibold text-gray-800 mb-4 flex items-center">
-                        <i class="fas fa-palette text-[#FFAF22] mr-2"></i> Colores del catalogo
+                    <h3 class="text-lg font-primary font-semibold text-gray-800 mb-1 flex items-center">
+                        <i class="fas fa-palette text-[#FFAF22] mr-2"></i> Estilo de la tienda
                     </h3>
+                    <p class="text-xs text-gray-400 mb-4">Elegí un estilo armado y después ajustá lo que quieras. De los cuatro colores se deriva toda la paleta de la tienda.</p>
+
+                    {{-- Presets --}}
+                    <div class="grid grid-cols-2 gap-2 mb-4">
+                        @foreach(\App\Services\TiendaEstiloService::PRESETS as $clavePreset => $preset)
+                            @php $pp = \App\Services\TiendaEstiloService::paleta($preset['valores']); @endphp
+                            <button type="button" wire:click="aplicarPreset('{{ $clavePreset }}')" class="text-left p-3 rounded-xl border border-gray-200 hover:border-[#FFAF22] hover:bg-[#FFAF22]/5 transition">
+                                <div class="flex items-center gap-1 mb-1.5">
+                                    <span class="w-5 h-5 rounded-full border border-gray-200" style="background-color: {{ $pp['fondo'] }}"></span>
+                                    <span class="w-5 h-5 rounded-full" style="background-color: {{ $pp['primario'] }}"></span>
+                                    <span class="w-5 h-5 rounded-full" style="background-color: {{ $pp['precio'] }}"></span>
+                                    <span class="w-5 h-5 rounded-full" style="background-color: {{ $pp['texto'] }}"></span>
+                                </div>
+                                <span class="text-sm font-semibold text-gray-800 block">{{ $preset['nombre'] }}</span>
+                                <span class="text-[11px] text-gray-400 leading-snug block">{{ $preset['descripcion'] }}</span>
+                            </button>
+                        @endforeach
+                    </div>
+
+                    {{-- Vista previa --}}
+                    @php $pv = $this->paletaPrevia; $fuentePv = \App\Services\TiendaEstiloService::FUENTES[$datosComercio['tienda_fuente'] ?? 'moderna'] ?? \App\Services\TiendaEstiloService::FUENTES['moderna']; @endphp
+                    <div class="rounded-xl border border-gray-200 p-3 mb-4" style="background-color: {{ $pv['fondo'] }}; font-family: {{ $fuentePv['css'] }};">
+                        <p class="text-[10px] uppercase tracking-wide mb-2" style="color: {{ $pv['texto_muted'] }};">Vista previa</p>
+                        <div class="flex gap-3">
+                            <div class="w-32 rounded-xl overflow-hidden flex-shrink-0" style="background-color: {{ $pv['tarjeta'] }}; border: 1px solid {{ $pv['borde'] }};">
+                                <div class="aspect-square flex items-center justify-center relative" style="background-color: {{ $pv['imagen_fondo'] }};">
+                                    <i class="fas fa-image text-2xl" style="color: {{ $pv['texto_muted'] }};"></i>
+                                    <span class="absolute top-1.5 left-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded" style="background-color: {{ $pv['primario'] }}; color: {{ $pv['primario_ink'] }};">2x1</span>
+                                    <span class="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-white/90 flex items-center justify-center text-[10px] text-red-500"><i class="fas fa-heart"></i></span>
+                                </div>
+                                <div class="p-2">
+                                    <p class="text-[11px] font-semibold leading-tight" style="color: {{ $pv['texto'] }}; font-family: {{ $fuentePv['titulos'] }};">Yerba Playadito 500 gr</p>
+                                    <p class="text-sm font-extrabold mt-1" style="color: {{ $pv['precio'] }};">$3.450,00</p>
+                                    <div class="mt-1.5 text-[10px] font-semibold text-center py-1 rounded-lg" style="background-color: {{ $pv['primario'] }}; color: {{ $pv['primario_ink'] }};"><i class="fas fa-cart-plus mr-1"></i>Agregar</div>
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0 space-y-2">
+                                <p class="text-base font-bold leading-tight" style="color: {{ $pv['texto'] }}; font-family: {{ $fuentePv['titulos'] }};">Así se ve tu tienda</p>
+                                <p class="text-xs" style="color: {{ $pv['texto_suave'] }};">Los textos, los precios y los botones con tus colores. Los chips y fondos suaves salen solos.</p>
+                                <div class="flex flex-wrap gap-1">
+                                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full" style="background-color: {{ $pv['primario_soft'] }}; color: {{ $pv['primario_dark'] }};">Categoría</span>
+                                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full" style="background-color: {{ $pv['exito_soft'] }}; color: {{ $pv['exito'] }};"><i class="fas fa-tag mr-0.5"></i>Promo</span>
+                                </div>
+                            </div>
+                        </div>
+                        @if($this->avisoContraste)
+                            <p class="text-[11px] mt-2 px-2 py-1.5 rounded-lg bg-amber-50 text-amber-700"><i class="fas fa-exclamation-triangle mr-1"></i>{{ $this->avisoContraste }}</p>
+                        @endif
+                    </div>
+
+                    {{-- Fuente --}}
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tipografía</label>
+                        <div class="flex gap-2">
+                            @foreach(\App\Services\TiendaEstiloService::FUENTES as $claveFuente => $fu)
+                                <button type="button" wire:click="$set('datosComercio.tienda_fuente', '{{ $claveFuente }}')" class="flex-1 py-2 rounded-lg border text-sm {{ ($datosComercio['tienda_fuente'] ?? 'moderna') === $claveFuente ? 'border-[#FFAF22] bg-[#FFAF22]/5 font-semibold text-gray-800' : 'border-gray-200 text-gray-600 hover:border-gray-300' }}">{{ $fu['nombre'] }}</button>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Colores</label>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Fondo</label>

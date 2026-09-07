@@ -380,6 +380,7 @@ class TiendaController extends Controller
         switch ($login['resultado']) {
             case TiendaCompradorService::LOGIN_OK:
                 $compradores->iniciarSesion($login['comprador']);
+                (new \App\Services\TiendaFavoritoService(session('tienda_prefix')))->fusionarSesion();
                 return $this->aplicarLinkPendiente($tienda) ?: redirect()->route('tienda.catalogo', $tienda);
 
             case TiendaCompradorService::LOGIN_SIN_VALIDAR:

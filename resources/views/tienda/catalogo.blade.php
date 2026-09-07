@@ -1,71 +1,44 @@
 <div class="w-full max-w-full overflow-x-hidden">
+    <div wire:loading.delay class="t-progress" wire:target="busqueda, toggleFiltro, quitarFiltro, limpiarFiltros, irAPagina, paginaSiguiente, paginaAnterior, toggleSoloPromos, verTodos"></div>
 
     @if($mensajeCerrada)
-        <div class="mb-4 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm">
-            <i class="fas fa-door-closed mr-1"></i> {{ $mensajeCerrada }}
+        <div class="mb-4 px-4 py-3 rounded-xl text-sm flex items-center gap-2" style="background-color: var(--twarn-soft); color: var(--twarn);">
+            <i class="fas fa-door-closed"></i> {{ $mensajeCerrada }}
         </div>
     @endif
 
-    {{-- ===== PARTIALS: Buscador ===== --}}
-    @php $searchBar = true; @endphp
+    @php
+        $hayFiltros = $filtrosVisibles['depto'] || $filtrosVisibles['rubro'] || $filtrosVisibles['marca'];
+        $totalFiltros = count($deptosSeleccionados) + count($rubrosSeleccionados) + count($marcasSeleccionadas);
+        $deptoNombres = collect($deptos)->pluck('nom', 'cod')->toArray();
+        $rubroNombres = collect($rubros)->pluck('nom', 'cod')->toArray();
+        $marcaNombres = collect($marcas)->pluck('nom', 'cod')->toArray();
+        $gruposFiltro = ['depto' => ['deptosSeleccionados', $deptos, 'fa-layer-group', 'Departamento'], 'rubro' => ['rubrosSeleccionados', $rubros, 'fa-tags', 'Rubro'], 'marca' => ['marcasSeleccionadas', $marcas, 'fa-bookmark', 'Marca']];
+    @endphp
 
     {{-- ===== LAYOUT: SIDEBAR ===== --}}
     @if($layoutCatalogo === 'sidebar')
-        @php
-            $hayFiltros = $filtrosVisibles['depto'] || $filtrosVisibles['rubro'] || $filtrosVisibles['marca'];
-        @endphp
         <div class="flex gap-6 min-w-0 w-full" x-data="{ filtrosOpen: false }">
-            {{-- Sidebar filtros (contenido reutilizable) --}}
-            @php $sidebarFilterContent = true; @endphp
-
-            {{-- Sidebar DESKTOP: siempre visible, sin Alpine --}}
             <aside class="hidden md:block w-64 flex-shrink-0">
-                <div class="bg-white rounded-xl shadow-sm p-4 sticky top-20 space-y-4 max-h-[calc(100vh-6rem)] overflow-y-auto">
+                <div class="t-card p-4 sticky top-20 space-y-4 max-h-[calc(100vh-6rem)] overflow-y-auto">
                     @include('tienda.partials.sidebar-filters')
                 </div>
             </aside>
 
-            {{-- Drawer MOBILE: controlado por Alpine --}}
-            <div x-show="filtrosOpen" x-transition.opacity @click="filtrosOpen = false"
-                 class="fixed inset-0 bg-black/40 z-40 md:hidden" style="display: none;"></div>
-            <div x-show="filtrosOpen"
-                 x-transition:enter="transition ease-out duration-300" x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0"
-                 x-transition:leave="transition ease-in duration-200" x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full"
-                 class="fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-xl md:hidden overflow-y-auto" style="display: none;">
-                <div class="p-4 space-y-4">
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm font-semibold text-gray-700"><i class="fas fa-filter mr-1" style="color: {{ $colores['boton'] }}"></i> Filtros</span>
-                        <button @click="filtrosOpen = false" class="p-1 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
-                    </div>
-                    @include('tienda.partials.sidebar-filters')
-                </div>
-            </div>
+            @include('tienda.partials.filtros-drawer')
 
-            {{-- Main content --}}
             <div class="flex-1 min-w-0">
-                {{-- Buscador + botón filtros mobile --}}
-                <div class="md:hidden bg-white rounded-xl shadow-sm p-4 mb-4">
+                <div class="md:hidden t-card p-3 mb-4 sticky top-[4.25rem] z-30">
                     <div class="flex gap-2">
                         <div class="relative flex-1">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fas fa-search"></i></span>
-                            <input type="text" wire:model.live.debounce.300ms="busqueda" placeholder="Buscar productos..."
-                                   class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 outline-none"
-                                   style="--tw-ring-color: {{ $colores['boton'] }}">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 t-muted"><i class="fas fa-search text-sm"></i></span>
+                            <input type="text" wire:model.live.debounce.300ms="busqueda" placeholder="Buscar productos..." class="t-input !pl-9">
                         </div>
                         @if($hayFiltros)
-                            <button @click="filtrosOpen = true"
-                                    class="px-3 py-2.5 text-white rounded-lg text-sm font-semibold flex items-center gap-1.5"
-                                    style="background-color: {{ $colores['boton'] }}">
-                                <i class="fas fa-sliders-h"></i>
-                                @php $totalFiltros = count($deptosSeleccionados) + count($rubrosSeleccionados) + count($marcasSeleccionadas); @endphp
-                                @if($totalFiltros > 0)
-                                    <span class="bg-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center" style="color: {{ $colores['boton'] }}">{{ $totalFiltros }}</span>
-                                @endif
-                            </button>
+                            <button @click="filtrosOpen = true" class="t-btn !px-3"><i class="fas fa-sliders-h"></i>@if($totalFiltros > 0)<span class="bg-white/25 text-xs font-bold rounded-full px-1.5">{{ $totalFiltros }}</span>@endif</button>
                         @endif
                     </div>
                 </div>
-
                 @include('tienda.partials.active-filters')
                 @include('tienda.partials.product-info')
                 @include('tienda.partials.product-grid')
@@ -74,118 +47,63 @@
 
     {{-- ===== LAYOUT: MINIMAL ===== --}}
     @elseif($layoutCatalogo === 'minimal')
-        {{-- Solo buscador --}}
-        <div class="bg-white rounded-xl shadow-sm p-4 mb-4">
+        <div class="t-card p-3 sm:p-4 mb-5 sticky md:static top-[4.25rem] z-30">
             <div class="relative">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fas fa-search"></i></span>
-                <input type="text" wire:model.live.debounce.300ms="busqueda" placeholder="Buscar productos..."
-                       class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 outline-none"
-                       style="--tw-ring-color: {{ $colores['boton'] }}">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 t-muted"><i class="fas fa-search text-sm"></i></span>
+                <input type="text" wire:model.live.debounce.300ms="busqueda" placeholder="Buscar productos..." class="t-input !pl-9">
             </div>
         </div>
-
         @include('tienda.partials.product-info')
         @include('tienda.partials.product-grid')
 
-    {{-- ===== LAYOUT: TOP (actual/default) ===== --}}
+    {{-- ===== LAYOUT: TOP (default) ===== --}}
     @else
-        @php $hayFiltrosTop = $filtrosVisibles['depto'] || $filtrosVisibles['rubro'] || $filtrosVisibles['marca']; @endphp
-        <div x-data="{ filtrosOpen: false }">
-        {{-- Buscador: en el celular queda fijo arriba, con el boton de filtros al lado (F6) --}}
-        <div class="bg-white rounded-xl shadow-sm p-3 sm:p-4 mb-4 sticky md:static top-[3.75rem] z-30">
-            <div class="flex gap-2">
-                <div class="relative flex-1">
-                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fas fa-search"></i></span>
-                    <input type="text" wire:model.live.debounce.300ms="busqueda" placeholder="Buscar productos..."
-                           class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 outline-none"
-                           style="--tw-ring-color: {{ $colores['boton'] }}">
-                </div>
-                @if($hayFiltrosTop)
-                    <button @click="filtrosOpen = true" class="md:hidden px-3 py-2.5 text-white rounded-lg text-sm font-semibold flex items-center gap-1.5" style="background-color: {{ $colores['boton'] }}">
-                        <i class="fas fa-sliders-h"></i>
-                        @php $totalFiltrosTop = count($deptosSeleccionados) + count($rubrosSeleccionados) + count($marcasSeleccionadas); @endphp
-                        @if($totalFiltrosTop > 0)
-                            <span class="bg-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center" style="color: {{ $colores['boton'] }}">{{ $totalFiltrosTop }}</span>
+        <div x-data="{ filtrosOpen: false, abierto: null }">
+            <div class="t-card p-3 sm:p-4 mb-4 sticky md:static top-[4.25rem] z-30">
+                <div class="flex gap-2">
+                    <div class="relative flex-1">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 t-muted"><i class="fas fa-search text-sm"></i></span>
+                        <input type="text" wire:model.live.debounce.300ms="busqueda" placeholder="Buscar productos..." class="t-input !pl-9">
+                        @if($busqueda)
+                            <button type="button" wire:click="$set('busqueda', '')" class="absolute inset-y-0 right-0 flex items-center pr-3 t-muted hover:t-text"><i class="fas fa-times text-sm"></i></button>
                         @endif
-                    </button>
-                @endif
-            </div>
-        </div>
-
-        {{-- Drawer de filtros (celular) --}}
-        @if($hayFiltrosTop)
-            <div x-show="filtrosOpen" x-transition.opacity @click="filtrosOpen = false" class="fixed inset-0 bg-black/40 z-40 md:hidden" style="display: none;"></div>
-            <div x-show="filtrosOpen"
-                 x-transition:enter="transition ease-out duration-300" x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0"
-                 x-transition:leave="transition ease-in duration-200" x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full"
-                 class="fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-xl md:hidden overflow-y-auto" style="display: none;">
-                <div class="p-4 space-y-4">
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm font-semibold text-gray-700"><i class="fas fa-filter mr-1" style="color: {{ $colores['boton'] }}"></i> Filtros</span>
-                        <button @click="filtrosOpen = false" class="p-1 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
                     </div>
-                    @include('tienda.partials.sidebar-filters')
-                    <button @click="filtrosOpen = false" class="w-full py-2.5 text-white rounded-lg text-sm font-semibold" style="background-color: {{ $colores['boton'] }}">Ver {{ $totalProductos }} producto{{ $totalProductos != 1 ? 's' : '' }}</button>
+                    @if($hayFiltros)
+                        <button @click="filtrosOpen = true" class="md:hidden t-btn !px-3"><i class="fas fa-sliders-h"></i>@if($totalFiltros > 0)<span class="bg-white/25 text-xs font-bold rounded-full px-1.5">{{ $totalFiltros }}</span>@endif</button>
+                    @endif
                 </div>
-            </div>
-        @endif
 
-        {{-- Filtros colapsables multi-select --}}
-        @if($filtrosVisibles['depto'] || $filtrosVisibles['rubro'] || $filtrosVisibles['marca'])
-            @php
-                $hayFiltrosActivos = !empty($deptosSeleccionados) || !empty($rubrosSeleccionados) || !empty($marcasSeleccionadas);
-                $deptoNombres = collect($deptos)->pluck('nom', 'cod')->toArray();
-                $rubroNombres = collect($rubros)->pluck('nom', 'cod')->toArray();
-                $marcaNombres = collect($marcas)->pluck('nom', 'cod')->toArray();
-            @endphp
-            <div x-data="{ abierto: null }" class="mb-4 space-y-2">
-                @include('tienda.partials.active-filters')
-
-                <div class="hidden md:flex gap-2 flex-wrap">
-                    @foreach(['depto' => ['deptosSeleccionados', $deptos, 'fa-layer-group', 'Departamento'], 'rubro' => ['rubrosSeleccionados', $rubros, 'fa-tags', 'Rubro'], 'marca' => ['marcasSeleccionadas', $marcas, 'fa-bookmark', 'Marca']] as $tipo => $cfg)
-                        @if($filtrosVisibles[$tipo] && count($cfg[1]) > 0)
-                            <div class="relative" x-data>
-                                <button @click="abierto === '{{ $tipo }}' ? abierto = null : abierto = '{{ $tipo }}'"
-                                        class="inline-flex items-center gap-1.5 px-3 py-2 bg-white border rounded-lg text-sm transition-all hover:shadow-sm"
-                                        :class="abierto === '{{ $tipo }}' ? 'border-2 shadow-sm' : 'border-gray-300'"
-                                        :style="abierto === '{{ $tipo }}' ? 'border-color: {{ $colores['boton'] }}' : ''"
-                                        style="{{ count($this->{$cfg[0]}) ? 'color: ' . $colores['boton'] . '; font-weight: 600;' : '' }}">
-                                    <i class="fas {{ $cfg[2] }} text-xs"></i>
-                                    {{ $cfg[3] }}
-                                    @if(count($this->{$cfg[0]}))
-                                        <span class="inline-flex items-center justify-center w-5 h-5 text-[10px] text-white rounded-full"
-                                              style="background-color: {{ $colores['boton'] }}">{{ count($this->{$cfg[0]}) }}</span>
-                                    @endif
-                                    <i class="fas fa-chevron-down text-[10px] transition-transform" :class="abierto === '{{ $tipo }}' && 'rotate-180'"></i>
-                                </button>
-                                <div x-show="abierto === '{{ $tipo }}'" @click.outside="abierto = null"
-                                     x-transition
-                                     class="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-30 w-60 max-w-[calc(100vw-2rem)] max-h-72 overflow-y-auto"
-                                     style="display: none;">
-                                    <div class="p-2">
+                {{-- Filtros en escritorio: chips desplegables --}}
+                @if($hayFiltros)
+                    <div class="hidden md:flex gap-2 flex-wrap mt-3">
+                        @foreach($gruposFiltro as $tipo => $cfg)
+                            @if($filtrosVisibles[$tipo] && count($cfg[1]) > 0)
+                                <div class="relative">
+                                    <button @click="abierto === '{{ $tipo }}' ? abierto = null : abierto = '{{ $tipo }}'" class="t-pill {{ count($this->{$cfg[0]}) ? 'is-on' : '' }}">
+                                        <i class="fas {{ $cfg[2] }} text-xs"></i> {{ $cfg[3] }}
+                                        @if(count($this->{$cfg[0]}))<span class="rounded-full px-1.5 text-[10px]" style="background-color: var(--tp); color: var(--tp-ink);">{{ count($this->{$cfg[0]}) }}</span>@endif
+                                        <i class="fas fa-chevron-down text-[10px] transition-transform" :class="abierto === '{{ $tipo }}' && 'rotate-180'"></i>
+                                    </button>
+                                    <div x-show="abierto === '{{ $tipo }}'" @click.outside="abierto = null" x-transition class="absolute top-full left-0 mt-1.5 t-card shadow-xl z-30 w-64 max-w-[calc(100vw-2rem)] max-h-72 overflow-y-auto p-1.5" style="display: none;">
                                         @foreach($cfg[1] as $item)
-                                            @php $seleccionado = in_array($item['cod'], $this->{$cfg[0]}); @endphp
-                                            <button wire:click="toggleFiltro('{{ $tipo }}', '{{ $item['cod'] }}')"
-                                                    class="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2.5 hover:bg-gray-50 transition">
-                                                <span class="w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-colors {{ $seleccionado ? 'text-white' : 'border-gray-300' }}"
-                                                      style="{{ $seleccionado ? 'background-color: ' . $colores['boton'] . '; border-color: ' . $colores['boton'] : '' }}">
-                                                    @if($seleccionado) <i class="fas fa-check text-[9px]"></i> @endif
-                                                </span>
-                                                <span class="{{ $seleccionado ? 'font-semibold' : 'text-gray-700' }}"
-                                                      style="{{ $seleccionado ? 'color: ' . $colores['boton'] : '' }}">{{ $item['nom'] }}</span>
+                                            @php $sel = in_array($item['cod'], $this->{$cfg[0]}); @endphp
+                                            <button wire:click="toggleFiltro('{{ $tipo }}', '{{ $item['cod'] }}')" class="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2.5 hover:bg-[var(--tp-tint)] {{ $sel ? 'font-semibold' : 't-soft' }}" style="{{ $sel ? 'color: var(--tp-dark);' : '' }}">
+                                                <span class="w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center" style="{{ $sel ? 'background-color: var(--tp); border-color: var(--tp); color: var(--tp-ink);' : 'border-color: var(--tborde);' }}">@if($sel)<i class="fas fa-check text-[9px]"></i>@endif</span>
+                                                {{ \App\Services\TiendaEstiloService::nombreBonito($item['nom']) }}
                                             </button>
                                         @endforeach
                                     </div>
                                 </div>
-                            </div>
-                        @endif
-                    @endforeach
-                </div>
+                            @endif
+                        @endforeach
+                    </div>
+                @endif
             </div>
-        @endif
 
-        @include('tienda.partials.product-info')
-        @include('tienda.partials.product-grid')
+            @include('tienda.partials.filtros-drawer')
+            @include('tienda.partials.active-filters')
+            @include('tienda.partials.product-info')
+            @include('tienda.partials.product-grid')
         </div>
     @endif
 
@@ -193,123 +111,119 @@
     <div class="fixed bottom-6 right-4 sm:right-6 z-50 flex flex-col gap-3 items-end safe-bottom safe-right">
         @php $telefonoWa = session('tienda_datos')['telefono'] ?? null; @endphp
         @if($telefonoWa)
-            <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $telefonoWa) }}" target="_blank"
-               class="w-12 h-12 bg-[#25D366] text-white rounded-full shadow-lg flex items-center justify-center hover:bg-[#1ebe57] transition-colors hover:scale-110 transform duration-200">
+            <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $telefonoWa) }}" target="_blank" class="w-12 h-12 bg-[#25D366] text-white rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform" title="Escribinos por WhatsApp">
                 <i class="fab fa-whatsapp text-xl"></i>
             </a>
         @endif
         @if($cantidadCarrito > 0 && !$esVitrina)
-            <button wire:click="irAlCarrito"
-                    class="text-white rounded-full w-14 h-14 flex items-center justify-center shadow-xl hover:scale-110 transition-transform relative"
-                    style="background-color: {{ $colores['boton'] }}">
-                <i class="fas fa-shopping-cart text-lg"></i>
+            <button wire:click="irAlCarrito" class="t-btn !rounded-full w-14 h-14 !p-0 shadow-xl hover:scale-110 transition-transform relative" title="Ver el carrito">
+                <i class="fas fa-shopping-bag text-lg"></i>
                 <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">{{ $cantidadCarrito }}</span>
             </button>
         @endif
     </div>
 
-    <div x-data="{ show: false }" x-on:producto-agregado.window="show = true; setTimeout(() => show = false, 2000)"
-         x-show="show" x-transition.opacity
-         class="fixed top-20 right-4 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg z-50" style="display: none;">
-        <i class="fas fa-check mr-2"></i> Producto agregado
+    {{-- Aviso "agregado" con la foto del producto --}}
+    <div x-data="{ show: false, nombre: '', foto: '' }"
+         x-on:producto-agregado.window="nombre = $event.detail?.nombre ?? ''; foto = $event.detail?.foto ?? ''; show = true; clearTimeout(window._tToast); window._tToast = setTimeout(() => show = false, 2200)"
+         x-show="show" x-transition.opacity.duration.200ms
+         class="fixed bottom-24 sm:bottom-auto sm:top-20 left-1/2 -translate-x-1/2 sm:left-auto sm:right-4 sm:translate-x-0 z-50 w-[calc(100%-2rem)] sm:w-80" style="display: none;">
+        <div class="t-toast">
+            <template x-if="foto"><img :src="foto" class="w-10 h-10 rounded-lg object-contain bg-white flex-shrink-0"></template>
+            <template x-if="!foto"><span class="w-10 h-10 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0"><i class="fas fa-check"></i></span></template>
+            <div class="min-w-0 flex-1">
+                <p class="text-xs opacity-70">Agregado al carrito</p>
+                <p class="text-sm font-semibold truncate" x-text="nombre || 'Producto'"></p>
+            </div>
+            @if(!$esVitrina)<button wire:click="irAlCarrito" class="text-xs font-semibold px-2.5 py-1.5 rounded-lg flex-shrink-0" style="background-color: var(--tp); color: var(--tp-ink);">Ver</button>@endif
+        </div>
     </div>
 
-    {{-- Modal: elegir cantidad --}}
+    {{-- Ficha del producto --}}
     @if($modalCantidadAbierto && $productoModal)
+        @php
+            $fotosFicha = $productoModal['fotos'] ?? [];
+            $fotoPrincipal = $productoModal['foto_url'] ?: session('tienda_foto_default');
+            $nombreFicha = \App\Services\TiendaEstiloService::nombreBonito($productoModal['nombre'], $productoModal['codigo']);
+            $favFicha = in_array((string) $productoModal['codigo'], $favoritos, true);
+        @endphp
         <div class="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4" wire:click="cerrarModalCantidad">
             <div class="absolute inset-0 bg-black/50"></div>
-            <div class="relative bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm p-5 sm:p-6 max-h-[92vh] overflow-y-auto safe-bottom" wire:click.stop>
-                <button wire:click="cerrarModalCantidad" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 p-1">
-                    <i class="fas fa-times"></i>
-                </button>
+            <div class="relative t-card !rounded-t-2xl sm:!rounded-2xl shadow-2xl w-full sm:max-w-3xl max-h-[92vh] overflow-y-auto safe-bottom" wire:click.stop x-data="{ actual: 0 }">
+                <button wire:click="cerrarModalCantidad" class="absolute top-3 right-3 z-10 t-icon-btn bg-white/80 shadow"><i class="fas fa-times"></i></button>
 
-                @php $fotosFicha = $productoModal['fotos'] ?? []; @endphp
-                @if(count($fotosFicha))
-                    {{-- Galeria de la ficha: imagen grande + miniaturas --}}
-                    <div class="mb-4" x-data="{ actual: 0 }">
-                        <div class="w-full aspect-square bg-gray-50 rounded-xl flex items-center justify-center overflow-hidden">
-                            @foreach($fotosFicha as $i => $ff)
-                                <img src="{{ $ff['medium'] }}" alt="{{ $productoModal['nombre'] }}" x-show="actual === {{ $i }}" class="max-w-full max-h-full object-contain" @if($i > 0) style="display:none" @endif>
-                            @endforeach
+                <div class="grid sm:grid-cols-2">
+                    {{-- Imagen / galeria --}}
+                    <div class="p-4 sm:p-6 sm:border-r" style="border-color: var(--tborde);">
+                        <div class="relative w-full aspect-square t-img rounded-xl flex items-center justify-center overflow-hidden">
+                            @if(count($fotosFicha))
+                                @foreach($fotosFicha as $i => $ff)
+                                    <img src="{{ $ff['medium'] }}" alt="{{ $nombreFicha }}" x-show="actual === {{ $i }}" class="max-w-full max-h-full object-contain p-2" @if($i > 0) style="display:none" @endif>
+                                @endforeach
+                            @elseif($fotoPrincipal)
+                                <img src="{{ $fotoPrincipal }}" alt="{{ $nombreFicha }}" class="max-w-full max-h-full object-contain p-2">
+                            @else
+                                <i class="fas fa-image text-5xl t-muted opacity-40"></i>
+                            @endif
+                            <button type="button" wire:click="toggleFavorito('{{ $productoModal['codigo'] }}')" class="t-heart absolute top-2 left-2 {{ $favFicha ? 'is-on' : '' }}"><i class="{{ $favFicha ? 'fas' : 'far' }} fa-heart text-sm"></i></button>
                         </div>
                         @if(count($fotosFicha) > 1)
-                            <div class="flex gap-2 mt-2 overflow-x-auto">
+                            <div class="flex gap-2 mt-3 overflow-x-auto">
                                 @foreach($fotosFicha as $i => $ff)
-                                    <button type="button" @click="actual = {{ $i }}" :class="actual === {{ $i }} ? 'ring-2 ring-offset-1' : 'opacity-70'"
-                                            class="w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden bg-gray-50 border border-gray-200" style="--tw-ring-color: {{ $colores['boton'] }}">
+                                    <button type="button" @click="actual = {{ $i }}" :class="actual === {{ $i }} ? 'ring-2' : 'opacity-60 hover:opacity-100'" class="w-14 h-14 flex-shrink-0 rounded-lg overflow-hidden t-img border" style="border-color: var(--tborde); --tw-ring-color: var(--tp);">
                                         <img src="{{ $ff['thumb'] }}" class="w-full h-full object-contain">
                                     </button>
                                 @endforeach
                             </div>
                         @endif
                     </div>
-                @endif
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="w-16 h-16 bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0 {{ count($fotosFicha) ? 'hidden' : '' }}">
-                        @if($productoModal['foto_url'] ?: session('tienda_foto_default'))
-                            <img src="{{ $productoModal['foto_url'] ?: session('tienda_foto_default') }}" alt="{{ $productoModal['nombre'] }}" class="max-w-full max-h-full object-contain">
-                        @else
-                            <i class="fas fa-image text-gray-300 text-2xl"></i>
+
+                    {{-- Datos --}}
+                    <div class="p-4 sm:p-6 flex flex-col">
+                        <p class="text-[11px] t-muted">#{{ $productoModal['codigo'] }}</p>
+                        <h3 class="t-h text-xl font-bold leading-tight t-text mt-0.5">{{ $nombreFicha }}</h3>
+                        <div class="mt-3 flex items-end gap-2 flex-wrap">
+                            <span class="t-precio text-3xl">${{ number_format($productoModal['precio'], 2, ',', '.') }}</span>
+                            @if(($productoModal['iva'] ?? 0) > 0)
+                                <span class="text-xs t-muted mb-1.5">IVA {{ \App\Services\TiendaPrecioService::etiquetaTasa($productoModal['tasa']) }} incl. ${{ number_format($productoModal['iva'], 2, ',', '.') }}</span>
+                            @endif
+                        </div>
+                        @if(!empty($productoModal['promos']))
+                            <div class="flex flex-wrap gap-1.5 mt-2">
+                                @foreach($productoModal['promos'] as $pc)
+                                    <span class="t-chip t-chip-ok"><i class="fas fa-tag"></i>{{ $pc }}</span>
+                                @endforeach
+                            </div>
+                        @endif
+                        @if(!$vendeSinStock)
+                            <p class="text-xs mt-2 {{ $productoModal['disponible'] > 0 ? '' : 'font-semibold' }}" style="color: {{ $productoModal['disponible'] > 0 ? 'var(--tok)' : 'var(--tdanger)' }};">
+                                <i class="fas fa-circle text-[6px] mr-1"></i>{{ $productoModal['disponible'] > 0 ? 'Disponible: ' . \App\Services\TiendaStockService::formato($productoModal['disponible']) : 'Sin stock por el momento' }}
+                            </p>
+                        @endif
+                        @if(!empty($productoModal['descripcion']))
+                            <div class="mt-4 text-sm t-soft leading-relaxed whitespace-pre-line max-h-40 overflow-y-auto">{{ $productoModal['descripcion'] }}</div>
+                        @endif
+
+                        @if(!$esVitrina)
+                            <div class="mt-auto pt-5">
+                                <label class="t-label">Cantidad</label>
+                                <div class="flex items-center gap-2">
+                                    <button wire:click="decrementarCantidadModal" type="button" class="t-btn-outline !rounded-full w-11 h-11 !p-0"><i class="fas fa-minus text-xs"></i></button>
+                                    <input type="number" wire:model.live.debounce.300ms="cantidadModal" min="{{ $permiteDecimal ? '0.01' : '1' }}" step="{{ $permiteDecimal ? '0.01' : '1' }}" class="t-input !w-24 text-center text-lg font-bold">
+                                    <button wire:click="incrementarCantidadModal" type="button" class="t-btn-outline !rounded-full w-11 h-11 !p-0"><i class="fas fa-plus text-xs"></i></button>
+                                    <div class="ml-auto text-right">
+                                        <p class="text-[11px] t-muted">Subtotal</p>
+                                        <p class="t-precio text-lg">${{ number_format($productoModal['precio'] * (float) $cantidadModal, 2, ',', '.') }}</p>
+                                    </div>
+                                </div>
+                                @if($permiteDecimal)<p class="text-[10px] t-muted mt-1">Podés cargar decimales, por ejemplo 0.5 o 1.25.</p>@endif
+                                <button wire:click="confirmarCantidadModal" @disabled(!$vendeSinStock && $productoModal['disponible'] <= 0) class="t-btn t-btn-lg w-full mt-4">
+                                    <i class="fas fa-cart-plus"></i> Agregar al carrito
+                                </button>
+                            </div>
                         @endif
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <h3 class="text-sm font-semibold leading-tight" style="color: {{ $colores['texto'] }}">{{ $productoModal['nombre'] }}</h3>
-                        <p class="text-base font-bold mt-1" style="color: {{ $colores['precio'] }}">
-                            ${{ number_format($productoModal['precio'], 2, ',', '.') }}
-                        </p>
-                    </div>
                 </div>
-                @if(!empty($productoModal['descripcion']))
-                    <p class="text-xs text-gray-600 leading-relaxed mb-4 max-h-32 overflow-y-auto">{{ $productoModal['descripcion'] }}</p>
-                @endif
-                <div class="hidden">
-                </div>
-
-                <label class="block text-xs font-medium text-gray-600 mb-2">Cantidad</label>
-                <div class="flex items-center gap-2">
-                    <button wire:click="decrementarCantidadModal" type="button"
-                            class="w-10 h-10 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-600 flex items-center justify-center text-lg">
-                        <i class="fas fa-minus text-xs"></i>
-                    </button>
-                    <input type="number"
-                           wire:model.live.debounce.300ms="cantidadModal"
-                           min="{{ $permiteDecimal ? '0.01' : '1' }}"
-                           step="{{ $permiteDecimal ? '0.01' : '1' }}"
-                           class="flex-1 text-center text-lg font-semibold border border-gray-300 rounded-lg py-2 focus:ring-2 outline-none"
-                           style="--tw-ring-color: {{ $colores['boton'] }}">
-                    <button wire:click="incrementarCantidadModal" type="button"
-                            class="w-10 h-10 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-600 flex items-center justify-center text-lg">
-                        <i class="fas fa-plus text-xs"></i>
-                    </button>
-                </div>
-                @if($permiteDecimal)
-                    <p class="text-[10px] text-gray-400 mt-1 text-center">Podés ingresar valores decimales (ej: 0.5, 1.25)</p>
-                @endif
-
-                @foreach(($productoModal['promos'] ?? []) as $pc)
-                    <p class="text-[11px] mt-1 text-center text-green-700"><i class="fas fa-tag mr-1"></i>{{ $pc }}</p>
-                @endforeach
-                @if(!$vendeSinStock)
-                    <p class="text-[11px] mt-1 text-center {{ $productoModal['disponible'] > 0 ? 'text-gray-500' : 'text-red-500' }}">
-                        Disponible: {{ \App\Services\TiendaStockService::formato($productoModal['disponible']) }}
-                    </p>
-                @endif
-
-                <div class="mt-4 flex items-center justify-between text-sm">
-                    <span class="text-gray-500">Subtotal:</span>
-                    <span class="font-bold text-base" style="color: {{ $colores['precio'] }}">
-                        ${{ number_format($productoModal['precio'] * (float) $cantidadModal, 2, ',', '.') }}
-                    </span>
-                </div>
-                @if(($productoModal['iva'] ?? 0) > 0)
-                    <p class="text-[10px] text-gray-400 text-right">Incluye IVA {{ \App\Services\TiendaPrecioService::etiquetaTasa($productoModal['tasa']) }}: ${{ number_format($productoModal['iva'] * (float) $cantidadModal, 2, ',', '.') }}</p>
-                @endif
-
-                <button wire:click="confirmarCantidadModal"
-                        class="w-full mt-4 py-3 text-white font-semibold rounded-lg transition-opacity hover:opacity-90 flex items-center justify-center gap-2"
-                        style="background-color: {{ $colores['boton'] }}">
-                    <i class="fas fa-cart-plus"></i> Agregar al carrito
-                </button>
             </div>
         </div>
     @endif

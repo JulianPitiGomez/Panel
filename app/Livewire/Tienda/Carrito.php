@@ -638,6 +638,7 @@ class Carrito extends Component
         $this->compradorValidado = true;
         $this->compradorNombre = session('tienda_comprador_nombre');
         $this->cargarDireccionesGuardadas();
+        (new \App\Services\TiendaFavoritoService($this->tablePrefix))->fusionarSesion();
         $this->paso = '';   // el render lo lleva al siguiente paso
 
         // Recalcular precios según la lista del comprador

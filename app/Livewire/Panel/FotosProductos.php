@@ -62,6 +62,7 @@ class FotosProductos extends Component
         'modo_cantidad' => 'rapido',
         'permite_decimal' => false,
         'tienda_vende_sin_stock' => true,   // ver TiendaStockService
+        'tienda_fuente' => 'moderna',
         'portada_titulo' => '',
         'portada_texto' => '',
         'portada_bloques' => [],
@@ -265,6 +266,32 @@ class FotosProductos extends Component
 
         $this->mensaje = 'Modo de acceso actualizado correctamente.';
         $this->tipoMensaje = 'success';
+    }
+
+    // ------------------------------------------------- estilo (F6): presets y vista previa
+
+    /** Aplica un estilo preconfigurado a los datos (se guarda con "Guardar datos"). */
+    public function aplicarPreset($nombre)
+    {
+        $preset = \App\Services\TiendaEstiloService::PRESETS[$nombre] ?? null;
+        if (!$preset) {
+            return;
+        }
+        foreach ($preset['valores'] as $k => $v) {
+            $this->datosComercio[$k] = $v;
+        }
+        $this->mensaje = 'Estilo "' . $preset['nombre'] . '" aplicado. Mirá la vista previa y apretá "Guardar datos" para publicarlo.';
+        $this->tipoMensaje = 'success';
+    }
+
+    public function getPaletaPreviaProperty(): array
+    {
+        return \App\Services\TiendaEstiloService::paleta($this->datosComercio);
+    }
+
+    public function getAvisoContrasteProperty(): ?string
+    {
+        return \App\Services\TiendaEstiloService::avisoContraste($this->datosComercio);
     }
 
     // ------------------------------------------------- portada (F6)
