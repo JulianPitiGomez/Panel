@@ -920,6 +920,15 @@ class Carrito extends Component
         // Enviar emails
         $this->enviarEmails($pedidoId, $compradorNombre, $itemsParaEmail, $totalEmail, $entregaParaEmail, $envioParaEmail);
 
+        // WhatsApp por la API de Meta (F7), si el comercio lo tiene; y el carrito abierto queda convertido
+        try {
+            $wa = new \App\Services\TiendaWhatsappService($this->tablePrefix);
+            $wa->avisarPedidoNuevo((int) $pedidoId, $wa->telefonoComprador(session('tienda_comprador_web_id') ? (int) session('tienda_comprador_web_id') : null, $compradorId ? (int) $compradorId : null), (string) $compradorNombre, (float) $totalConEnvio, (string) $this->nombreTienda);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Tienda: WhatsApp del pedido ' . $pedidoId . ': ' . $e->getMessage());
+        }
+        (new \App\Services\TiendaCarritoService($this->tablePrefix))->convertido((int) $pedidoId);
+
         // Link del preventista: usado, y el borrador del vendedor se reemplaza por este pedido
         if (!empty($linkVendedor['id'])) {
             (new \App\Services\TiendaLinkService($this->tablePrefix))->marcarUsado((int) $linkVendedor['id'], (int) $pedidoId);
@@ -1012,6 +1021,9 @@ class Carrito extends Component
         if (!$this->pedidoConfirmado && !empty($this->carrito)) {
             $this->cotizarEntrega();
             $this->ajustarPaso();
+        }
+        if (!$this->pedidoConfirmado) {
+            (new \App\Services\TiendaCarritoService($this->tablePrefix))->guardar($this->carrito);
         }
 
         return view('tienda.carrito', [

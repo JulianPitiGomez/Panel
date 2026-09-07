@@ -22,7 +22,7 @@
 --                  tienda_articu, tienda_correo_tarifas (F2 correo y peso),
 --                  tienda_agenda, tienda_agenda_franjas, tienda_agenda_excepciones (F2 agenda);
 --                  F3: tienda_pedidos.descuento_promos / promos_aplicadas, tienda_pagos_config.forpag_*;
---                  F4: tienda_fotos (galeria); F5: tienda_metricas; F6: tienda_pagos_cuenta, tienda_links, tienda_favoritos
+--                  F4: tienda_fotos (galeria); F5: tienda_metricas; F6: tienda_pagos_cuenta, tienda_links, tienda_favoritos; F7: tienda_carritos
 --                  tienda_pedidos.entrega_fecha / entrega_franja_id / entrega_franja / agenda_cupo
 --                  (F1 agrego comision_saldo a tienda_pedidos y tienda_eventos; v1 todavia no salio a produccion,
 --                   por eso se edita en lugar de crear v2)
@@ -367,4 +367,22 @@ CREATE TABLE IF NOT EXISTS `{p}tienda_favoritos` (
   `codigo`       BIGINT       NOT NULL,       -- articu.CODIGO
   `creado`       DATETIME     NOT NULL,
   PRIMARY KEY (`comprador_id`, `codigo`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- F7: foto del carrito del comprador logueado, para recuperar los abandonados por WhatsApp.
+CREATE TABLE IF NOT EXISTS `{p}tienda_carritos` (
+  `id`             INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+  `comprador_id`   INT UNSIGNED  NOT NULL,
+  `items`          TEXT          NOT NULL,                  -- JSON [{codigo, nombre, cantidad, precio}]
+  `cantidad`       INT           NOT NULL DEFAULT 0,
+  `total`          DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `creado`         DATETIME      NOT NULL,
+  `actualizado`    DATETIME      NOT NULL,
+  `convertido`     DATETIME      DEFAULT NULL,              -- confirmo el pedido
+  `idpedido`       INT           DEFAULT NULL,
+  `avisado`        DATETIME      DEFAULT NULL,              -- se le mando el aviso de carrito abandonado
+  `aviso_resultado` VARCHAR(120) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_abierto` (`comprador_id`, `convertido`),
+  KEY `idx_abandono` (`convertido`, `avisado`, `actualizado`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

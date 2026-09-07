@@ -46,7 +46,17 @@ class Catalogo extends Component
     public $esVitrina = false;         // modo vitrina: se mira, no se compra
     public $cerradaSinPedidos = false;
     public $favoritos = [];            // codigos marcados con el corazon (TiendaFavoritoService)
-    public $soloFavoritos = false;     // /favoritos: solo lo marcado // agenda: cerrada y sin 'recibe cerrada' -> no se agrega al carrito
+    public $soloFavoritos = false;     // /favoritos: solo lo marcado
+
+    // Asistente de IA con la clave del comercio (F7)
+    public $iaBusqueda = false;        // busqueda que entiende, disponible
+    public $iaPedido = false;          // pedido desde un mensaje, disponible
+    public $busquedaIa = null;         // ['palabras' => [], 'rubro','marca','depto'] cuando la IA amplio una busqueda sin resultados
+    public $busquedaIaTexto = '';      // para que busqueda se pidio (no se repite)
+    public $pedidoIaAbierto = false;
+    public $pedidoIaTexto = '';
+    public $pedidoIaItems = [];
+    public $pedidoIaError = '';
     public $habituales = [];           // lo que este comprador compra seguido (ultimos 12 meses)
     public $destacados = [];           // elegidos por el comercio (tienda_articu.destacado), en su orden
     public $promosPortada = [];        // articulos con promo vigente, para la vitrina de la portada (F6)
@@ -125,6 +135,11 @@ class Catalogo extends Component
 
         $this->cargarFiltros();
         $this->favoritos = (new \App\Services\TiendaFavoritoService($this->tablePrefix))->codigos();
+        $ia = (new \App\Services\TiendaIntegracionService($this->tablePrefix))->obtener(\App\Services\TiendaIntegracionService::IA);
+        if ($ia && $ia->activa && !empty($ia->credenciales['api_key'])) {
+            $this->iaBusqueda = (bool) ($ia->credenciales['busqueda'] ?? true);
+            $this->iaPedido = !$this->esVitrina && (bool) ($ia->credenciales['pedido'] ?? true);
+        }
 
         // Metrica: una visita por carga del catalogo
         (new \App\Services\TiendaMetricaService($this->tablePrefix))->registrar(\App\Services\TiendaMetricaService::VISITA);
@@ -153,6 +168,89 @@ class Catalogo extends Component
         }
 
         return \App\Services\TiendaSeoService::metaTienda($datos, $nombre, $this->modo, route('tienda.catalogo', $this->tiendaSlug));
+    }
+
+    // ------------------------------------------------------------ pedido desde un mensaje (F7)
+
+    public function abrirPedidoIa()
+    {
+        if (!$this->iaPedido) {
+            return;
+        }
+        $this->pedidoIaAbierto = true;
+        $this->pedidoIaError = '';
+    }
+
+    public function cerrarPedidoIa()
+    {
+        $this->pedidoIaAbierto = false;
+        $this->pedidoIaItems = [];
+        $this->pedidoIaError = '';
+    }
+
+    public function armarPedidoIa()
+    {
+        if (!$this->iaPedido) {
+            return;
+        }
+        $this->setupClientDatabase();
+        $this->pedidoIaError = '';
+        if (mb_strlen(trim($this->pedidoIaTexto)) < 3) {
+            $this->pedidoIaError = 'Contanos qué querés pedir, como se lo dirías al comercio.';
+            return;
+        }
+        $items = (new \App\Services\TiendaAsistenteIaService($this->tablePrefix))->armarPedido($this->pedidoIaTexto, fn ($p) => $this->obtenerPrecio($p));
+        if (empty($items)) {
+            $this->pedidoIaError = 'No pudimos armar el pedido con ese texto. Probá escribiéndolo de otra forma o buscá los productos en el catálogo.';
+            return;
+        }
+        $this->pedidoIaItems = $items;
+    }
+
+    public function elegirAlternativaIa($i, $codigo)
+    {
+        $item = $this->pedidoIaItems[$i] ?? null;
+        if (!$item) {
+            return;
+        }
+        $alt = collect($item['alternativas'])->firstWhere('codigo', (string) $codigo);
+        if (!$alt) {
+            return;
+        }
+        $this->pedidoIaItems[$i]['codigo'] = $alt['codigo'];
+        $this->pedidoIaItems[$i]['nombre'] = $alt['nombre'];
+        $this->pedidoIaItems[$i]['precio'] = $alt['precio'];
+        $this->pedidoIaItems[$i]['foto'] = null;
+    }
+
+    public function quitarItemIa($i)
+    {
+        unset($this->pedidoIaItems[$i]);
+        $this->pedidoIaItems = array_values($this->pedidoIaItems);
+    }
+
+    public function cambiarCantidadIa($i, $cantidad)
+    {
+        if (isset($this->pedidoIaItems[$i])) {
+            $this->pedidoIaItems[$i]['cantidad'] = max(0.01, (float) str_replace(',', '.', (string) $cantidad));
+        }
+    }
+
+    /** Agrega al carrito todo lo que la IA encontro (lo que no encontro queda afuera). */
+    public function agregarPedidoIa()
+    {
+        $n = 0;
+        foreach ($this->pedidoIaItems as $item) {
+            if (!empty($item['codigo'])) {
+                $this->agregarAlCarrito($item['codigo'], $item['cantidad']);
+                $n++;
+            }
+        }
+        $this->cerrarPedidoIa();
+        if ($n > 0) {
+            $this->pedidoIaTexto = '';
+            return $this->irAlCarrito();
+        }
     }
 
     /** El corazon: marca o desmarca. Anonimo queda en sesion; logueado en su cuenta. */
@@ -220,6 +318,7 @@ class Catalogo extends Component
     {
         $this->paginaActual = 1;
         $this->busquedaRegistrada = '';
+        $this->busquedaIa = null;
     }
 
     private $busquedaRegistrada = '';   // ultima busqueda sin resultado ya contada (evita contarla en cada render)
@@ -294,7 +393,18 @@ class Catalogo extends Component
             ->where('a.NOSALE', 0)
             ->select('a.CODIGO', 'a.NOMBRE', 'a.PRECIOVEN', 'a.REVENTA', 'a.STOCKACT', 'a.DEPTO', 'a.RUBRO', 'a.MARCA', 'f.url as foto_url', 'i.tasa as tasa_iva');
 
-        if ($this->busqueda) {
+        if ($this->busqueda && $this->busquedaIa && $this->busquedaIaTexto === $this->busqueda) {
+            // La IA tradujo la busqueda: alcanza con que el nombre tenga alguna de sus palabras (o el filtro que eligio)
+            $ia = $this->busquedaIa;
+            $query->where(function ($q) use ($ia) {
+                foreach ($ia['palabras'] as $palabra) {
+                    $q->orWhere('a.NOMBRE', 'like', "%{$palabra}%");
+                }
+                if ($ia['rubro']) { $q->orWhere('a.RUBRO', $ia['rubro']); }
+                if ($ia['marca']) { $q->orWhere('a.MARCA', $ia['marca']); }
+                if ($ia['depto']) { $q->orWhere('a.DEPTO', $ia['depto']); }
+            });
+        } elseif ($this->busqueda) {
             $palabras = array_filter(explode(' ', trim($this->busqueda)));
             $query->where(function ($q) use ($palabras) {
                 // Buscar por código exacto parcial
@@ -706,6 +816,7 @@ class Catalogo extends Component
         session(['tienda_carrito' => $this->carrito]);
         $this->cantidadCarrito = count($this->carrito);
 
+        (new \App\Services\TiendaCarritoService($this->tablePrefix))->guardar($this->carrito);
         $this->dispatch('producto-agregado', nombre: \App\Services\TiendaEstiloService::nombreBonito($producto->NOMBRE, $producto->CODIGO), foto: $producto->foto_url ?: (session('tienda_foto_default') ?: ''));
     }
 
@@ -717,6 +828,16 @@ class Catalogo extends Component
     public function render()
     {
         $productos = $this->obtenerProductos();
+
+        // Busqueda que entiende (F7): sin resultados, la IA la traduce y se vuelve a buscar
+        if ($this->iaBusqueda && $this->busqueda && !$this->soloFavoritos && $this->totalProductos == 0 && $this->busquedaIa === null && $this->busquedaIaTexto !== $this->busqueda) {
+            $this->busquedaIaTexto = $this->busqueda;
+            $r = (new \App\Services\TiendaAsistenteIaService($this->tablePrefix))->interpretarBusqueda($this->busqueda, $this->rubros, $this->marcas, $this->deptos);
+            if ($r && (!empty($r['palabras']) || $r['rubro'] || $r['marca'] || $r['depto'])) {
+                $this->busquedaIa = $r;
+                $productos = $this->obtenerProductos();
+            }
+        }
         $totalPaginas = ceil($this->totalProductos / $this->porPagina);
 
         $sinFiltros = !$this->busqueda && empty($this->rubrosSeleccionados) && empty($this->marcasSeleccionadas) && empty($this->deptosSeleccionados) && $this->paginaActual == 1 && !$this->soloPromos;

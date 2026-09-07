@@ -41,6 +41,12 @@
             <i class="fas fa-wallet"></i>
             <span>Pagos</span>
         </button>
+        <button wire:click="$set('tabActivo', 'integraciones')"
+                class="flex-1 flex items-center justify-center gap-2 px-2 sm:px-4 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-semibold transition-all
+                {{ $tabActivo === 'integraciones' ? 'bg-[#1E1B35] text-white shadow' : 'text-gray-600 hover:bg-gray-100' }}">
+            <i class="fas fa-plug"></i>
+            <span>Integraciones</span>
+        </button>
         <button wire:click="$set('tabActivo', 'pedidos')"
                 class="flex-1 flex items-center justify-center gap-2 px-2 sm:px-4 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-semibold transition-all
                 {{ $tabActivo === 'pedidos' ? 'bg-[#1E1B35] text-white shadow' : 'text-gray-600 hover:bg-gray-100' }}">
@@ -62,6 +68,11 @@
     {{-- ==================== TAB PAGOS ==================== --}}
     @if($tabActivo === 'pagos')
         @livewire('panel.configurar-pagos', [], key('configurar-pagos'))
+    @endif
+
+    {{-- ==================== TAB INTEGRACIONES (F7) ==================== --}}
+    @if($tabActivo === 'integraciones')
+        @livewire('panel.configurar-integraciones', [], key('configurar-integraciones'))
     @endif
 
     {{-- ==================== TAB PEDIDOS WEB ==================== --}}

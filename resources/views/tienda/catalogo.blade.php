@@ -68,10 +68,16 @@
                             <button type="button" wire:click="$set('busqueda', '')" class="absolute inset-y-0 right-0 flex items-center pr-3 t-muted hover:t-text"><i class="fas fa-times text-sm"></i></button>
                         @endif
                     </div>
+                    @if($iaPedido)
+                        <button type="button" wire:click="abrirPedidoIa" class="t-btn-outline !px-3 whitespace-nowrap" title="Escribí tu pedido y te lo armamos"><i class="fas fa-magic"></i><span class="hidden sm:inline"> Pedir escribiendo</span></button>
+                    @endif
                     @if($hayFiltros)
                         <button @click="filtrosOpen = true" class="md:hidden t-btn !px-3"><i class="fas fa-sliders-h"></i>@if($totalFiltros > 0)<span class="bg-white/25 text-xs font-bold rounded-full px-1.5">{{ $totalFiltros }}</span>@endif</button>
                     @endif
                 </div>
+                @if($busquedaIa && $busquedaIaTexto === $busqueda)
+                    <p class="text-xs t-soft mt-2"><i class="fas fa-magic mr-1" style="color: var(--tp);"></i> No había nada con "{{ $busqueda }}"; te mostramos lo parecido: {{ implode(', ', $busquedaIa['palabras']) }}.</p>
+                @endif
 
                 {{-- Filtros en escritorio: chips desplegables --}}
                 @if($hayFiltros)
@@ -138,6 +144,62 @@
             @if(!$esVitrina)<button wire:click="irAlCarrito" class="text-xs font-semibold px-2.5 py-1.5 rounded-lg flex-shrink-0" style="background-color: var(--tp); color: var(--tp-ink);">Ver</button>@endif
         </div>
     </div>
+
+    {{-- Pedido desde un mensaje (F7) --}}
+    @if($pedidoIaAbierto)
+        <div class="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4" wire:click="cerrarPedidoIa">
+            <div class="absolute inset-0 bg-black/50"></div>
+            <div class="relative t-card !rounded-t-2xl sm:!rounded-2xl shadow-2xl w-full sm:max-w-2xl max-h-[92vh] overflow-y-auto safe-bottom p-5 sm:p-6" wire:click.stop>
+                <button wire:click="cerrarPedidoIa" class="absolute top-3 right-3 t-icon-btn"><i class="fas fa-times"></i></button>
+                <h3 class="t-h text-xl font-bold t-text"><i class="fas fa-magic mr-1.5" style="color: var(--tp);"></i> Pedí escribiendo</h3>
+                <p class="text-sm t-soft mt-1">Escribí tu pedido como se lo dirías al comercio y te lo armamos. Después revisás y agregás al carrito.</p>
+
+                @if(empty($pedidoIaItems))
+                    <textarea wire:model="pedidoIaTexto" rows="4" class="t-input mt-4" placeholder="Ej: 2 kg de arroz, 3 gaseosas cola de 2 litros y una yerba de medio kilo"></textarea>
+                    @if($pedidoIaError)<p class="text-sm mt-2" style="color: var(--tdanger);">{{ $pedidoIaError }}</p>@endif
+                    <button wire:click="armarPedidoIa" wire:loading.attr="disabled" class="t-btn t-btn-lg w-full mt-4">
+                        <span wire:loading.remove wire:target="armarPedidoIa"><i class="fas fa-magic"></i> Armar mi pedido</span>
+                        <span wire:loading wire:target="armarPedidoIa"><i class="fas fa-spinner fa-spin"></i> Leyendo tu pedido...</span>
+                    </button>
+                @else
+                    <div class="mt-4 divide-y rounded-xl border" style="border-color: var(--tborde);">
+                        @foreach($pedidoIaItems as $i => $it)
+                            <div class="p-3 flex gap-3 items-start" style="border-color: var(--tborde);" wire:key="ia-{{ $i }}">
+                                <div class="w-12 h-12 rounded-lg t-img flex items-center justify-center overflow-hidden flex-shrink-0 border" style="border-color: var(--tborde);">
+                                    @if($it['foto'])<img src="{{ $it['foto'] }}" class="w-full h-full object-contain p-0.5">@else<i class="fas {{ $it['codigo'] ? 'fa-box' : 'fa-question' }} t-muted"></i>@endif
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-[11px] t-muted">Pediste: {{ $it['texto'] }}</p>
+                                    @if($it['codigo'])
+                                        <p class="text-sm font-semibold t-text">{{ $it['nombre'] }} <span class="t-precio text-sm ml-1">${{ number_format($it['precio'], 2, ',', '.') }}</span></p>
+                                    @else
+                                        <p class="text-sm font-semibold" style="color: var(--twarn);">No lo encontramos en el catálogo</p>
+                                    @endif
+                                    @if(count($it['alternativas']))
+                                        <select wire:change="elegirAlternativaIa({{ $i }}, $event.target.value)" class="t-input !py-1 !text-xs mt-1.5 !w-auto max-w-full">
+                                            <option value="">{{ $it['codigo'] ? '¿No era este? Elegí otro…' : 'Elegí uno parecido…' }}</option>
+                                            @foreach($it['alternativas'] as $alt)
+                                                <option value="{{ $alt['codigo'] }}">{{ $alt['nombre'] }} · ${{ number_format($alt['precio'], 2, ',', '.') }}</option>
+                                            @endforeach
+                                        </select>
+                                    @endif
+                                </div>
+                                <div class="flex flex-col items-end gap-1 flex-shrink-0">
+                                    <input type="number" step="{{ $permiteDecimal ? '0.01' : '1' }}" min="0.01" value="{{ $it['cantidad'] }}" wire:change="cambiarCantidadIa({{ $i }}, $event.target.value)" class="t-input !w-20 !py-1 text-center text-sm">
+                                    <button wire:click="quitarItemIa({{ $i }})" class="text-xs t-muted hover:underline">Quitar</button>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                    @php $encontrados = count(array_filter($pedidoIaItems, fn ($x) => !empty($x['codigo']))); @endphp
+                    <div class="flex gap-2 mt-4">
+                        <button wire:click="$set('pedidoIaItems', [])" class="t-btn-outline"><i class="fas fa-pen"></i> Corregir el texto</button>
+                        <button wire:click="agregarPedidoIa" @disabled($encontrados === 0) class="t-btn flex-1"><i class="fas fa-cart-plus"></i> Agregar {{ $encontrados }} al carrito</button>
+                    </div>
+                @endif
+            </div>
+        </div>
+    @endif
 
     {{-- Ficha del producto --}}
     @if($modalCantidadAbierto && $productoModal)

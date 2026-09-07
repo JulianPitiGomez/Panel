@@ -263,6 +263,16 @@ class TiendaSeguimientoService
             $this->tabla('tienda_eventos')->where('idpedido', $idpedido)->where('estado', $estado)
                 ->orderByDesc('id')->limit(1)->update(['notificado' => 1]);
 
+            // WhatsApp (F7): si el comercio lo tiene activo, el mismo aviso por ahi
+            try {
+                $wa = new TiendaWhatsappService($this->prefijo);
+                $codcli = DB::connection('client_db')->table($this->prefijo . 'pedidos_encab')->where('id', $idpedido)->value('codcli');
+                $nombre = (string) ($sat->comprador_id ? $this->tabla('tienda_compradores')->where('id', $sat->comprador_id)->value('nombre') : '');
+                $wa->avisarEstado($idpedido, $wa->telefonoComprador($sat->comprador_id ? (int) $sat->comprador_id : null, $codcli ? (int) $codcli : null), $nombre, self::etiqueta($estado, $sat->entrega_modo), $ctx['nombre']);
+            } catch (\Throwable $e) {
+                Log::warning('Tienda: WhatsApp del estado del pedido ' . $idpedido . ': ' . $e->getMessage());
+            }
+
             return true;
         } catch (\Throwable $e) {
             Log::error("Tienda: no se pudo avisar el estado del pedido {$idpedido}: " . $e->getMessage());

@@ -92,6 +92,28 @@ class TiendaIntegracionService
         return $mp->credenciales['access_token'] ?? null;
     }
 
+    /** Clave de Anthropic del comercio para el asistente de la tienda (F7), o null. */
+    public function claveIa(): ?string
+    {
+        $ia = $this->obtener(self::IA);
+        if (!$ia || !$ia->activa) {
+            return null;
+        }
+
+        return $ia->credenciales['api_key'] ?? null;
+    }
+
+    /** Configuracion de WhatsApp (API de Meta) del comercio, o null si no esta cargada / activa. */
+    public function whatsapp(): ?array
+    {
+        $wa = $this->obtener(self::WHATSAPP);
+        if (!$wa || !$wa->activa || empty($wa->credenciales['token']) || empty($wa->credenciales['phone_number_id'])) {
+            return null;
+        }
+
+        return $wa->credenciales;
+    }
+
     private function descifrar(?string $valor): array
     {
         if (!$valor) {
