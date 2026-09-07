@@ -60,6 +60,8 @@ class Carrito extends Component
 
     public $colores = [];
 
+    public $paso = '';             // checkout por pasos (cuenta > entrega > cuando > pago > confirmar)
+
     public $linkVendedor = null;   // ['id','codven','vendedor','salteados','observa'] cuando el carrito vino de un link del vendedor
 
     public function mount($tienda)
@@ -89,6 +91,166 @@ class Carrito extends Component
         }
     }
 
+    // ------------------------------------------------------------ checkout por pasos
+
+    /** Pasos del checkout para esta tienda y este comprador, en orden (clave => titulo). */
+    public function pasos(): array
+    {
+        $pasos = [];
+        if (!$this->compradorValidado) {
+            $pasos['cuenta'] = 'Tu cuenta';
+        }
+        $unicaSinDireccion = count($this->opcionesEntrega) === 1 && !$this->necesitaDireccion(array_key_first($this->opcionesEntrega));
+        if (count($this->opcionesEntrega) && !$unicaSinDireccion) {
+            $pasos['entrega'] = 'Entrega';
+        }
+        $pasos['cuando'] = 'Cuándo';
+        if (count($this->opcionesPago) > 1) {
+            $pasos['pago'] = 'Pago';
+        }
+        $pasos['confirmar'] = 'Confirmar';
+
+        return $pasos;
+    }
+
+    public function necesitaDireccion(?string $modo): bool
+    {
+        return in_array($modo, [\App\Services\TiendaPedidoService::ENTREGA_FLOTA, \App\Services\TiendaPedidoService::ENTREGA_CORREO, \App\Services\TiendaPedidoService::ENTREGA_A_CONVENIR], true);
+    }
+
+    public function direccionCompleta(): bool
+    {
+        return trim((string) $this->direccion['calle']) !== '' && trim((string) $this->direccion['localidad']) !== '';
+    }
+
+    /** Mensaje de error si el paso no esta completo; null si esta bien. */
+    private function validarPaso(string $paso): ?string
+    {
+        switch ($paso) {
+            case 'cuenta':
+                return $this->compradorValidado ? null : 'Ingresá con tu cuenta para seguir.';
+            case 'entrega':
+                if (!$this->entregaModo || !isset($this->opcionesEntrega[$this->entregaModo])) {
+                    return 'Elegí cómo querés recibir el pedido.';
+                }
+                if ($this->necesitaDireccion($this->entregaModo) && !$this->direccionCompleta()) {
+                    return 'Completá calle y localidad de la dirección de entrega.';
+                }
+                if (!$this->opcionesEntrega[$this->entregaModo]['disponible']) {
+                    return $this->opcionesEntrega[$this->entregaModo]['detalle'] ?: 'Esa forma de entrega no está disponible para tu dirección.';
+                }
+                return null;
+            case 'cuando':
+                if (!empty($this->agenda['activa'])) {
+                    return (new \App\Services\TiendaAgendaService($this->tablePrefix))->validar(
+                        $this->carrito, $this->entregaModo ?: 'retiro', $this->entregaFecha ?: null,
+                        $this->entregaFranjaId !== null ? (int) $this->entregaFranjaId : null
+                    );
+                }
+                return ($this->parafecha && $this->parafecha >= date('Y-m-d')) ? null : 'Elegí una fecha de entrega de hoy en adelante.';
+            case 'pago':
+                return ($this->pagoMedio && !empty($this->opcionesPago[$this->pagoMedio]['disponible'])) ? null : 'Elegí cómo vas a pagar.';
+        }
+
+        return null;
+    }
+
+    /** Primer paso que falta completar (el ultimo es 'confirmar'). */
+    private function primerPasoIncompleto(): string
+    {
+        foreach (array_keys($this->pasos()) as $k) {
+            if ($k !== 'confirmar' && $this->validarPaso($k) !== null) {
+                return $k;
+            }
+        }
+
+        return 'confirmar';
+    }
+
+    /** Se corre en cada render: si el paso actual dejo de existir o quedo adelantado, se acomoda. */
+    private function ajustarPaso(): void
+    {
+        $claves = array_keys($this->pasos());
+        // Se arranca siempre por el primer paso (aunque lo guardado ya lo deje valido: el comprador lo revisa)
+        if ($this->paso === '' || !in_array($this->paso, $claves, true)) {
+            $this->paso = $claves[0];
+        }
+        // Nunca mas adelante de lo que falta completar
+        $tope = $this->primerPasoIncompleto();
+        if (array_search($this->paso, $claves, true) > array_search($tope, $claves, true)) {
+            $this->paso = $tope;
+        }
+    }
+
+    public function irAPaso($paso)
+    {
+        $this->setupClientDatabase();
+        $this->cotizarEntrega();
+        $claves = array_keys($this->pasos());
+        if (!in_array($paso, $claves, true)) {
+            return;
+        }
+        $tope = $this->primerPasoIncompleto();
+        if (array_search($paso, $claves, true) <= array_search($tope, $claves, true)) {
+            $this->paso = $paso;
+        }
+    }
+
+    public function siguientePaso()
+    {
+        $this->setupClientDatabase();
+        $this->cotizarEntrega();
+        $this->entregaError = '';
+        $this->agendaError = '';
+        $this->pagoError = '';
+        $error = $this->validarPaso($this->paso);
+        if ($error !== null) {
+            match ($this->paso) {
+                'entrega' => $this->entregaError = $error,
+                'cuando'  => $this->agendaError = $error,
+                'pago'    => $this->pagoError = $error,
+                default   => $this->compradorError = $error,
+            };
+            return;
+        }
+        $claves = array_keys($this->pasos());
+        $i = array_search($this->paso, $claves, true);
+        $this->paso = $claves[$i + 1] ?? 'confirmar';
+    }
+
+    public function pasoAnterior()
+    {
+        $claves = array_keys($this->pasos());
+        $i = array_search($this->paso, $claves, true);
+        if ($i !== false && $i > 0) {
+            $this->paso = $claves[$i - 1];
+        }
+    }
+
+    /** Textos cortos de lo elegido, para el paso de confirmacion. */
+    public function resumenEleccion(): array
+    {
+        $entrega = $this->entregaModo && isset($this->opcionesEntrega[$this->entregaModo]) ? $this->opcionesEntrega[$this->entregaModo]['etiqueta'] : '';
+        if ($entrega && $this->necesitaDireccion($this->entregaModo) && $this->direccionCompleta()) {
+            $entrega .= ' · ' . $this->textoDireccion(true);
+        }
+        $cuando = '';
+        if (!empty($this->agenda['activa'])) {
+            if ($this->loAntesPosible && !empty($this->agenda['lo_antes_posible'])) {
+                $cuando = $this->agenda['lo_antes_posible']['etiqueta'];
+            } elseif ($this->entregaFecha) {
+                $dia = collect($this->agenda['dias'] ?? [])->firstWhere('fecha', $this->entregaFecha);
+                $franja = $dia ? collect($dia['franjas'])->firstWhere('id', (int) $this->entregaFranjaId) : null;
+                $cuando = ($dia['etiqueta'] ?? \Carbon\Carbon::parse($this->entregaFecha)->format('d/m')) . ($franja ? ' · ' . $franja['etiqueta'] : '');
+            }
+        } elseif ($this->parafecha) {
+            $cuando = \Carbon\Carbon::parse($this->parafecha)->format('d/m/Y');
+        }
+        $pago = $this->pagoMedio && isset($this->opcionesPago[$this->pagoMedio]) ? $this->opcionesPago[$this->pagoMedio]['etiqueta'] : '';
+
+        return ['entrega' => $entrega, 'cuando' => $cuando, 'pago' => $pago];
+    }
+
     // ------------------------------------------------------------ entrega
 
     /**
@@ -114,8 +276,10 @@ class Carrito extends Component
             $this->carrito
         );
 
-        // Modo elegido invalido o no disponible: pasar al primero disponible
-        if (!isset($this->opcionesEntrega[$this->entregaModo]) || !$this->opcionesEntrega[$this->entregaModo]['disponible']) {
+        // Modo elegido invalido o no disponible: pasar al primero disponible. Excepcion: un envio que
+        // todavia no se pudo cotizar porque falta la direccion se mantiene elegido (el paso pide la direccion).
+        $pendienteDireccion = isset($this->opcionesEntrega[$this->entregaModo]) && $this->necesitaDireccion($this->entregaModo) && !$this->direccionCompleta();
+        if (!$pendienteDireccion && (!isset($this->opcionesEntrega[$this->entregaModo]) || !$this->opcionesEntrega[$this->entregaModo]['disponible'])) {
             $this->entregaModo = '';
             foreach ($this->opcionesEntrega as $modo => $op) {
                 if ($op['disponible']) {
@@ -474,6 +638,7 @@ class Carrito extends Component
         $this->compradorValidado = true;
         $this->compradorNombre = session('tienda_comprador_nombre');
         $this->cargarDireccionesGuardadas();
+        $this->paso = '';   // el render lo lleva al siguiente paso
 
         // Recalcular precios según la lista del comprador
         $this->recalcularPrecios();
@@ -845,6 +1010,7 @@ class Carrito extends Component
     {
         if (!$this->pedidoConfirmado && !empty($this->carrito)) {
             $this->cotizarEntrega();
+            $this->ajustarPaso();
         }
 
         return view('tienda.carrito', [

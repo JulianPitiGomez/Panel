@@ -164,142 +164,22 @@
             <!-- Panel de checkout (1/3) -->
             <div class="lg:col-span-1" id="checkout">
                 <div class="bg-white rounded-xl shadow-sm p-6 lg:sticky lg:top-20">
-                    <h3 class="text-lg font-bold mb-4" style="color: {{ $colores['texto'] }}">Resumen del pedido</h3>
+                    @php $pasos = $this->pasos(); $clavesPasos = array_keys($pasos); $idxPaso = array_search($paso, $clavesPasos, true); $eleccion = $this->resumenEleccion(); @endphp
+                    <h3 class="text-lg font-bold mb-3" style="color: {{ $colores['texto'] }}">{{ $paso === 'confirmar' ? 'Confirmá tu pedido' : ($pasos[$paso] ?? 'Tu pedido') }}</h3>
 
-                    <!-- Validación de email (solo modo público) -->
-                    @if($modo === \App\Services\TiendaService::MODO_PUBLICA && !$compradorValidado)
-                        <div class="mb-4 p-4 bg-blue-50 rounded-lg">
-                            <p class="text-sm text-blue-700 mb-3">
-                                <i class="fas fa-info-circle mr-1"></i>
-                                Para confirmar tu pedido, ingresá con tu email y contraseña.
-                            </p>
-                            <div class="space-y-2">
-                                <input type="email" wire:model="emailComprador"
-                                       placeholder="tu@email.com" autocomplete="email"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 outline-none"
-                                       style="--tw-ring-color: {{ $colores['boton'] }}"
-                                       wire:keydown.enter="ingresarComprador">
-                                <input type="password" wire:model="passwordComprador"
-                                       placeholder="Contraseña" autocomplete="current-password"
-                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 outline-none"
-                                       style="--tw-ring-color: {{ $colores['boton'] }}"
-                                       wire:keydown.enter="ingresarComprador">
-                                <button wire:click="ingresarComprador"
-                                        wire:loading.attr="disabled"
-                                        class="w-full px-4 py-2 text-white text-sm font-semibold rounded-lg transition-opacity hover:opacity-90"
-                                        style="background-color: {{ $colores['precio'] }}">
-                                    <span wire:loading.remove wire:target="ingresarComprador">Ingresar</span>
-                                    <span wire:loading wire:target="ingresarComprador"><i class="fas fa-spinner fa-spin"></i></span>
-                                </button>
-                            </div>
-                            @if($compradorError)
-                                <p class="text-sm text-red-500 mt-2">{{ $compradorError }}</p>
-                            @endif
-                            <div class="mt-2 text-[11px] text-gray-500 flex flex-wrap gap-x-3">
-                                <a href="{{ route('tienda.recuperar', $tiendaSlug) }}" class="underline">Olvidé mi contraseña</a>
-                                @if(\App\Services\TiendaService::permiteRegistro($modo))
-                                    <a href="{{ route('tienda.registro', $tiendaSlug) }}" class="underline font-semibold" style="color: {{ $colores['boton'] }}">¿Primera vez? Creá tu cuenta</a>
-                                @endif
-                            </div>
-                        </div>
-                    @endif
-
-                    <!-- Info del comprador validado -->
-                    @if($compradorValidado)
-                        <div class="mb-4 p-3 bg-green-50 rounded-lg flex items-center gap-2">
-                            <i class="fas fa-check-circle text-green-500"></i>
-                            <div>
-                                <p class="text-sm font-medium text-green-800">{{ $compradorNombre }}</p>
-                                <p class="text-xs text-green-600">Cliente verificado</p>
-                            </div>
-                        </div>
-                    @endif
-
-                    <!-- Entrega: modalidad y dirección -->
-                    @if(count($opcionesEntrega))
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">¿Cómo lo recibís?</label>
-                        <div class="space-y-2">
-                            @foreach($opcionesEntrega as $op)
-                                <label class="flex items-start gap-2 p-2.5 rounded-lg border cursor-pointer {{ $entregaModo === $op['modo'] ? 'border-gray-400 bg-gray-50' : 'border-gray-200' }} {{ !$op['disponible'] ? 'opacity-60 cursor-not-allowed' : '' }}">
-                                    <input type="radio" wire:model.live="entregaModo" value="{{ $op['modo'] }}" @disabled(!$op['disponible']) class="mt-1">
-                                    <div class="flex-1 min-w-0">
-                                        <div class="flex items-center justify-between gap-2">
-                                            <span class="text-sm font-medium" style="color: {{ $colores['texto'] }}">{{ $op['etiqueta'] }}</span>
-                                            @if($op['disponible'])
-                                                <span class="text-sm font-bold whitespace-nowrap" style="color: {{ $colores['precio'] }}">
-                                                    {{ $op['importe'] > 0 ? '$' . number_format($op['importe'], 2, ',', '.') : ($op['modo'] === 'a_convenir' ? 'a definir' : 'Gratis') }}
-                                                </span>
-                                            @endif
-                                        </div>
-                                        <p class="text-xs text-gray-400 leading-snug">{{ $op['detalle'] }}</p>
-                                    </div>
-                                </label>
-                            @endforeach
-                        </div>
-
-                        @if(in_array($entregaModo, ['flota', 'correo', 'a_convenir']) || (isset($opcionesEntrega['flota']) && !$opcionesEntrega['flota']['disponible']) || (isset($opcionesEntrega['correo']) && !$opcionesEntrega['correo']['disponible']))
-                        <div class="mt-3 p-3 bg-gray-50 rounded-lg space-y-2">
-                            <p class="text-xs font-medium text-gray-600">Dirección de entrega</p>
-
-                            @if(count($direccionesGuardadas))
-                                <select wire:change="seleccionarDireccion($event.target.value)"
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
-                                    <option value="">Otra dirección…</option>
-                                    @foreach($direccionesGuardadas as $d)
-                                        <option value="{{ $d['id'] }}" @selected($direccionSeleccionada == $d['id'])>
-                                            {{ $d['alias'] ? $d['alias'] . ': ' : '' }}{{ $d['calle'] }} {{ $d['numero'] }}, {{ $d['localidad'] }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            @endif
-
-                            <div wire:ignore id="tienda_dir_buscador"></div>
-
-                            <div class="grid grid-cols-3 gap-2">
-                                <input type="text" wire:model.blur="direccion.calle" placeholder="Calle" class="col-span-2 px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                                <input type="text" wire:model.blur="direccion.numero" placeholder="Número" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                                <input type="text" wire:model.blur="direccion.piso" placeholder="Piso / depto" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                                <input type="text" wire:model.blur="direccion.localidad" placeholder="Localidad" class="col-span-2 px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                                <input type="text" wire:model.blur="direccion.provincia" placeholder="Provincia" class="col-span-2 px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                                <input type="text" wire:model.blur="direccion.cp" placeholder="Cód. postal" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                                <input type="text" wire:model.blur="direccion.referencia" placeholder="Referencia (timbre, entre calles…)" class="col-span-3 px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                            </div>
-
-                            @if(session('tienda_comprador_web_id') && !$direccionSeleccionada)
-                                <label class="flex items-center gap-2 text-xs text-gray-500">
-                                    <input type="checkbox" wire:model="guardarDireccion" class="w-4 h-4 rounded"> Guardar esta dirección para la próxima
-                                </label>
-                            @endif
-                        </div>
-                        @endif
-
-                        @if($entregaError)
-                            <p class="text-sm text-red-500 mt-2">{{ $entregaError }}</p>
-                        @endif
+                    {{-- Pasos --}}
+                    <div class="flex items-center gap-1 mb-4 overflow-x-auto pb-1">
+                        @foreach($pasos as $k => $titulo)
+                            @php $i = $loop->index; $hecho = $idxPaso !== false && $i < $idxPaso; $actual = $k === $paso; @endphp
+                            <button type="button" wire:click="irAPaso('{{ $k }}')" class="flex items-center gap-1.5 flex-shrink-0 {{ $hecho ? 'cursor-pointer' : ($actual ? '' : 'cursor-default') }}">
+                                <span class="w-6 h-6 rounded-full text-[11px] font-bold flex items-center justify-center {{ $actual || $hecho ? 'text-white' : 'bg-gray-200 text-gray-500' }}" style="{{ $actual || $hecho ? 'background-color: ' . $colores['boton'] : '' }}">
+                                    @if($hecho)<i class="fas fa-check text-[9px]"></i>@else{{ $i + 1 }}@endif
+                                </span>
+                                <span class="text-[11px] {{ $actual ? 'font-semibold' : 'text-gray-400' }} {{ !$actual ? 'hidden sm:inline' : '' }}" style="{{ $actual ? 'color: ' . $colores['texto'] : '' }}">{{ $titulo }}</span>
+                            </button>
+                            @if(!$loop->last)<span class="w-4 h-px bg-gray-200 flex-shrink-0"></span>@endif
+                        @endforeach
                     </div>
-                    @endif
-
-                    <!-- Pago: medio -->
-                    @if(count($opcionesPago))
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">¿Cómo pagás?</label>
-                        <div class="space-y-2">
-                            @foreach($opcionesPago as $op)
-                                <label class="flex items-start gap-2 p-2.5 rounded-lg border cursor-pointer {{ $pagoMedio === $op['medio'] ? 'border-gray-400 bg-gray-50' : 'border-gray-200' }} {{ !$op['disponible'] ? 'opacity-60 cursor-not-allowed' : '' }}">
-                                    <input type="radio" wire:model.live="pagoMedio" value="{{ $op['medio'] }}" @disabled(!$op['disponible']) class="mt-1">
-                                    <div class="flex-1 min-w-0">
-                                        <span class="text-sm font-medium" style="color: {{ $colores['texto'] }}">{{ $op['etiqueta'] }}</span>
-                                        <p class="text-xs text-gray-400 leading-snug">{{ $op['detalle'] }}</p>
-                                    </div>
-                                </label>
-                            @endforeach
-                        </div>
-                        @if($pagoError)
-                            <p class="text-sm text-red-500 mt-2">{{ $pagoError }}</p>
-                        @endif
-                    </div>
-                    @endif
 
                     <!-- Aviso de tienda cerrada -->
                     @if(!empty($agenda['mensaje_cerrada']))
@@ -308,135 +188,319 @@
                         </div>
                     @endif
 
-                    <!-- Cuándo: agenda del comercio o fecha libre -->
-                    @if(!empty($agenda['activa']))
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">¿Cuándo lo querés?</label>
-                            @if($agenda['anticipacion_horas'] > 0)
-                                <p class="text-[11px] text-gray-400 mb-2">Este pedido necesita {{ $agenda['anticipacion_horas'] >= 48 ? round($agenda['anticipacion_horas'] / 24) . ' días' : $agenda['anticipacion_horas'] . ' horas' }} de anticipación.</p>
-                            @endif
-
-                            @if(empty($agenda['dias']))
-                                <p class="text-sm text-red-500">Por ahora no hay días disponibles para este pedido. Consultá al comercio.</p>
-                            @else
-                                @if($agenda['lo_antes_posible'])
-                                    <button type="button" wire:click="elegirLoAntesPosible"
-                                            class="w-full text-left mb-2 px-3 py-2 rounded-lg border text-sm {{ $loAntesPosible ? 'border-gray-400 bg-gray-50 font-medium' : 'border-gray-200' }}" style="color: {{ $colores['texto'] }}">
-                                        <i class="fas fa-bolt mr-1" style="color: {{ $colores['boton'] }}"></i> {{ $agenda['lo_antes_posible']['etiqueta'] }}
+                    @if($paso === 'cuenta')
+                        <!-- Validación de email (solo modo público) -->
+                        @if($modo === \App\Services\TiendaService::MODO_PUBLICA && !$compradorValidado)
+                            <div class="mb-4 p-4 bg-blue-50 rounded-lg">
+                                <p class="text-sm text-blue-700 mb-3">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    Para confirmar tu pedido, ingresá con tu email y contraseña.
+                                </p>
+                                <div class="space-y-2">
+                                    <input type="email" wire:model="emailComprador"
+                                           placeholder="tu@email.com" autocomplete="email"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 outline-none"
+                                           style="--tw-ring-color: {{ $colores['boton'] }}"
+                                           wire:keydown.enter="ingresarComprador">
+                                    <input type="password" wire:model="passwordComprador"
+                                           placeholder="Contraseña" autocomplete="current-password"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 outline-none"
+                                           style="--tw-ring-color: {{ $colores['boton'] }}"
+                                           wire:keydown.enter="ingresarComprador">
+                                    <button wire:click="ingresarComprador"
+                                            wire:loading.attr="disabled"
+                                            class="w-full px-4 py-2 text-white text-sm font-semibold rounded-lg transition-opacity hover:opacity-90"
+                                            style="background-color: {{ $colores['precio'] }}">
+                                        <span wire:loading.remove wire:target="ingresarComprador">Ingresar</span>
+                                        <span wire:loading wire:target="ingresarComprador"><i class="fas fa-spinner fa-spin"></i></span>
                                     </button>
-                                @endif
-
-                                <div class="flex gap-2 overflow-x-auto pb-1">
-                                    @foreach($agenda['dias'] as $dia)
-                                        <button type="button" wire:click="elegirDia('{{ $dia['fecha'] }}')"
-                                                class="flex-shrink-0 px-3 py-2 rounded-lg border text-xs {{ !$loAntesPosible && $entregaFecha === $dia['fecha'] ? 'text-white border-transparent' : 'border-gray-200 text-gray-700' }}"
-                                                style="{{ !$loAntesPosible && $entregaFecha === $dia['fecha'] ? 'background-color: ' . $colores['precio'] : '' }}">
-                                            {{ $dia['etiqueta'] }}
-                                        </button>
-                                    @endforeach
                                 </div>
+                                @if($compradorError)
+                                    <p class="text-sm text-red-500 mt-2">{{ $compradorError }}</p>
+                                @endif
+                                <div class="mt-2 text-[11px] text-gray-500 flex flex-wrap gap-x-3">
+                                    <a href="{{ route('tienda.recuperar', $tiendaSlug) }}" class="underline">Olvidé mi contraseña</a>
+                                    @if(\App\Services\TiendaService::permiteRegistro($modo))
+                                        <a href="{{ route('tienda.registro', $tiendaSlug) }}" class="underline font-semibold" style="color: {{ $colores['boton'] }}">¿Primera vez? Creá tu cuenta</a>
+                                    @endif
+                                </div>
+                            </div>
+                        @endif
 
-                                @php $diaElegido = !$loAntesPosible ? collect($agenda['dias'])->firstWhere('fecha', $entregaFecha) : null; @endphp
-                                @if($diaElegido)
-                                    <div class="mt-2 grid grid-cols-2 gap-2">
-                                        @foreach($diaElegido['franjas'] as $f)
-                                            <button type="button" wire:click="elegirFranja({{ $f['id'] }})" @disabled(!$f['disponible'])
-                                                    title="{{ $f['motivo'] ?? '' }}"
-                                                    class="px-3 py-2 rounded-lg border text-xs {{ (int) $entregaFranjaId === (int) $f['id'] && $f['disponible'] ? 'text-white border-transparent' : 'border-gray-200 text-gray-700' }} {{ !$f['disponible'] ? 'opacity-40 line-through cursor-not-allowed' : '' }}"
-                                                    style="{{ (int) $entregaFranjaId === (int) $f['id'] && $f['disponible'] ? 'background-color: ' . $colores['precio'] : '' }}">
-                                                {{ $f['etiqueta'] }}
+                    @endif
+
+                    @if($paso === 'entrega')
+                        <!-- Entrega: modalidad y dirección -->
+                        @if(count($opcionesEntrega))
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">¿Cómo lo recibís?</label>
+                            <p class="text-[11px] text-gray-400 -mt-1 mb-2">Si elegís envío, después te pedimos la dirección.</p>
+                            <div class="space-y-2">
+                                @foreach($opcionesEntrega as $op)
+                                    <label class="flex items-start gap-2 p-2.5 rounded-lg border cursor-pointer {{ $entregaModo === $op['modo'] ? 'border-gray-400 bg-gray-50' : 'border-gray-200' }} {{ !$op['disponible'] && !($this->necesitaDireccion($op['modo']) && !$this->direccionCompleta()) ? 'opacity-60 cursor-not-allowed' : '' }}">
+                                        <input type="radio" wire:model.live="entregaModo" value="{{ $op['modo'] }}" @disabled(!$op['disponible'] && !($this->necesitaDireccion($op['modo']) && !$this->direccionCompleta())) class="mt-1">
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <span class="text-sm font-medium" style="color: {{ $colores['texto'] }}">{{ $op['etiqueta'] }}</span>
+                                                @if($op['disponible'])
+                                                    <span class="text-sm font-bold whitespace-nowrap" style="color: {{ $colores['precio'] }}">
+                                                        {{ $op['importe'] > 0 ? '$' . number_format($op['importe'], 2, ',', '.') : ($op['modo'] === 'a_convenir' ? 'a definir' : 'Gratis') }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                            <p class="text-xs text-gray-400 leading-snug">{{ $op['detalle'] }}</p>
+                                        </div>
+                                    </label>
+                                @endforeach
+                            </div>
+    
+                            @if($this->necesitaDireccion($entregaModo))
+                            <div class="mt-3 p-3 bg-gray-50 rounded-lg space-y-2">
+                                <p class="text-xs font-medium text-gray-600">Dirección de entrega</p>
+    
+                                @if(count($direccionesGuardadas))
+                                    <select wire:change="seleccionarDireccion($event.target.value)"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                                        <option value="">Otra dirección…</option>
+                                        @foreach($direccionesGuardadas as $d)
+                                            <option value="{{ $d['id'] }}" @selected($direccionSeleccionada == $d['id'])>
+                                                {{ $d['alias'] ? $d['alias'] . ': ' : '' }}{{ $d['calle'] }} {{ $d['numero'] }}, {{ $d['localidad'] }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                @endif
+    
+                                <div wire:ignore id="tienda_dir_buscador"></div>
+    
+                                <div class="grid grid-cols-3 gap-2">
+                                    <input type="text" wire:model.blur="direccion.calle" placeholder="Calle" class="col-span-2 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                    <input type="text" wire:model.blur="direccion.numero" placeholder="Número" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                    <input type="text" wire:model.blur="direccion.piso" placeholder="Piso / depto" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                    <input type="text" wire:model.blur="direccion.localidad" placeholder="Localidad" class="col-span-2 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                    <input type="text" wire:model.blur="direccion.provincia" placeholder="Provincia" class="col-span-2 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                    <input type="text" wire:model.blur="direccion.cp" placeholder="Cód. postal" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                    <input type="text" wire:model.blur="direccion.referencia" placeholder="Referencia (timbre, entre calles…)" class="col-span-3 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                </div>
+    
+                                @if(session('tienda_comprador_web_id') && !$direccionSeleccionada)
+                                    <label class="flex items-center gap-2 text-xs text-gray-500">
+                                        <input type="checkbox" wire:model="guardarDireccion" class="w-4 h-4 rounded"> Guardar esta dirección para la próxima
+                                    </label>
+                                @endif
+                            </div>
+                            @endif
+    
+                            @if($entregaError)
+                                <p class="text-sm text-red-500 mt-2">{{ $entregaError }}</p>
+                            @endif
+                        </div>
+                        @endif
+
+                    @endif
+
+                    @if($paso === 'cuando')
+                        <!-- Cuándo: agenda del comercio o fecha libre -->
+                        @if(!empty($agenda['activa']))
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">¿Cuándo lo querés?</label>
+                                @if($agenda['anticipacion_horas'] > 0)
+                                    <p class="text-[11px] text-gray-400 mb-2">Este pedido necesita {{ $agenda['anticipacion_horas'] >= 48 ? round($agenda['anticipacion_horas'] / 24) . ' días' : $agenda['anticipacion_horas'] . ' horas' }} de anticipación.</p>
+                                @endif
+    
+                                @if(empty($agenda['dias']))
+                                    <p class="text-sm text-red-500">Por ahora no hay días disponibles para este pedido. Consultá al comercio.</p>
+                                @else
+                                    @if($agenda['lo_antes_posible'])
+                                        <button type="button" wire:click="elegirLoAntesPosible"
+                                                class="w-full text-left mb-2 px-3 py-2 rounded-lg border text-sm {{ $loAntesPosible ? 'border-gray-400 bg-gray-50 font-medium' : 'border-gray-200' }}" style="color: {{ $colores['texto'] }}">
+                                            <i class="fas fa-bolt mr-1" style="color: {{ $colores['boton'] }}"></i> {{ $agenda['lo_antes_posible']['etiqueta'] }}
+                                        </button>
+                                    @endif
+    
+                                    <div class="flex gap-2 overflow-x-auto pb-1">
+                                        @foreach($agenda['dias'] as $dia)
+                                            <button type="button" wire:click="elegirDia('{{ $dia['fecha'] }}')"
+                                                    class="flex-shrink-0 px-3 py-2 rounded-lg border text-xs {{ !$loAntesPosible && $entregaFecha === $dia['fecha'] ? 'text-white border-transparent' : 'border-gray-200 text-gray-700' }}"
+                                                    style="{{ !$loAntesPosible && $entregaFecha === $dia['fecha'] ? 'background-color: ' . $colores['precio'] : '' }}">
+                                                {{ $dia['etiqueta'] }}
                                             </button>
                                         @endforeach
                                     </div>
+    
+                                    @php $diaElegido = !$loAntesPosible ? collect($agenda['dias'])->firstWhere('fecha', $entregaFecha) : null; @endphp
+                                    @if($diaElegido)
+                                        <div class="mt-2 grid grid-cols-2 gap-2">
+                                            @foreach($diaElegido['franjas'] as $f)
+                                                <button type="button" wire:click="elegirFranja({{ $f['id'] }})" @disabled(!$f['disponible'])
+                                                        title="{{ $f['motivo'] ?? '' }}"
+                                                        class="px-3 py-2 rounded-lg border text-xs {{ (int) $entregaFranjaId === (int) $f['id'] && $f['disponible'] ? 'text-white border-transparent' : 'border-gray-200 text-gray-700' }} {{ !$f['disponible'] ? 'opacity-40 line-through cursor-not-allowed' : '' }}"
+                                                        style="{{ (int) $entregaFranjaId === (int) $f['id'] && $f['disponible'] ? 'background-color: ' . $colores['precio'] : '' }}">
+                                                    {{ $f['etiqueta'] }}
+                                                </button>
+                                            @endforeach
+                                        </div>
+                                    @endif
                                 @endif
-                            @endif
-                            @if($agendaError)
-                                <p class="text-sm text-red-500 mt-2">{{ $agendaError }}</p>
-                            @endif
-                        </div>
-                    @else
-                        <!-- Fecha de entrega libre (sin agenda) -->
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de entrega</label>
-                            <input type="date" wire:model="parafecha"
-                                   min="{{ date('Y-m-d') }}"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 outline-none"
-                                   style="--tw-ring-color: {{ $colores['boton'] }}">
-                            @if($agendaError)
-                                <p class="text-sm text-red-500 mt-2">{{ $agendaError }}</p>
-                            @endif
-                        </div>
+                                @if($agendaError)
+                                    <p class="text-sm text-red-500 mt-2">{{ $agendaError }}</p>
+                                @endif
+                            </div>
+                        @else
+                            <!-- Fecha de entrega libre (sin agenda) -->
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de entrega</label>
+                                <input type="date" wire:model="parafecha"
+                                       min="{{ date('Y-m-d') }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 outline-none"
+                                       style="--tw-ring-color: {{ $colores['boton'] }}">
+                                @if($agendaError)
+                                    <p class="text-sm text-red-500 mt-2">{{ $agendaError }}</p>
+                                @endif
+                            </div>
+                        @endif
+
                     @endif
 
-                    <!-- Observaciones -->
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
-                        <textarea wire:model="observaciones"
-                                  rows="2"
-                                  placeholder="Notas para tu pedido..."
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 outline-none resize-none"
-                                  style="--tw-ring-color: {{ $colores['boton'] }}"></textarea>
-                    </div>
-
-                    <hr class="my-4">
-
-                    <!-- Resumen -->
-                    <div class="space-y-2 mb-4">
-                        <div class="flex justify-between text-sm">
-                            <span class="text-gray-500">Productos ({{ count($carrito) }})</span>
-                            <span class="font-medium">${{ number_format($total, 2, ',', '.') }}</span>
-                        </div>
-                        @foreach($promoLineas as $pl)
-                            <div class="flex justify-between text-sm">
-                                <span class="text-green-700"><i class="fas fa-tag mr-1 text-xs"></i>{{ $pl['nombre'] }}</span>
-                                <span class="font-medium text-green-700">-${{ number_format(abs($pl['importe']), 2, ',', '.') }}</span>
-                            </div>
-                        @endforeach
-                        @if($promoExcluido)
-                            <p class="text-[11px] text-gray-400">Tu cuenta no participa de las promociones.</p>
-                        @endif
-                        @if(count($promoLineas))
-                            <p class="text-[10px] text-gray-400">Las promociones se confirman al facturar según su vigencia.</p>
-                        @endif
-                        @if($resumenIva['iva'] > 0)
-                            <div class="text-xs text-gray-400 pt-1 border-t border-dashed border-gray-200">
-                                <p class="mb-0.5">Los precios incluyen IVA:</p>
-                                @foreach($resumenIva['por_tasa'] as $t)
-                                    <div class="flex justify-between">
-                                        <span>IVA {{ \App\Services\TiendaPrecioService::etiquetaTasa($t['tasa']) }} sobre ${{ number_format($t['neto'], 2, ',', '.') }}</span>
-                                        <span>${{ number_format($t['iva'], 2, ',', '.') }}</span>
-                                    </div>
+                    @if($paso === 'pago')
+                        <!-- Pago: medio -->
+                        @if(count($opcionesPago))
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">¿Cómo pagás?</label>
+                            <div class="space-y-2">
+                                @foreach($opcionesPago as $op)
+                                    <label class="flex items-start gap-2 p-2.5 rounded-lg border cursor-pointer {{ $pagoMedio === $op['medio'] ? 'border-gray-400 bg-gray-50' : 'border-gray-200' }} {{ !$op['disponible'] ? 'opacity-60 cursor-not-allowed' : '' }}">
+                                        <input type="radio" wire:model.live="pagoMedio" value="{{ $op['medio'] }}" @disabled(!$op['disponible']) class="mt-1">
+                                        <div class="flex-1 min-w-0">
+                                            <span class="text-sm font-medium" style="color: {{ $colores['texto'] }}">{{ $op['etiqueta'] }}</span>
+                                            <p class="text-xs text-gray-400 leading-snug">{{ $op['detalle'] }}</p>
+                                        </div>
+                                    </label>
                                 @endforeach
                             </div>
-                        @endif
-                    </div>
-
-                    @if($entregaModo)
-                        <div class="flex justify-between text-sm mb-2">
-                            <span class="text-gray-500">Envío</span>
-                            <span class="font-medium">{{ $envioImporte > 0 ? '$' . number_format($envioImporte, 2, ',', '.') : ($entregaModo === 'a_convenir' ? 'a convenir' : 'Gratis') }}</span>
+                            @if($pagoError)
+                                <p class="text-sm text-red-500 mt-2">{{ $pagoError }}</p>
+                            @endif
                         </div>
+                        @endif
+
                     @endif
 
+                    @if($paso === 'confirmar')
+                        {{-- Lo elegido, con acceso a cambiarlo --}}
+                        <div class="mb-4 divide-y divide-gray-100 rounded-lg border border-gray-200 text-sm">
+                            @if($compradorValidado)
+                                <div class="px-3 py-2 flex items-center gap-2"><i class="fas fa-user text-gray-400 w-4"></i><span class="flex-1 text-gray-700">{{ $compradorNombre }}</span></div>
+                            @endif
+                            @foreach(['entrega' => ['fa-truck', 'Entrega'], 'cuando' => ['fa-clock', 'Cuándo'], 'pago' => ['fa-wallet', 'Pago']] as $k => [$icono, $titulo])
+                                @if($eleccion[$k] !== '')
+                                    <div class="px-3 py-2 flex items-center gap-2">
+                                        <i class="fas {{ $icono }} text-gray-400 w-4"></i>
+                                        <span class="flex-1 text-gray-700 min-w-0"><span class="text-[10px] uppercase text-gray-400 block leading-none mb-0.5">{{ $titulo }}</span>{{ $eleccion[$k] }}</span>
+                                        @if(isset($pasos[$k]))<button type="button" wire:click="irAPaso('{{ $k }}')" class="text-xs hover:underline" style="color: {{ $colores['boton'] }}">Cambiar</button>@endif
+                                    </div>
+                                @endif
+                            @endforeach
+                        </div>
+
+                        <!-- Observaciones -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
+                            <textarea wire:model="observaciones"
+                                      rows="2"
+                                      placeholder="Notas para tu pedido..."
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 outline-none resize-none"
+                                      style="--tw-ring-color: {{ $colores['boton'] }}"></textarea>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Resumen -->
+                        <div class="space-y-2 mb-4">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-500">Productos ({{ count($carrito) }})</span>
+                                <span class="font-medium">${{ number_format($total, 2, ',', '.') }}</span>
+                            </div>
+                            @foreach($promoLineas as $pl)
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-green-700"><i class="fas fa-tag mr-1 text-xs"></i>{{ $pl['nombre'] }}</span>
+                                    <span class="font-medium text-green-700">-${{ number_format(abs($pl['importe']), 2, ',', '.') }}</span>
+                                </div>
+                            @endforeach
+                            @if($promoExcluido)
+                                <p class="text-[11px] text-gray-400">Tu cuenta no participa de las promociones.</p>
+                            @endif
+                            @if(count($promoLineas))
+                                <p class="text-[10px] text-gray-400">Las promociones se confirman al facturar según su vigencia.</p>
+                            @endif
+                            @if($resumenIva['iva'] > 0)
+                                <div class="text-xs text-gray-400 pt-1 border-t border-dashed border-gray-200">
+                                    <p class="mb-0.5">Los precios incluyen IVA:</p>
+                                    @foreach($resumenIva['por_tasa'] as $t)
+                                        <div class="flex justify-between">
+                                            <span>IVA {{ \App\Services\TiendaPrecioService::etiquetaTasa($t['tasa']) }} sobre ${{ number_format($t['neto'], 2, ',', '.') }}</span>
+                                            <span>${{ number_format($t['iva'], 2, ',', '.') }}</span>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </div>
+    
+                        @if($entregaModo)
+                            <div class="flex justify-between text-sm mb-2">
+                                <span class="text-gray-500">Envío</span>
+                                <span class="font-medium">{{ $envioImporte > 0 ? '$' . number_format($envioImporte, 2, ',', '.') : ($entregaModo === 'a_convenir' ? 'a convenir' : 'Gratis') }}</span>
+                            </div>
+                        @endif
+    
+                        <div class="flex justify-between text-lg font-bold border-t pt-3">
+                            <span style="color: {{ $colores['texto'] }}">Total</span>
+                            <span style="color: {{ $colores['precio'] }}">${{ number_format($totalConEnvio, 2, ',', '.') }}</span>
+                        </div>
+
+                        @if($entregaModo)
+                            <div class="flex justify-between text-sm mb-2">
+                                <span class="text-gray-500">Envío</span>
+                                <span class="font-medium">{{ $envioImporte > 0 ? '$' . number_format($envioImporte, 2, ',', '.') : ($entregaModo === 'a_convenir' ? 'a convenir' : 'Gratis') }}</span>
+                            </div>
+                        @endif
+                    @endif
+
+                    {{-- Total: en todos los pasos --}}
                     <div class="flex justify-between text-lg font-bold border-t pt-3">
                         <span style="color: {{ $colores['texto'] }}">Total</span>
                         <span style="color: {{ $colores['precio'] }}">${{ number_format($totalConEnvio, 2, ',', '.') }}</span>
                     </div>
+                    @if($paso !== 'confirmar' && $entregaModo && $envioImporte > 0)
+                        <p class="text-[11px] text-gray-400 text-right">incluye envío ${{ number_format($envioImporte, 2, ',', '.') }}</p>
+                    @endif
 
-                    <!-- Botón confirmar -->
-                    <button wire:click="confirmarPedido"
-                            wire:loading.attr="disabled"
-                            @if(!$compradorValidado) disabled @endif
-                            class="w-full mt-4 py-3 text-white font-semibold rounded-lg transition-opacity hover:opacity-90 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                            style="background-color: {{ $colores['boton'] }}">
-                        <span wire:loading.remove wire:target="confirmarPedido">
-                            <i class="fas fa-check mr-2"></i> Confirmar pedido
-                        </span>
-                        <span wire:loading wire:target="confirmarPedido">
-                            <i class="fas fa-spinner fa-spin mr-2"></i> Procesando...
-                        </span>
-                    </button>
+                    {{-- Navegacion --}}
+                    @if($paso === 'confirmar')
+                        <!-- Botón confirmar -->
+                        <button wire:click="confirmarPedido"
+                                wire:loading.attr="disabled"
+                                @if(!$compradorValidado) disabled @endif
+                                class="w-full mt-4 py-3 text-white font-semibold rounded-lg transition-opacity hover:opacity-90 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                style="background-color: {{ $colores['boton'] }}">
+                            <span wire:loading.remove wire:target="confirmarPedido">
+                                <i class="fas fa-check mr-2"></i> Confirmar pedido
+                            </span>
+                            <span wire:loading wire:target="confirmarPedido">
+                                <i class="fas fa-spinner fa-spin mr-2"></i> Procesando...
+                            </span>
+                        </button>
 
+                    @elseif($paso !== 'cuenta')
+                        <div class="flex gap-2 mt-4">
+                            @if($idxPaso > 0)
+                                <button type="button" wire:click="pasoAnterior" class="px-4 py-3 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50"><i class="fas fa-arrow-left"></i></button>
+                            @endif
+                            <button type="button" wire:click="siguientePaso" wire:loading.attr="disabled" class="flex-1 py-3 text-white font-semibold rounded-lg transition-opacity hover:opacity-90 shadow-lg" style="background-color: {{ $colores['boton'] }}">
+                                <span wire:loading.remove wire:target="siguientePaso">Continuar <i class="fas fa-arrow-right ml-1"></i></span>
+                                <span wire:loading wire:target="siguientePaso"><i class="fas fa-spinner fa-spin"></i></span>
+                            </button>
+                        </div>
+                    @endif
                     @if(session()->has('error'))
                         <p class="text-sm text-red-500 mt-2 text-center">{{ session('error') }}</p>
                     @endif
@@ -449,9 +513,15 @@
                     <p class="text-[11px] text-gray-400 leading-none">Total</p>
                     <p class="text-lg font-bold leading-tight" style="color: {{ $colores['precio'] }}">${{ number_format($totalConEnvio ?? 0, 2, ',', '.') }}</p>
                 </div>
-                <a href="#checkout" class="px-5 py-2.5 rounded-lg text-white font-semibold text-sm" style="background-color: {{ $colores['boton'] }}">
-                    {{ $compradorValidado ? 'Confirmar pedido' : 'Continuar' }} <i class="fas fa-arrow-down ml-1"></i>
-                </a>
+                @if($paso === 'confirmar' || $paso === 'cuenta')
+                    <a href="#checkout" class="px-5 py-2.5 rounded-lg text-white font-semibold text-sm" style="background-color: {{ $colores['boton'] }}">
+                        {{ $paso === 'confirmar' ? 'Confirmar pedido' : 'Ingresar' }} <i class="fas fa-arrow-down ml-1"></i>
+                    </a>
+                @else
+                    <a href="#checkout" wire:click.prevent="siguientePaso" class="px-5 py-2.5 rounded-lg text-white font-semibold text-sm" style="background-color: {{ $colores['boton'] }}">
+                        Continuar <i class="fas fa-arrow-right ml-1"></i>
+                    </a>
+                @endif
             </div>
             <div class="lg:hidden h-20"></div>
             <div class="hidden">            </div>
