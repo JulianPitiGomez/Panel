@@ -350,19 +350,8 @@
                     @endif
 
                     <div class="space-y-3">
-                        <input type="file" wire:model="fotoLogo" accept="image/*"
-                               class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#FFAF22] file:text-white hover:file:bg-[#E89B0A] cursor-pointer">
+                        <x-subir-archivo model="fotoLogo" accept="image/*" titulo="Arrastrá el logo acá o hacé clic para elegirlo" ayuda="PNG o JPG cuadrado, hasta 2 MB" />
                         @error('fotoLogo') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
-
-                        <div wire:loading wire:target="fotoLogo" class="flex items-center gap-2 text-sm text-gray-500">
-                            <i class="fas fa-spinner fa-spin text-[#FFAF22]"></i> Cargando...
-                        </div>
-
-                        @if($fotoLogo)
-                            <div class="flex justify-center">
-                                <img src="{{ $fotoLogo->temporaryUrl() }}" alt="Preview" class="w-24 h-24 object-contain rounded-lg border">
-                            </div>
-                        @endif
 
                         <button wire:click="subirLogo" wire:loading.attr="disabled" wire:target="subirLogo"
                                 {{ !$fotoLogo ? 'disabled' : '' }}
@@ -393,19 +382,8 @@
                     @endif
 
                     <div class="space-y-3">
-                        <input type="file" wire:model="fotoPortada" accept="image/*"
-                               class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#FFAF22] file:text-white hover:file:bg-[#E89B0A] cursor-pointer">
+                        <x-subir-archivo model="fotoPortada" accept="image/*" titulo="Arrastrá la portada acá o hacé clic para elegirla" ayuda="JPG o PNG de 1200x400, hasta 5 MB" />
                         @error('fotoPortada') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
-
-                        <div wire:loading wire:target="fotoPortada" class="flex items-center gap-2 text-sm text-gray-500">
-                            <i class="fas fa-spinner fa-spin text-[#FFAF22]"></i> Cargando...
-                        </div>
-
-                        @if($fotoPortada)
-                            <div>
-                                <img src="{{ $fotoPortada->temporaryUrl() }}" alt="Preview" class="w-full h-32 object-cover rounded-lg border">
-                            </div>
-                        @endif
 
                         <button wire:click="subirPortada" wire:loading.attr="disabled" wire:target="subirPortada"
                                 {{ !$fotoPortada ? 'disabled' : '' }}
@@ -436,19 +414,8 @@
                     @endif
 
                     <div class="space-y-3">
-                        <input type="file" wire:model="fotoDefault" accept="image/*"
-                               class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#FFAF22] file:text-white hover:file:bg-[#E89B0A] cursor-pointer">
+                        <x-subir-archivo model="fotoDefault" accept="image/*" titulo="Arrastrá la foto acá o hacé clic para elegirla" ayuda="PNG o JPG cuadrado, hasta 2 MB" />
                         @error('fotoDefault') <p class="text-xs text-red-500">{{ $message }}</p> @enderror
-
-                        <div wire:loading wire:target="fotoDefault" class="flex items-center gap-2 text-sm text-gray-500">
-                            <i class="fas fa-spinner fa-spin text-[#FFAF22]"></i> Cargando...
-                        </div>
-
-                        @if($fotoDefault)
-                            <div class="flex justify-center">
-                                <img src="{{ $fotoDefault->temporaryUrl() }}" alt="Preview" class="w-24 h-24 object-contain rounded-lg border">
-                            </div>
-                        @endif
 
                         <button wire:click="subirFotoDefault" wire:loading.attr="disabled" wire:target="subirFotoDefault"
                                 {{ !$fotoDefault ? 'disabled' : '' }}
@@ -1117,7 +1084,7 @@
                         <i class="fas fa-download mr-1"></i> Descargar planilla
                     </button>
                     <div class="flex items-center gap-2">
-                        <input type="file" wire:model="planillaPesos" accept=".csv,text/csv" class="text-xs w-48">
+                        <x-subir-archivo model="planillaPesos" accept=".csv,text/csv" :compacto="true" titulo="Planilla CSV" class="w-64" />
                         <button wire:click="importarPlanillaPesos" wire:loading.attr="disabled" class="px-3 py-2 rounded-lg text-xs font-semibold bg-[#1E1B35] text-white hover:bg-[#2d2952] whitespace-nowrap">
                             <i class="fas fa-upload mr-1"></i> Importar
                         </button>
@@ -1339,20 +1306,9 @@
                     {{-- Subir nuevas --}}
                     <div class="border-t border-gray-100 pt-4">
                         <label class="block text-sm font-secondary font-medium text-gray-700 mb-2">Agregar fotos (podés elegir varias)</label>
-                        <input type="file" wire:model="fotosNuevas" accept="image/*" multiple
-                               class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#FFAF22] file:text-white hover:file:bg-[#E89B0A] file:cursor-pointer">
+                        <x-subir-archivo model="fotosNuevas" accept="image/*" :multiple="true" titulo="Arrastrá las fotos acá o hacé clic para elegirlas" ayuda="Podés elegir varias. JPG o PNG, hasta 5 MB cada una" />
                         @error('fotosNuevas') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
                         @error('fotosNuevas.*') <p class="mt-1 text-xs text-red-500">{{ $message }}</p> @enderror
-                        @if(count($fotosNuevas))
-                            <div class="flex gap-2 mt-3 flex-wrap">
-                                @foreach($fotosNuevas as $fn)
-                                    <img src="{{ $fn->temporaryUrl() }}" class="w-16 h-16 object-contain rounded-lg border border-gray-200 bg-gray-50">
-                                @endforeach
-                            </div>
-                        @endif
-                        <div wire:loading wire:target="fotosNuevas" class="flex items-center gap-2 text-sm text-gray-500 mt-2">
-                            <i class="fas fa-spinner fa-spin text-[#FFAF22]"></i> Cargando imágenes...
-                        </div>
                     </div>
                 </div>
                 <div class="px-6 py-4 border-t border-gray-200 flex gap-3">

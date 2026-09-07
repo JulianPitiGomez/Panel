@@ -131,9 +131,8 @@
                                             @endif
                                             @if($comprobantePedidoId === $pedido['id'])
                                                 <div class="mt-2 space-y-2">
-                                                    <input type="file" wire:model="comprobante" accept="image/*,.pdf" class="block w-full text-xs">
+                                                    <x-subir-archivo model="comprobante" accept="image/*,.pdf" tema="tienda" titulo="Arrastrá el comprobante acá o hacé clic para elegirlo" ayuda="Foto o PDF, hasta 5 MB" />
                                                     @error('comprobante') <p class="text-red-500">{{ $message }}</p> @enderror
-                                                    <div wire:loading wire:target="comprobante" class="text-gray-400">Cargando archivo…</div>
                                                     <button wire:click="subirComprobante" wire:loading.attr="disabled" class="px-3 py-1.5 text-white rounded-lg" style="background-color: {{ $colores['boton'] }}">Enviar comprobante</button>
                                                 </div>
                                             @else

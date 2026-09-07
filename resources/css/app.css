@@ -123,3 +123,5 @@
     /* Exito */
     .t-success-ico { width: 5.5rem; height: 5.5rem; border-radius: 9999px; background-color: var(--tok-soft); color: var(--tok); display: inline-flex; align-items: center; justify-content: center; font-size: 2.4rem; animation: t-pop .5s ease; }
 }
+
+[x-cloak] { display: none !important; }

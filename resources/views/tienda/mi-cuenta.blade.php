@@ -146,7 +146,7 @@
                             @include('tienda.partials.datos-transferencia', ['transferencia' => $this->datosTransferencia(), 'importe' => $pagoCreado['importe_unico'], 'colores' => $colores])
                             <div class="mt-3">
                                 <label class="block text-xs text-gray-500 mb-1">Subí el comprobante de la transferencia</label>
-                                <input type="file" wire:model="comprobante" accept="image/*,.pdf" class="text-sm">
+                                <x-subir-archivo model="comprobante" accept="image/*,.pdf" tema="tienda" titulo="Arrastrá el comprobante acá o hacé clic para elegirlo" ayuda="Foto o PDF, hasta 5 MB" />
                                 @error('comprobante')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
                                 <button wire:click="subirComprobante" wire:loading.attr="disabled" class="mt-2 px-3 py-1.5 text-white rounded-lg text-sm" style="background-color: {{ $colores['boton'] }}">Enviar comprobante</button>
                             </div>
@@ -187,7 +187,7 @@
                                     @if($p['estado'] === 'pendiente' && $p['medio'] === 'transferencia')
                                         @if($comprobantePagoId === (int) $p['id'])
                                             <div class="mt-2">
-                                                <input type="file" wire:model="comprobante" accept="image/*,.pdf" class="text-sm">
+                                                <x-subir-archivo model="comprobante" accept="image/*,.pdf" tema="tienda" titulo="Arrastrá el comprobante acá o hacé clic para elegirlo" ayuda="Foto o PDF, hasta 5 MB" />
                                                 @error('comprobante')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
                                                 <button wire:click="subirComprobante" wire:loading.attr="disabled" class="mt-2 px-3 py-1.5 text-white rounded-lg text-xs" style="background-color: {{ $colores['boton'] }}">Enviar comprobante</button>
                                             </div>
