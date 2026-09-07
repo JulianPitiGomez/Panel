@@ -59,9 +59,9 @@
             </div>
         </div>
     @else
-        <div class="grid lg:grid-cols-3 gap-6" x-data="{ confirmVaciar: false }">
+        <div class="grid lg:grid-cols-5 gap-6" x-data="{ confirmVaciar: false }">
             <!-- Lista de items (2/3) -->
-            <div class="lg:col-span-2 space-y-3">
+            <div class="lg:col-span-2 space-y-3 lg:order-2">
                 @if($linkVendedor)
                     <div class="px-4 py-3 rounded-xl bg-blue-50 border border-blue-100 text-sm text-blue-900">
                         <p><i class="fas fa-user-tie mr-1"></i> Este pedido lo armó <strong>{{ $linkVendedor['vendedor'] ?: 'tu vendedor' }}</strong>. Revisalo, cambiá lo que quieras y confirmalo.</p>
@@ -162,7 +162,7 @@
             </div>
 
             <!-- Panel de checkout (1/3) -->
-            <div class="lg:col-span-1" id="checkout">
+            <div class="lg:col-span-3 lg:order-1" id="checkout">
                 <div class="bg-white rounded-xl shadow-sm p-6 lg:sticky lg:top-20">
                     @php $pasos = $this->pasos(); $clavesPasos = array_keys($pasos); $idxPaso = array_search($paso, $clavesPasos, true); $eleccion = $this->resumenEleccion(); @endphp
                     <h3 class="text-lg font-bold mb-3" style="color: {{ $colores['texto'] }}">{{ $paso === 'confirmar' ? 'Confirmá tu pedido' : ($pasos[$paso] ?? 'Tu pedido') }}</h3>
