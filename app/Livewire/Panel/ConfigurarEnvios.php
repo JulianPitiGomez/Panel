@@ -3,6 +3,7 @@
 namespace App\Livewire\Panel;
 
 use App\Services\TiendaEnvioService;
+use App\Services\TiendaIntegracionService;
 use App\Services\TiendaService;
 use Livewire\Component;
 
@@ -103,10 +104,27 @@ class ConfigurarEnvios extends Component
         }
     }
 
+    /** Estado de la cuenta MiCorreo (Integraciones) para mostrar en el bloque de correo. */
+    private function estadoCorreoApi(): array
+    {
+        $co = (new TiendaIntegracionService($this->tablePrefix))->obtener(TiendaIntegracionService::CORREO);
+
+        return [
+            'cargada' => (bool) ($co && !empty($co->credenciales['password'])),
+            'activa' => (bool) ($co->activa ?? false),
+            'verificada' => (bool) ($co->verificada ?? false),
+            'customer_id' => (string) ($co->credenciales['customer_id'] ?? ''),
+            'error' => $co->ultimo_error ?? null,
+        ];
+    }
+
     public function render()
     {
+        $this->conectar();
+
         return view('panel.configurar-envios', [
             'googleMapsApiKey' => config('app.google_maps_api_key'),
+            'correoApi' => $this->estadoCorreoApi(),
         ]);
     }
 }

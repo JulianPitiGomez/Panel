@@ -3,6 +3,8 @@
 namespace App\Livewire\Panel;
 
 use App\Services\TiendaAsistenteIaService;
+use App\Services\TiendaCorreoService;
+use App\Services\TiendaEnvioService;
 use App\Services\TiendaIntegracionService;
 use App\Services\TiendaService;
 use App\Services\TiendaWhatsappService;
@@ -10,14 +12,24 @@ use Livewire\Component;
 
 /**
  * Pestana Integraciones de Catalogo (F7): las cuentas del comercio en servicios de
- * terceros que van mas alla del cobro: la IA del asistente y WhatsApp por la API de
- * Meta. Regla: la cuenta es del comercio; las claves se guardan cifradas y no se
- * vuelven a mostrar.
+ * terceros que van mas alla del cobro: la IA del asistente, WhatsApp por la API de
+ * Meta y la API MiCorreo de Correo Argentino para cotizar envios. Regla: la cuenta
+ * es del comercio; las claves se guardan cifradas y no se vuelven a mostrar.
  */
 class ConfigurarIntegraciones extends Component
 {
     public $mensaje = '';
     public $tipoMensaje = '';
+
+    // Correo Argentino (API MiCorreo)
+    public $correoPassword = '';            // contraseña de la API, solo escritura
+    public $correoMicorreoPassword = '';    // contraseña de la web MiCorreo: solo para pedir el Customer ID, no se guarda
+    public $correo = ['env' => 'produccion', 'usuario' => '', 'customer_id' => '', 'micorreo_email' => ''];
+    public $correoEstado = [];
+    public $correoCpPrueba = '1425';
+    public $correoResultadoPrueba = [];     // lineas del resultado de la ultima prueba
+    public $correoOrigenCp = '';            // CP del local (se carga en Envios)
+    public $correoProveedorElegido = null;  // transportista elegido en Envios
 
     // IA (clave del comercio)
     public $iaClave = '';           // solo escritura
@@ -75,6 +87,26 @@ class ConfigurarIntegraciones extends Component
             'dato' => $wa->verificada_dato ?? null,
             'error' => $wa->ultimo_error ?? null,
         ];
+
+        $co = $integraciones->obtener(TiendaIntegracionService::CORREO);
+        $credCo = $co->credenciales ?? [];
+        $this->correo = [
+            'env' => in_array($credCo['env'] ?? '', ['test', 'produccion'], true) ? $credCo['env'] : 'produccion',
+            'usuario' => (string) ($credCo['usuario'] ?? ''),
+            'customer_id' => (string) ($credCo['customer_id'] ?? ''),
+            'micorreo_email' => (string) ($credCo['micorreo_email'] ?? ''),
+        ];
+        $this->correoEstado = [
+            'cargado' => (bool) ($co && !empty($credCo['password'])),
+            'activa' => (bool) ($co->activa ?? false),
+            'verificada' => (bool) ($co->verificada ?? false),
+            'dato' => $co->verificada_dato ?? null,
+            'error' => $co->ultimo_error ?? null,
+        ];
+
+        $envios = (new TiendaEnvioService($this->tablePrefix))->config();
+        $this->correoOrigenCp = (string) ($envios['origen_cp'] ?? '');
+        $this->correoProveedorElegido = $envios['correo_activo'] ? ($envios['correo_proveedor'] ?: '') : null;
     }
 
     // ------------------------------------------------------------ IA
@@ -212,6 +244,146 @@ class ConfigurarIntegraciones extends Component
         $this->mensaje = 'Se quitó WhatsApp. Los avisos siguen saliendo por mail.';
         $this->tipoMensaje = 'success';
         $this->wa = ['phone_number_id' => '', 'idioma' => 'es_AR', 'plantilla_pedido' => '', 'plantilla_estado' => '', 'plantilla_carrito' => '', 'telefono_comercio' => '', 'avisa_pedido' => true, 'avisa_estado' => true, 'avisa_carrito' => false, 'carrito_horas' => 6];
+        $this->cargar();
+    }
+
+    // ------------------------------------------------------------ Correo Argentino (MiCorreo)
+
+    /** Credenciales para guardar o probar: lo del formulario, con la contraseña ya guardada si no se pego una nueva. */
+    private function credencialesCorreo(?object $actual): ?array
+    {
+        $password = trim($this->correoPassword) !== '' ? trim($this->correoPassword) : ($actual->credenciales['password'] ?? null);
+        $usuario = trim((string) $this->correo['usuario']);
+        if (!$password || $usuario === '') {
+            return null;
+        }
+
+        return [
+            'env' => $this->correo['env'] === 'test' ? 'test' : 'produccion',
+            'usuario' => $usuario,
+            'password' => $password,
+            'customer_id' => trim((string) $this->correo['customer_id']),
+            'micorreo_email' => trim((string) $this->correo['micorreo_email']),
+        ];
+    }
+
+    public function guardarCorreo()
+    {
+        $this->conectar();
+        $this->correoResultadoPrueba = [];
+        $integraciones = new TiendaIntegracionService($this->tablePrefix);
+        $actual = $integraciones->obtener(TiendaIntegracionService::CORREO);
+        $cred = $this->credencialesCorreo($actual);
+        if (!$cred) {
+            $this->mensaje = 'Hacen falta el usuario y la contraseña de la API que te dio Correo Argentino.';
+            $this->tipoMensaje = 'error';
+            return;
+        }
+        $activa = $actual ? (int) $actual->activa : 1;
+        $integraciones->guardar(TiendaIntegracionService::CORREO, $cred, ['proveedor' => TiendaCorreoService::PROVEEDOR, 'activa' => $activa]);
+        $sinCambios = $actual && trim($this->correoPassword) === ''
+            && ($actual->credenciales['usuario'] ?? '') === $cred['usuario']
+            && ($actual->credenciales['env'] ?? 'produccion') === $cred['env']
+            && ($actual->credenciales['customer_id'] ?? '') === $cred['customer_id'];
+        if ($sinCambios && $actual->verificada) {
+            $integraciones->marcarVerificada(TiendaIntegracionService::CORREO, true, $actual->verificada_dato);
+        }
+        $this->correoPassword = '';
+        $this->mensaje = 'Correo Argentino guardado.' . ($cred['customer_id'] === '' ? ' Falta el Customer ID: obtenelo con tu email y contraseña de MiCorreo.' : '');
+        $this->tipoMensaje = $cred['customer_id'] === '' ? 'error' : 'success';
+        $this->cargar();
+    }
+
+    /** Pide el Customer ID a MiCorreo con el email y la contraseña de la web. La contraseña no se guarda. */
+    public function obtenerCustomerIdCorreo()
+    {
+        $this->conectar();
+        $this->correoResultadoPrueba = [];
+        $integraciones = new TiendaIntegracionService($this->tablePrefix);
+        $actual = $integraciones->obtener(TiendaIntegracionService::CORREO);
+        $cred = $this->credencialesCorreo($actual);
+        if (!$cred) {
+            $this->mensaje = 'Primero cargá el usuario y la contraseña de la API.';
+            $this->tipoMensaje = 'error';
+            return;
+        }
+        $email = trim((string) $this->correo['micorreo_email']);
+        if ($email === '' || trim($this->correoMicorreoPassword) === '') {
+            $this->mensaje = 'Escribí el email y la contraseña con los que entrás a la web de MiCorreo.';
+            $this->tipoMensaje = 'error';
+            return;
+        }
+        $r = (new TiendaCorreoService($this->tablePrefix))->obtenerCustomerId($cred, $email, $this->correoMicorreoPassword);
+        $this->correoMicorreoPassword = '';
+        if (!$r['ok']) {
+            $this->mensaje = $r['error'];
+            $this->tipoMensaje = 'error';
+            return;
+        }
+        $this->correo['customer_id'] = $r['customer_id'];
+        $this->guardarCorreo();
+        $this->mensaje = "Customer ID obtenido y guardado: {$r['customer_id']}. Ahora probá una cotización.";
+        $this->tipoMensaje = 'success';
+    }
+
+    /** Guarda y prueba: token y una cotizacion de un bulto chico desde el CP del local al CP indicado. */
+    public function probarCorreo()
+    {
+        $this->conectar();
+        $integraciones = new TiendaIntegracionService($this->tablePrefix);
+        $actual = $integraciones->obtener(TiendaIntegracionService::CORREO);
+        $cred = $this->credencialesCorreo($actual);
+        if (!$cred) {
+            $this->mensaje = 'Cargá el usuario y la contraseña de la API antes de probar.';
+            $this->tipoMensaje = 'error';
+            return;
+        }
+        $this->guardarCorreo();
+        $this->correoResultadoPrueba = [];
+
+        $origen = $this->correoOrigenCp !== '' ? $this->correoOrigenCp : '1000';
+        $r = (new TiendaCorreoService($this->tablePrefix))->probar($cred, $origen, (string) $this->correoCpPrueba);
+        if ($r['ok']) {
+            $integraciones->marcarVerificada(TiendaIntegracionService::CORREO, true, 'Customer ID ' . $cred['customer_id'] . ($cred['env'] === 'test' ? ' (ambiente de prueba)' : ''));
+            $this->correoResultadoPrueba = $r['lineas'];
+            $this->mensaje = 'La API de Correo Argentino respondió bien.' . ($this->correoOrigenCp === '' ? ' Cargá el código postal del local en Envíos para que la tienda cotice desde tu dirección.' : '');
+            $this->tipoMensaje = 'success';
+        } else {
+            $integraciones->marcarVerificada(TiendaIntegracionService::CORREO, false, null, $r['error']);
+            $this->mensaje = 'Correo Argentino respondió con error: ' . $r['error'];
+            $this->tipoMensaje = 'error';
+        }
+        $this->cargar();
+    }
+
+    /** Prende o apaga la cotizacion por API sin borrar las credenciales. Apagada, la tienda usa el tarifario manual. */
+    public function alternarCorreo()
+    {
+        $this->conectar();
+        $integraciones = new TiendaIntegracionService($this->tablePrefix);
+        $actual = $integraciones->obtener(TiendaIntegracionService::CORREO);
+        if (!$actual) {
+            return;
+        }
+        $nuevo = $actual->activa ? 0 : 1;
+        $integraciones->guardar(TiendaIntegracionService::CORREO, $actual->credenciales, ['proveedor' => TiendaCorreoService::PROVEEDOR, 'activa' => $nuevo]);
+        if ($actual->verificada) {
+            $integraciones->marcarVerificada(TiendaIntegracionService::CORREO, true, $actual->verificada_dato);
+        }
+        $this->mensaje = $nuevo ? 'La tienda vuelve a cotizar con la API de Correo Argentino.' : 'Cotización por API apagada: la tienda usa el tarifario manual de Envíos.';
+        $this->tipoMensaje = 'success';
+        $this->cargar();
+    }
+
+    public function quitarCorreo()
+    {
+        $this->conectar();
+        (new TiendaIntegracionService($this->tablePrefix))->eliminar(TiendaIntegracionService::CORREO);
+        $this->correoPassword = '';
+        $this->correoMicorreoPassword = '';
+        $this->correoResultadoPrueba = [];
+        $this->mensaje = 'Se quitó la cuenta de Correo Argentino. La tienda sigue cotizando con el tarifario manual de Envíos.';
+        $this->tipoMensaje = 'success';
         $this->cargar();
     }
 

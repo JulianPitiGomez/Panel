@@ -16,7 +16,7 @@
                 <input type="checkbox" wire:model.live="config.correo_activo" class="mt-1 w-4 h-4 rounded text-[#FFAF22] focus:ring-[#FFAF22]">
                 <div>
                     <span class="text-sm font-medium text-gray-700">Envío por correo</span>
-                    <p class="text-xs text-gray-400">Correo Argentino, Andreani u otro, con el tarifario que cargás abajo.</p>
+                    <p class="text-xs text-gray-400">Correo Argentino (con precio real por API si cargás tu cuenta MiCorreo), Andreani u otro con tarifario propio.</p>
                 </div>
             </label>
             <label class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100">
@@ -153,13 +153,13 @@
 
     {{-- Correo: tarifario manual --}}
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6" x-show="$wire.config.correo_activo" x-transition>
-        <h3 class="font-primary font-semibold text-gray-800 mb-1"><i class="fas fa-envelope-open-text text-[#FFAF22] mr-2"></i>Envío por correo: tarifario</h3>
-        <p class="text-xs text-gray-400 mb-4">Cargá cuánto cobrás según el destino y el peso del pedido. El peso sale de lo que cargues por artículo en Fotos Productos; si un artículo no lo tiene, se usa el peso por defecto. Cuando el correo tenga API, la cotización se enchufa acá sin cambiar nada.</p>
+        <h3 class="font-primary font-semibold text-gray-800 mb-1"><i class="fas fa-envelope-open-text text-[#FFAF22] mr-2"></i>Envío por correo</h3>
+        <p class="text-xs text-gray-400 mb-4">El peso y las medidas salen de lo que cargues por artículo en Fotos Productos; si un artículo no los tiene, se usan los valores por defecto de acá. Con Correo Argentino podés cotizar con el precio real del Correo cargando tu cuenta MiCorreo en <strong>Integraciones</strong>; el tarifario manual de abajo se usa cuando no tenés la API o si el Correo no responde.</p>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Transportista</label>
-                <select wire:model="config.correo_proveedor" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                <select wire:model.live="config.correo_proveedor" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                     <option value="">Elegí…</option>
                     <option value="correo_argentino">Correo Argentino</option>
                     <option value="andreani">Andreani</option>
@@ -172,6 +172,11 @@
                 <input type="number" step="0.001" min="0" wire:model="config.peso_default" placeholder="0.500"
                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
             </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Medidas por defecto (ancho x alto x largo, cm)</label>
+                <input type="text" wire:model="config.bulto_default" placeholder="25x10x30" maxlength="40"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+            </div>
             <div class="flex items-end">
                 <div class="flex gap-1">
                     <button type="button" @click="agregarTarifa('provincia')" class="px-2 py-2 text-xs rounded-lg bg-[#FFAF22]/15 text-[#B8860B] hover:bg-[#FFAF22]/30"><i class="fas fa-map mr-1"></i>Por provincia</button>
@@ -179,6 +184,28 @@
                 </div>
             </div>
         </div>
+
+        @if(($config['correo_proveedor'] ?? '') === 'correo_argentino')
+            @if($correoApi['cargada'] && $correoApi['activa'] && $correoApi['customer_id'] !== '')
+                <div class="mb-4 px-4 py-3 rounded-xl text-xs border {{ $correoApi['verificada'] ? 'bg-green-50 text-green-800 border-green-200' : 'bg-amber-50 text-amber-800 border-amber-200' }}">
+                    <i class="fas {{ $correoApi['verificada'] ? 'fa-check-circle' : 'fa-exclamation-circle' }} mr-1"></i>
+                    <strong>Cotización automática con la API de MiCorreo {{ $correoApi['verificada'] ? 'activa' : 'cargada pero sin probar' }}.</strong>
+                    La tienda le cotiza al comprador el envío a domicilio con el precio real de Correo Argentino desde el código postal del local{{ empty($config['origen_cp']) ? ' (cargalo arriba, sin eso no se puede cotizar)' : ' (' . $config['origen_cp'] . ')' }}. El tarifario de abajo queda como respaldo.
+                    @if(!$correoApi['verificada'] && $correoApi['error'])<div class="mt-1">Último error: {{ $correoApi['error'] }}</div>@endif
+                </div>
+            @else
+                <div class="mb-4 px-4 py-3 rounded-xl text-xs bg-blue-50 text-blue-800 border border-blue-200">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    @if($correoApi['cargada'] && !$correoApi['activa'])
+                        Tenés tu cuenta MiCorreo cargada pero la cotización por API está apagada: la tienda usa este tarifario. La prendés en <strong>Integraciones</strong>.
+                    @elseif($correoApi['cargada'])
+                        Tu cuenta MiCorreo está cargada pero falta el Customer ID: completalo en <strong>Integraciones</strong> para cotizar con la API.
+                    @else
+                        ¿Tenés cuenta en MiCorreo? Cargá las credenciales de la API en <strong>Integraciones</strong> y la tienda cotiza con el precio real del Correo, sin tarifario.
+                    @endif
+                </div>
+            @endif
+        @endif
 
         <div wire:ignore class="space-y-3">
             <template x-if="tarifas.length === 0">

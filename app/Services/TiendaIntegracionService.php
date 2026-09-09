@@ -103,6 +103,26 @@ class TiendaIntegracionService
         return $ia->credenciales['api_key'] ?? null;
     }
 
+    /**
+     * Credenciales de la API MiCorreo (Correo Argentino) del comercio:
+     * env, usuario, password, customer_id. Null si no estan cargadas o estan
+     * desactivadas (el comercio las guardo pero eligio no cotizar con la API).
+     */
+    public function correo(): ?array
+    {
+        $c = $this->obtener(self::CORREO);
+        if (!$c || !$c->activa || empty($c->credenciales['usuario']) || empty($c->credenciales['password'])) {
+            return null;
+        }
+
+        return [
+            'env' => $c->credenciales['env'] ?? 'produccion',
+            'usuario' => $c->credenciales['usuario'],
+            'password' => $c->credenciales['password'],
+            'customer_id' => $c->credenciales['customer_id'] ?? '',
+        ];
+    }
+
     /** Configuracion de WhatsApp (API de Meta) del comercio, o null si no esta cargada / activa. */
     public function whatsapp(): ?array
     {

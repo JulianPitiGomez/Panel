@@ -128,15 +128,15 @@ CREATE TABLE IF NOT EXISTS `{p}tienda_envios_config` (
   `retiro_local`     TINYINT(1)   NOT NULL DEFAULT 1,
   `retiro_texto`     VARCHAR(200) DEFAULT NULL,                  -- "Lun a Vie 9 a 18, 25 de Mayo 123"
   `flota_propia`     TINYINT(1)   NOT NULL DEFAULT 0,            -- envio a domicilio con zonas propias
-  `correo_activo`    TINYINT(1)   NOT NULL DEFAULT 0,            -- F2b: tarifario manual / API
+  `correo_activo`    TINYINT(1)   NOT NULL DEFAULT 0,            -- tarifario manual; con correo_proveedor=correo_argentino + integracion 'correo' activa cotiza la API MiCorreo
   `correo_proveedor` VARCHAR(20)  DEFAULT NULL,
   `a_convenir`       TINYINT(1)   NOT NULL DEFAULT 1,            -- red de contencion: entra sin costo y se arregla por WhatsApp
   `origen_direccion` VARCHAR(160) DEFAULT NULL,
   `origen_cp`        VARCHAR(10)  DEFAULT NULL,
   `origen_lat`       DECIMAL(10,7) DEFAULT NULL,
   `origen_lng`       DECIMAL(10,7) DEFAULT NULL,
-  `peso_default`     DECIMAL(8,3) DEFAULT NULL,                  -- F2b
-  `bulto_default`    VARCHAR(40)  DEFAULT NULL,                  -- F2b
+  `peso_default`     DECIMAL(8,3) DEFAULT NULL,                  -- kg por articulo sin peso cargado
+  `bulto_default`    VARCHAR(40)  DEFAULT NULL,                  -- "ancho x alto x largo" en cm por articulo sin medidas (API MiCorreo)
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

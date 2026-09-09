@@ -104,4 +104,86 @@
             <button type="button" wire:click="guardarWhatsapp" wire:loading.attr="disabled" class="px-4 py-2 rounded-lg text-sm font-semibold bg-[#1E1B35] text-white hover:bg-[#2d2952]"><i class="fas fa-save mr-1"></i> Guardar</button>
         </div>
     </div>
+
+    {{-- Correo Argentino (API MiCorreo) --}}
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6">
+        <h3 class="font-primary font-semibold text-gray-800"><i class="fas fa-shipping-fast text-[#0057A8] mr-2"></i>Correo Argentino: cotización automática (API MiCorreo)</h3>
+        <p class="text-xs text-gray-400 mt-1 mb-4">Con tu cuenta de <strong>MiCorreo</strong>, la tienda le cotiza al comprador el envío a domicilio con el precio real del Correo para su código postal y el peso del pedido. Es opcional: si no la cargás, se usa el tarifario manual que armás en Envíos, que además queda de respaldo si el Correo no responde. Las credenciales de la API (usuario y contraseña) se las pedís a Correo Argentino desde tu cuenta MiCorreo; son distintas de las que usás para entrar a la web.</p>
+
+        @if($correoProveedorElegido === null)
+            <div class="mb-3 px-4 py-3 rounded-xl text-xs bg-amber-50 text-amber-800 border border-amber-200"><i class="fas fa-info-circle mr-1"></i>El envío por correo está apagado en <strong>Envíos</strong>. Podés cargar la cuenta igual, pero la tienda no la va a usar hasta que lo prendas.</div>
+        @elseif($correoProveedorElegido !== 'correo_argentino')
+            <div class="mb-3 px-4 py-3 rounded-xl text-xs bg-amber-50 text-amber-800 border border-amber-200"><i class="fas fa-info-circle mr-1"></i>En <strong>Envíos</strong> el transportista elegido no es Correo Argentino. Para cotizar con la API, elegí Correo Argentino ahí.</div>
+        @endif
+
+        @if($correoEstado['cargado'])
+            <div class="flex flex-wrap items-center justify-between gap-2 bg-gray-50 rounded-xl px-4 py-3 text-sm mb-3">
+                <div>
+                    <span class="font-medium text-gray-700"><i class="fas fa-key mr-1 text-gray-400"></i>Cuenta cargada</span>
+                    @if($correoEstado['verificada'])<span class="ml-2 text-green-600"><i class="fas fa-check-circle mr-1"></i>Verificada{{ $correoEstado['dato'] ? ': ' . $correoEstado['dato'] : '' }}</span>
+                    @elseif($correoEstado['error'])<span class="ml-2 text-red-500"><i class="fas fa-exclamation-circle mr-1"></i>{{ $correoEstado['error'] }}</span>
+                    @else<span class="ml-2 text-gray-400">Sin probar todavía</span>@endif
+                    @if(!$correoEstado['activa'])<span class="ml-2 text-amber-600"><i class="fas fa-pause-circle mr-1"></i>Apagada: la tienda usa el tarifario manual</span>@endif
+                </div>
+                <div class="flex items-center gap-3">
+                    <button type="button" wire:click="alternarCorreo" class="text-xs text-[#0057A8] hover:underline">{{ $correoEstado['activa'] ? 'Apagar cotización por API' : 'Prender cotización por API' }}</button>
+                    <button type="button" wire:click="quitarCorreo" wire:confirm="¿Quitar la cuenta de Correo Argentino? La tienda vuelve al tarifario manual." class="text-xs text-red-500 hover:underline">Quitar</button>
+                </div>
+            </div>
+        @endif
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Ambiente</label>
+                <select wire:model="correo.env" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    <option value="produccion">Producción (cuenta real)</option>
+                    <option value="test">Prueba (credenciales de test del Correo)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Usuario de la API</label>
+                <input type="text" wire:model="correo.usuario" autocomplete="off" placeholder="usuario que te dio el Correo" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Contraseña de la API</label>
+                <input type="password" wire:model="correoPassword" autocomplete="off" placeholder="{{ $correoEstado['cargado'] ? 'Pegá una nueva solo si querés reemplazarla' : 'contraseña de la API' }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono">
+            </div>
+        </div>
+
+        <div class="mt-4 rounded-xl border border-gray-100 p-4">
+            <p class="text-xs font-semibold text-gray-700 mb-1">Customer ID de tu cuenta MiCorreo</p>
+            <p class="text-[11px] text-gray-400 mb-3">Es el número que identifica tu cuenta. Si no lo sabés, escribí el email y la contraseña con los que entrás a la web de MiCorreo y lo buscamos: la contraseña se usa una sola vez y no se guarda.</p>
+            <div class="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-2 items-end">
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Customer ID</label>
+                    <input type="text" wire:model="correo.customer_id" autocomplete="off" placeholder="0000123456" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Email de MiCorreo</label>
+                    <input type="email" wire:model="correo.micorreo_email" autocomplete="off" placeholder="vos@tucomercio.com" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Contraseña de MiCorreo (no se guarda)</label>
+                    <input type="password" wire:model="correoMicorreoPassword" autocomplete="off" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                </div>
+                <button type="button" wire:click="obtenerCustomerIdCorreo" wire:loading.attr="disabled" class="px-4 py-2 rounded-lg text-sm font-semibold bg-[#0057A8]/10 text-[#0057A8] hover:bg-[#0057A8]/20 whitespace-nowrap"><i class="fas fa-search mr-1"></i> Obtener</button>
+            </div>
+        </div>
+
+        @if(!empty($correoResultadoPrueba))
+            <div class="mt-4 px-4 py-3 rounded-xl text-xs bg-green-50 text-green-800 border border-green-200 space-y-0.5">
+                @foreach($correoResultadoPrueba as $linea)<div>{{ $linea }}</div>@endforeach
+            </div>
+        @endif
+
+        <div class="flex flex-col sm:flex-row gap-2 mt-4 sm:items-center">
+            <div class="flex items-center gap-2 flex-1">
+                <span class="text-xs text-gray-500 whitespace-nowrap">Probar cotizando desde el CP {{ $correoOrigenCp !== '' ? $correoOrigenCp : '(cargá el CP del local en Envíos)' }} a</span>
+                <input type="text" wire:model="correoCpPrueba" maxlength="10" placeholder="CP destino" class="w-28 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+            </div>
+            <button type="button" wire:click="probarCorreo" wire:loading.attr="disabled" class="px-4 py-2 rounded-lg text-sm font-semibold bg-[#0057A8]/10 text-[#0057A8] hover:bg-[#0057A8]/20"><i class="fas fa-plug mr-1"></i> Probar</button>
+            <button type="button" wire:click="guardarCorreo" wire:loading.attr="disabled" class="px-4 py-2 rounded-lg text-sm font-semibold bg-[#1E1B35] text-white hover:bg-[#2d2952]"><i class="fas fa-save mr-1"></i> Guardar</button>
+        </div>
+        <p class="text-[11px] text-gray-400 mt-2">El peso y las medidas de cada artículo se cargan en Fotos Productos; los que no los tengan usan el peso y las medidas por defecto de Envíos. El pago del envío y la impresión del rótulo siguen haciéndose en la web de MiCorreo.</p>
+    </div>
 </div>

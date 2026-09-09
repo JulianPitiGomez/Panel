@@ -12,7 +12,9 @@ use Illuminate\Support\Facades\Cache;
  * Modalidades (ver plan, "Envios y zonas"):
  *  - retiro     : en el local, sin costo.
  *  - flota      : reparto propio por zonas (tienda_zonas): radio, codigos postales o poligono.
- *  - correo     : F2b (tarifario manual, luego API). Todavia no.
+ *  - correo     : tarifario manual por destino y peso; si el comercio cargo su cuenta
+ *                 MiCorreo (Integraciones) y el transportista es Correo Argentino, se
+ *                 cotiza con la API y el tarifario queda de respaldo (TiendaCorreoService).
  *  - a_convenir : entra sin costo de envio y el comercio lo cierra por WhatsApp.
  *                 Es la red de contencion cuando no hay cotizacion.
  *
@@ -83,6 +85,11 @@ class TiendaEnvioService
             if (array_key_exists($c, $datos)) {
                 $datos[$c] = is_numeric($datos[$c]) ? round((float) $datos[$c], 7) : null;
             }
+        }
+        if (array_key_exists('bulto_default', $datos)) {
+            // se guarda normalizado "ancho x alto x largo" en cm, o null si no se entiende
+            $b = self::parsearBulto($datos['bulto_default']);
+            $datos['bulto_default'] = $b ? "{$b['ancho_cm']}x{$b['alto_cm']}x{$b['largo_cm']}" : null;
         }
 
         $existente = $this->tabla('tienda_envios_config')->first();
@@ -221,15 +228,22 @@ class TiendaEnvioService
     }
 
     /**
-     * Peso total del carrito en kg y cantidad de bultos, con tienda_articu.peso
-     * (o el peso por defecto del comercio para los que no lo tienen cargado).
+     * Peso total del carrito en kg, cantidad de bultos y las medidas del paquete
+     * que se le manda a la API del correo, con tienda_articu.peso/alto/ancho/largo
+     * (o los valores por defecto del comercio para los que no los tienen cargados).
+     *
+     * El paquete es uno solo para todo el carrito: se suman los pesos, se toman el
+     * ancho y el alto mayores y se apilan los largos. Es una aproximacion pensada
+     * para cotizar; el rotulo real lo arma el comercio en MiCorreo.
+     *
      * @param array $carrito items con 'codigo' y 'cantidad'
-     * @return array{peso: float, bultos: int, sin_peso: int}
+     * @return array{peso: float, bultos: int, sin_peso: int, sin_medidas: int, peso_gramos: int, ancho_cm: int, alto_cm: int, largo_cm: int}
      */
     public function pesoCarrito(array $carrito, ?array $config = null): array
     {
         $config ??= $this->config();
         $default = (float) ($config['peso_default'] ?? 0);
+        $bultoDef = self::bultoDefault($config);
         $codigos = array_map(fn ($i) => $i['codigo'], $carrito);
 
         $datos = empty($codigos) ? collect() : $this->tabla('tienda_articu')->whereIn('codigo', $codigos)->get()->keyBy('codigo');
@@ -237,18 +251,81 @@ class TiendaEnvioService
         $peso = 0.0;
         $bultos = 0;
         $sinPeso = 0;
+        $sinMedidas = 0;
+        $ancho = 0.0;
+        $alto = 0.0;
+        $largo = 0.0;
         foreach ($carrito as $i) {
             $a = $datos[$i['codigo']] ?? null;
+            $cant = (float) $i['cantidad'];
+            $unidades = max(1, (int) ceil($cant));
+
             $p = $a && $a->peso !== null ? (float) $a->peso : null;
             if ($p === null) {
                 $sinPeso++;
                 $p = $default;
             }
-            $peso += $p * (float) $i['cantidad'];
-            $bultos += max(1, (int) ($a->bultos ?? 1)) * (int) ceil((float) $i['cantidad']);
+            $peso += $p * $cant;
+            $bultos += max(1, (int) ($a->bultos ?? 1)) * $unidades;
+
+            $conMedidas = $a && (float) ($a->ancho ?? 0) > 0 && (float) ($a->alto ?? 0) > 0 && (float) ($a->largo ?? 0) > 0;
+            if (!$conMedidas) {
+                $sinMedidas++;
+            }
+            $ancho = max($ancho, $conMedidas ? (float) $a->ancho : $bultoDef['ancho_cm']);
+            $alto = max($alto, $conMedidas ? (float) $a->alto : $bultoDef['alto_cm']);
+            $largo += ($conMedidas ? (float) $a->largo : $bultoDef['largo_cm']) * $unidades;
         }
 
-        return ['peso' => round($peso, 3), 'bultos' => $bultos, 'sin_peso' => $sinPeso];
+        $bulto = CorreoArgentinoService::normalizarBulto([
+            'peso_gramos' => $peso * 1000,
+            'ancho_cm' => $ancho,
+            'alto_cm' => $alto,
+            'largo_cm' => $largo,
+        ]);
+
+        return [
+            'peso' => round($peso, 3), 'bultos' => $bultos, 'sin_peso' => $sinPeso, 'sin_medidas' => $sinMedidas,
+            'peso_gramos' => $bulto['peso_gramos'], 'ancho_cm' => $bulto['ancho_cm'], 'alto_cm' => $bulto['alto_cm'], 'largo_cm' => $bulto['largo_cm'],
+        ];
+    }
+
+    /**
+     * Medidas por defecto de un articulo sin medidas: las del comercio
+     * (bulto_default, "ancho x alto x largo" en cm) o las de config/correo.php.
+     * @return array{ancho_cm: float, alto_cm: float, largo_cm: float}
+     */
+    public static function bultoDefault(array $config): array
+    {
+        $propio = self::parsearBulto($config['bulto_default'] ?? null);
+        if ($propio) {
+            return $propio;
+        }
+        $global = (array) config('correo.bulto_por_defecto');
+
+        return [
+            'ancho_cm' => (float) ($global['ancho_cm'] ?? 25),
+            'alto_cm' => (float) ($global['alto_cm'] ?? 10),
+            'largo_cm' => (float) ($global['largo_cm'] ?? 30),
+        ];
+    }
+
+    /** "25x10x30", "25 x 10 x 30 cm", "25*10*30" -> medidas en cm; null si no hay tres numeros positivos. */
+    public static function parsearBulto($valor): ?array
+    {
+        if (!is_string($valor) && !is_numeric($valor)) {
+            return null;
+        }
+        $partes = preg_split('/[^\d.,]+/', str_replace(',', '.', (string) $valor), -1, PREG_SPLIT_NO_EMPTY);
+        if (count($partes) < 3) {
+            return null;
+        }
+        [$an, $al, $la] = array_map('floatval', array_slice($partes, 0, 3));
+        if ($an <= 0 || $al <= 0 || $la <= 0) {
+            return null;
+        }
+
+        return ['ancho_cm' => (float) ceil($an), 'alto_cm' => (float) ceil($al), 'largo_cm' => (float) ceil($la)];
     }
 
     /**
@@ -278,6 +355,50 @@ class TiendaEnvioService
         }
 
         return $mejor ? ['tarifa' => $mejor, 'importe' => round((float) $mejor->precio, 2)] : null;
+    }
+
+    // ------------------------------------------------------------ correo (API)
+
+    /**
+     * El comercio cotiza con la API de MiCorreo: eligio Correo Argentino como
+     * transportista y tiene sus credenciales cargadas y activas en Integraciones.
+     */
+    public function usaCorreoApi(?array $config = null): bool
+    {
+        $config ??= $this->config();
+
+        return ($config['correo_proveedor'] ?? null) === TiendaCorreoService::PROVEEDOR
+            && (new TiendaCorreoService($this->prefijo))->activo();
+    }
+
+    /**
+     * Cotizacion a domicilio por la API de MiCorreo para el paquete que devuelve
+     * pesoCarrito(). Null si el comercio no usa la API, falta el CP de destino o
+     * del local, o el Correo no respondio (queda en el log y se cae al tarifario).
+     *
+     * @return array{importe: float, producto: string, demora: ?string}|null
+     */
+    private function cotizarCorreoApi(array $cfg, ?string $cp, array $paquete): ?array
+    {
+        if (($cfg['correo_proveedor'] ?? null) !== TiendaCorreoService::PROVEEDOR) {
+            return null;
+        }
+        if (CorreoArgentinoService::normalizarCodigoPostal($cp) === null || CorreoArgentinoService::normalizarCodigoPostal($cfg['origen_cp'] ?? null) === null) {
+            return null;
+        }
+
+        $correo = new TiendaCorreoService($this->prefijo);
+        $cred = $correo->credenciales();
+        if (!$cred) {
+            return null;
+        }
+
+        $r = $correo->cotizarDomicilio((string) $cfg['origen_cp'], $cp, [
+            'peso_gramos' => $paquete['peso_gramos'], 'ancho_cm' => $paquete['ancho_cm'],
+            'alto_cm' => $paquete['alto_cm'], 'largo_cm' => $paquete['largo_cm'],
+        ], $cred);
+
+        return $r['ok'] ? ['importe' => (float) $r['importe'], 'producto' => $r['producto'], 'demora' => $r['demora']] : null;
     }
 
     public static function parsearProvincias($valor): array
@@ -423,9 +544,21 @@ class TiendaEnvioService
         if ($cfg['correo_activo']) {
             $tieneDestino = self::normalizarProvincia($provincia) !== '' || self::normalizarCp($cp) !== '';
             $peso = $this->pesoCarrito($carrito ?? [], $cfg);
-            $cot = $tieneDestino ? $this->cotizarCorreo($provincia, $cp, $peso['peso']) : null;
             $proveedor = $cfg['correo_proveedor'] ? ucwords(str_replace('_', ' ', $cfg['correo_proveedor'])) : 'Correo';
-            if ($cot) {
+
+            // 1. API de MiCorreo, si el comercio la tiene: precio real del Correo para ese CP y ese paquete.
+            // 2. Si no la tiene o fallo, el tarifario manual del comercio.
+            $api = $this->cotizarCorreoApi($cfg, $cp, $peso);
+            $cot = !$api && $tieneDestino ? $this->cotizarCorreo($provincia, $cp, $peso['peso']) : null;
+
+            if ($api) {
+                $out[TiendaPedidoService::ENTREGA_CORREO] = [
+                    'modo' => TiendaPedidoService::ENTREGA_CORREO, 'etiqueta' => 'Envío por Correo Argentino',
+                    'importe' => $api['importe'], 'disponible' => true,
+                    'detalle' => $api['producto'] . ' a domicilio' . ($api['demora'] ? ' · ' . $api['demora'] : '') . ' · ' . self::formatoPeso($peso['peso']),
+                    'zona_id' => null, 'transportista' => TiendaCorreoService::PROVEEDOR, 'cotizacion' => 'api',
+                ];
+            } elseif ($cot) {
                 $out[TiendaPedidoService::ENTREGA_CORREO] = [
                     'modo' => TiendaPedidoService::ENTREGA_CORREO, 'etiqueta' => 'Envío por ' . $proveedor,
                     'importe' => $cot['importe'], 'disponible' => true,
@@ -436,7 +569,9 @@ class TiendaEnvioService
                 $out[TiendaPedidoService::ENTREGA_CORREO] = [
                     'modo' => TiendaPedidoService::ENTREGA_CORREO, 'etiqueta' => 'Envío por ' . $proveedor,
                     'importe' => 0.0, 'disponible' => false,
-                    'detalle' => !$tieneDestino ? 'Ingresá provincia o código postal para cotizar' : 'No tenemos tarifa de correo para ese destino o peso (' . self::formatoPeso($peso['peso']) . ')',
+                    'detalle' => !$tieneDestino
+                        ? ($this->usaCorreoApi($cfg) ? 'Ingresá tu código postal para cotizar' : 'Ingresá provincia o código postal para cotizar')
+                        : 'No tenemos tarifa de correo para ese destino o peso (' . self::formatoPeso($peso['peso']) . ')',
                     'zona_id' => null, 'transportista' => $cfg['correo_proveedor'] ?: 'correo',
                 ];
             }
