@@ -198,3 +198,10 @@ Route::prefix('monitor')->middleware(['client:monitor'])->group(function () {
         Route::get('/monitor', \App\Livewire\Panelresto\Monitor::class)->name('monitor.dashboard');
     });
 });
+// ====================== Gestion (Fivewin) -> tienda ======================
+// Endpoints que usa el modulo Pedidos Web de gestion (docs/tienda/fivewin). Autenticados por
+// header X-Gestion-Token (TIENDA_GESTION_TOKEN); sin sesion ni CSRF porque no los llama un navegador.
+Route::post('/api/gestion/tienda/{cliente}/pedidos/{pedido}/envio-micorreo', [\App\Http\Controllers\Api\TiendaGestionController::class, 'envioMiCorreo'])
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
+    ->where(['cliente' => '[0-9]+', 'pedido' => '[0-9]+'])
+    ->name('gestion.tienda.envio-micorreo');

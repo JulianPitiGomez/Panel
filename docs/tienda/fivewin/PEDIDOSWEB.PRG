@@ -23,7 +23,8 @@
 **   1. Agregar el modulo al menu (menu_nuevo, modulo 'PEDWEB') con permisos A,M,E,R.
 **   2. Que la tienda cree los pedidos con estado 'W' en vez de 'P' (cambio en el panel) y que
 **      el panel conozca la letra 'W' en config/tienda.php (estados_gestion, comprometen_stock).
-**   3. Crear en el panel el endpoint que genera el envio en MiCorreo (URL_PANEL abajo).
+**   3. Configurar TIENDA_GESTION_TOKEN en el .env del panel y poner el mismo valor en TOKEN_GESTION
+**      (abajo), junto con URL_PANEL. El endpoint ya existe (TiendaGestionController).
 **   4. Los avisos por mail al comprador los manda el panel; desde aca queda el evento con
 **      notificado = 0 para que un comando del panel los mande (pendiente en el panel).
 **

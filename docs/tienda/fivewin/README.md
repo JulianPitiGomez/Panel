@@ -29,14 +29,14 @@ Las reglas de estados web (flujo por modo de entrega, etiquetas) son una copia d
    - Revisar que la conciliación de comisiones (`TiendaComisionService`) trate `W` como pendiente.
    - La ventana Pedidos de gestión filtra `estado = 'P'`, así que los `W` quedan afuera sin tocar `pedidos.prg`.
 
-3. **Endpoint del panel para MiCorreo.** El `.prg` hace:
+3. **Endpoint del panel para MiCorreo (ya existe).** El `.prg` hace:
    ```
    POST {URL_PANEL}/api/gestion/tienda/{cId}/pedidos/{idpedido}/envio-micorreo
    Header X-Gestion-Token: {token}
    Body {"usuario": "nombre del usuario de gestión"}
-   Respuesta {"ok": true|false, "mensaje": "..."}
+   Respuesta {"ok": true|false, "mensaje": "..."}   (200 ok, 422 no se pudo, 401 token, 404 comercio)
    ```
-   Falta crearlo en `routes/api.php` (conecta la base del cliente con `TiendaService::conectarCliente` y llama a `TiendaCorreoService::importarPedido`). Ajustar `URL_PANEL` y `TOKEN_GESTION` al principio del `.prg`.
+   Está en `routes/web.php` al final y lo atiende `app/Http/Controllers/Api/TiendaGestionController.php`, que conecta la base del cliente y llama a `TiendaCorreoService::importarPedido`. Para habilitarlo: poner un valor en `TIENDA_GESTION_TOKEN` en el `.env` del panel (vacío = endpoint apagado) y el mismo valor en `TOKEN_GESTION` al principio del `.prg`, junto con `URL_PANEL`.
 
 4. **Avisos al comprador.** Cuando el estado web cambia desde el panel, el panel manda el mail y el WhatsApp. Desde gestión queda el evento con `notificado = 0`; falta un comando del panel que los recorra y avise (o un endpoint como el de MiCorreo).
 

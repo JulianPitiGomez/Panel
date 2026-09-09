@@ -112,4 +112,11 @@ return [
     */
     'contacto_whatsapp' => env('TIENDA_CONTACTO_WHATSAPP', '5491128654468'),
 
+    /*
+    | Token que manda gestion (Fivewin, modulo PEDIDOSWEB.PRG) en el header
+    | X-Gestion-Token para usar los endpoints /api/gestion/tienda/... Vacio =
+    | integracion apagada. Ver docs/tienda/fivewin/README.md.
+    */
+    'gestion_token' => env('TIENDA_GESTION_TOKEN', ''),
+
 ];
