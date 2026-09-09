@@ -202,9 +202,14 @@ class TiendaSeguimientoService
         $eventos = new TiendaPedidoService($this->prefijo);
         $eventos->registrarEvento($idpedido, $estado, $detalle, 'comercio', $usuario);
 
-        // Volver atras no avisa: seria confundir al comprador con un "listo" que no era
+        // Volver atras no avisa: seria confundir al comprador con un "listo" que no era.
+        // El evento queda como notificado para que tienda:avisos-pendientes tampoco lo mande.
         $esAvance = in_array($estado, self::siguientes($actual, $sat->entrega_modo), true);
-        $avisado = $esAvance && $this->notificar($idpedido, $estado, $nro);
+        if (!$esAvance) {
+            $this->tabla('tienda_eventos')->where('idpedido', $idpedido)->where('estado', $estado)
+                ->orderByDesc('id')->limit(1)->update(['notificado' => 1]);
+        }
+        $avisado = $esAvance && $this->avisarEstado($idpedido, $estado, $nro);
 
         return ['ok' => true, 'mensaje' => "Pedido #{$idpedido}: {$detalle}." . ($avisado ? ' Se le avisó al comprador por mail.' : '')];
     }
@@ -218,13 +223,23 @@ class TiendaSeguimientoService
         }
         $this->tabla('tienda_pedidos')->where('idpedido', $idpedido)->update(['estado_web' => self::CANCELADO]);
         (new TiendaPedidoService($this->prefijo))->registrarEvento($idpedido, self::CANCELADO, "Cancelado: {$motivo}", 'sistema');
-        $this->notificar($idpedido, self::CANCELADO, null);
+        $this->avisarEstado($idpedido, self::CANCELADO, null);
     }
 
     // ------------------------------------------------------------ aviso por mail
 
-    /** Manda el aviso del estado al comprador y marca el evento como notificado. Nunca rompe el flujo. */
-    private function notificar(int $idpedido, string $estado, ?string $seguimiento): bool
+    /** El comprador de este pedido tiene un mail al que avisarle. */
+    public function tieneDestinatario(int $idpedido): bool
+    {
+        return $this->emailComprador($this->tabla('tienda_pedidos')->where('idpedido', $idpedido)->first()) !== null;
+    }
+
+    /**
+     * Manda el aviso del estado al comprador (mail y, si el comercio lo tiene, WhatsApp) y
+     * marca el evento como notificado: el de $eventoId si viene (comando tienda:avisos-pendientes,
+     * para los cambios hechos desde gestion), si no el ultimo de ese estado. Nunca rompe el flujo.
+     */
+    public function avisarEstado(int $idpedido, string $estado, ?string $seguimiento, ?int $eventoId = null): bool
     {
         try {
             $sat = $this->tabla('tienda_pedidos')->where('idpedido', $idpedido)->first();
@@ -260,8 +275,12 @@ class TiendaSeguimientoService
                 $m->to($email)->subject("Pedido #{$idpedido} en {$ctx['nombre']}: " . self::etiqueta($estado, $sat->entrega_modo));
             });
 
-            $this->tabla('tienda_eventos')->where('idpedido', $idpedido)->where('estado', $estado)
-                ->orderByDesc('id')->limit(1)->update(['notificado' => 1]);
+            if ($eventoId) {
+                $this->tabla('tienda_eventos')->where('id', $eventoId)->update(['notificado' => 1]);
+            } else {
+                $this->tabla('tienda_eventos')->where('idpedido', $idpedido)->where('estado', $estado)
+                    ->orderByDesc('id')->limit(1)->update(['notificado' => 1]);
+            }
 
             // WhatsApp (F7): si el comercio lo tiene activo, el mismo aviso por ahi
             try {

@@ -25,8 +25,8 @@
 **      el panel conozca la letra 'W' en config/tienda.php (estados_gestion, comprometen_stock).
 **   3. Configurar TIENDA_GESTION_TOKEN en el .env del panel y poner el mismo valor en TOKEN_GESTION
 **      (abajo), junto con URL_PANEL. El endpoint ya existe (TiendaGestionController).
-**   4. Los avisos por mail al comprador los manda el panel; desde aca queda el evento con
-**      notificado = 0 para que un comando del panel los mande (pendiente en el panel).
+**   4. Los avisos al comprador los manda el panel: desde aca queda el evento con notificado = 0
+**      y el comando "php artisan tienda:avisos-pendientes" (cada 5 min en el cron) lo manda.
 **
 ** Permisos (cPermisos): A = pasar a pedidos, M = pagos / estados / envio, E = exportar,
 **                       R = reporte.

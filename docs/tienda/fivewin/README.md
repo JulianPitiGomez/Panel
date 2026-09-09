@@ -38,7 +38,7 @@ Las reglas de estados web (flujo por modo de entrega, etiquetas) son una copia d
    ```
    Está en `routes/web.php` al final y lo atiende `app/Http/Controllers/Api/TiendaGestionController.php`, que conecta la base del cliente y llama a `TiendaCorreoService::importarPedido`. Para habilitarlo: poner un valor en `TIENDA_GESTION_TOKEN` en el `.env` del panel (vacío = endpoint apagado) y el mismo valor en `TOKEN_GESTION` al principio del `.prg`, junto con `URL_PANEL`.
 
-4. **Avisos al comprador.** Cuando el estado web cambia desde el panel, el panel manda el mail y el WhatsApp. Desde gestión queda el evento con `notificado = 0`; falta un comando del panel que los recorra y avise (o un endpoint como el de MiCorreo).
+4. **Avisos al comprador (ya resuelto con un comando).** Cuando el estado web cambia desde el panel, el panel manda el mail y el WhatsApp en el momento. Desde gestión queda el evento con `notificado = 0` y lo toma `php artisan tienda:avisos-pendientes`, que manda el mismo aviso: solo el último evento de cada pedido y solo si coincide con el estado actual, de los últimos 2 días. Está programado cada 5 minutos en `routes/console.php`; el servidor necesita el cron `* * * * * php artisan schedule:run` (o llamar al comando directo desde el cron). Para ver qué mandaría sin mandar: `--dry-run`.
 
 5. **Sacar la pestaña del panel.** Cuando el módulo esté andando, quitar la pestaña Pedidos web de Catálogo (`FotosProductos` y `resources/views/panel/fotos-productos.blade.php`).
 
