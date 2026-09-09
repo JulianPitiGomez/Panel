@@ -24,6 +24,7 @@
 --                  F3: tienda_pedidos.descuento_promos / promos_aplicadas, tienda_pagos_config.forpag_*;
 --                  F4: tienda_fotos (galeria); F5: tienda_metricas; F6: tienda_pagos_cuenta, tienda_links, tienda_favoritos; F7: tienda_carritos
 --                  tienda_pedidos.entrega_fecha / entrega_franja_id / entrega_franja / agenda_cupo
+--                  Correo API: tienda_pedidos.entrega_calle / entrega_numero / entrega_piso / entrega_provincia / envio_importado
 --                  (F1 agrego comision_saldo a tienda_pedidos y tienda_eventos; v1 todavia no salio a produccion,
 --                   por eso se edita en lugar de crear v2)
 -- =====================================================================
@@ -79,10 +80,16 @@ CREATE TABLE IF NOT EXISTS `{p}tienda_pedidos` (
   `entrega_direccion`   VARCHAR(160) DEFAULT NULL,
   `entrega_localidad`   VARCHAR(60)  DEFAULT NULL,
   `entrega_cp`          VARCHAR(10)  DEFAULT NULL,
+  -- direccion desarmada (API MiCorreo la pide asi para importar el envio); entrega_direccion sigue siendo el texto para mostrar
+  `entrega_calle`       VARCHAR(100) DEFAULT NULL,
+  `entrega_numero`      VARCHAR(10)  DEFAULT NULL,
+  `entrega_piso`        VARCHAR(20)  DEFAULT NULL,
+  `entrega_provincia`   VARCHAR(40)  DEFAULT NULL,
   `entrega_zona_id`     INT UNSIGNED DEFAULT NULL,               -- tienda_zonas.id (F2)
   `envio_importe`       DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   `envio_transportista` VARCHAR(40)  DEFAULT NULL,
   `envio_seguimiento`   VARCHAR(60)  DEFAULT NULL,
+  `envio_importado`     DATETIME     DEFAULT NULL,               -- cuando se importo el envio a la cuenta MiCorreo del comercio
   -- pago
   `pago_medio`          VARCHAR(20)  DEFAULT NULL,               -- mercadopago | transferencia | cuenta_corriente | a_convenir
   `pago_estado`         VARCHAR(12)  NOT NULL DEFAULT 'pendiente', -- pendiente | aprobado | rechazado | no_aplica

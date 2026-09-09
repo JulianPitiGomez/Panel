@@ -173,6 +173,19 @@
                                                     @if($u = $this->urlSeguimiento($p['envio_transportista'], $p['envio_seguimiento']))<a href="{{ $u }}" target="_blank" class="ml-1 text-blue-600 hover:underline">Ver en el transportista</a>@endif
                                                 </p>
                                             @endif
+                                            @if($p['entrega_modo'] === 'correo' && $p['envio_transportista'] === 'correo_argentino' && !in_array($ew, ['entregado', 'cancelado']))
+                                                <div class="mt-3 pt-3 border-t border-gray-100">
+                                                    @if(!empty($p['envio_importado']))
+                                                        <p class="text-xs text-green-700"><i class="fas fa-check-circle mr-1"></i>Envío importado a MiCorreo el {{ \Carbon\Carbon::parse($p['envio_importado'])->format('d/m/Y H:i') }}. Pagalo e imprimí el rótulo en la web de MiCorreo y cargá acá el número de seguimiento.</p>
+                                                    @elseif($correoApi)
+                                                        <button wire:click="importarEnvioCorreo({{ $p['idpedido'] }})" wire:loading.attr="disabled" wire:confirm="¿Importar el envío del pedido #{{ $p['idpedido'] }} a tu cuenta MiCorreo? Queda cargado ahí para pagarlo e imprimir el rótulo."
+                                                                class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#0057A8]/10 text-[#0057A8] hover:bg-[#0057A8]/20">
+                                                            <i class="fas fa-shipping-fast mr-1"></i>Generar envío en MiCorreo
+                                                        </button>
+                                                        <p class="text-[11px] text-gray-400 mt-1">Manda la dirección del comprador y el peso y medidas del pedido a tu cuenta MiCorreo. Hace falta el pago confirmado.</p>
+                                                    @endif
+                                                </div>
+                                            @endif
                                             <p class="text-[11px] text-gray-400 mt-2">Cada avance le llega al comprador por mail.</p>
                                         </div>
                                         @if(in_array($p['pago_medio'], ['transferencia', 'debin']) && $p['pago_estado'] === 'pendiente')

@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Panel;
 
+use App\Services\TiendaCorreoService;
+use App\Services\TiendaEnvioService;
 use App\Services\TiendaEstadoPedido;
 use App\Services\TiendaPagoService;
 use App\Services\TiendaPedidoService;
@@ -27,6 +29,7 @@ class PedidosWeb extends Component
     public $eventos = [];
     public $mensaje = '';
     public $tipoMensaje = '';
+    public $correoApi = false;      // el comercio cotiza con la API de MiCorreo: se puede importar el envio desde aca
 
     private $tablePrefix;
 
@@ -35,6 +38,22 @@ class PedidosWeb extends Component
         $this->conectar();
         $this->cargar();
         $this->cargarPagosCuenta();
+        try {
+            $this->correoApi = (new TiendaEnvioService($this->tablePrefix))->usaCorreoApi();
+        } catch (\Throwable $e) {
+            $this->correoApi = false;
+        }
+    }
+
+    /** Carga el envio del pedido en la cuenta MiCorreo del comercio (API). El pago del envio y el rotulo se hacen en la web de MiCorreo. */
+    public function importarEnvioCorreo($id)
+    {
+        $this->conectar();
+        $r = (new TiendaCorreoService($this->tablePrefix))->importarPedido((int) $id, session('cliente_nombre') ?: 'panel');
+        $this->mensaje = $r['mensaje'];
+        $this->tipoMensaje = $r['ok'] ? 'success' : 'error';
+        $this->cargar();
+        $this->verDetalle($id);
     }
 
     // ------------------------------------------------- pagos a cuenta del mayorista (F6)

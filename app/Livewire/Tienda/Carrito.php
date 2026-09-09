@@ -911,6 +911,11 @@ class Carrito extends Component
             'entrega_direccion' => $requiereDireccion ? mb_substr($this->textoDireccion(), 0, 160) : null,
             'entrega_localidad' => $requiereDireccion ? mb_substr(trim($this->direccion['localidad']), 0, 60) : null,
             'entrega_cp'        => $requiereDireccion ? (mb_substr(trim($this->direccion['cp']), 0, 10) ?: null) : null,
+            // desarmada, para importar el envio a MiCorreo desde el panel
+            'entrega_calle'     => $requiereDireccion ? (mb_substr(trim($this->direccion['calle']), 0, 100) ?: null) : null,
+            'entrega_numero'    => $requiereDireccion ? (mb_substr(trim($this->direccion['numero']), 0, 10) ?: null) : null,
+            'entrega_piso'      => $requiereDireccion ? (mb_substr(trim($this->direccion['piso']), 0, 20) ?: null) : null,
+            'entrega_provincia' => $requiereDireccion ? (mb_substr(trim($this->direccion['provincia']), 0, 40) ?: null) : null,
             'entrega_zona_id'   => $opcion['zona_id'],
             'envio_importe'     => $this->envioImporte,
             'envio_transportista' => $opcion['transportista'] ?? null,

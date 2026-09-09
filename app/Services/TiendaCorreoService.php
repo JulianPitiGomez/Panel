@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -146,6 +147,130 @@ class TiendaCorreoService
 
             return ['ok' => false, 'error' => 'No se pudo consultar la cuenta MiCorreo.'];
         }
+    }
+
+    /**
+     * Importa un pedido de la tienda a la cuenta MiCorreo del comercio (API
+     * /shipping/import). Queda cargado ahi para pagarlo e imprimir el rotulo; el
+     * numero de seguimiento lo da MiCorreo al generar el rotulo y el comercio lo
+     * carga despues al marcar "despachado". Deja envio_importado y un evento.
+     *
+     * @return array{ok: bool, mensaje: string}
+     */
+    public function importarPedido(int $idpedido, string $usuario = 'panel'): array
+    {
+        $db = DB::connection('client_db');
+        $sat = $db->table($this->prefijo . 'tienda_pedidos')->where('idpedido', $idpedido)->first();
+        if (!$sat) {
+            return ['ok' => false, 'mensaje' => 'El pedido no vino de la tienda web.'];
+        }
+        if ($sat->entrega_modo !== TiendaPedidoService::ENTREGA_CORREO) {
+            return ['ok' => false, 'mensaje' => 'Este pedido no se entrega por correo.'];
+        }
+        if ($sat->envio_importado) {
+            return ['ok' => false, 'mensaje' => 'El envío de este pedido ya fue importado a MiCorreo el ' . date('d/m/Y H:i', strtotime($sat->envio_importado)) . '.'];
+        }
+        if (in_array($sat->estado_web, [TiendaSeguimientoService::CANCELADO, TiendaSeguimientoService::ENTREGADO], true)) {
+            return ['ok' => false, 'mensaje' => 'El pedido está ' . mb_strtolower(TiendaSeguimientoService::etiqueta($sat->estado_web, $sat->entrega_modo)) . '; no corresponde generar el envío.'];
+        }
+        if (in_array($sat->pago_estado, [TiendaPagoService::ESTADO_PENDIENTE, TiendaPagoService::ESTADO_RECHAZADO], true)) {
+            return ['ok' => false, 'mensaje' => 'El pago del pedido todavía no está confirmado. Confirmalo antes de generar el envío.'];
+        }
+
+        $cred = $this->credenciales();
+        if (!$cred || !(new CorreoArgentinoService($cred))->configurado()) {
+            return ['ok' => false, 'mensaje' => 'Falta la cuenta MiCorreo del comercio (Catálogo → Integraciones → Correo Argentino).'];
+        }
+
+        $provincia = CorreoArgentinoService::codigoProvincia($sat->entrega_provincia);
+        if ($provincia === null) {
+            return ['ok' => false, 'mensaje' => 'El pedido no tiene una provincia de entrega reconocible' . ($sat->entrega_provincia ? " ({$sat->entrega_provincia})" : '') . '. Cargá el envío a mano en MiCorreo.'];
+        }
+        if (!$sat->entrega_calle || !$sat->entrega_numero || !$sat->entrega_localidad || CorreoArgentinoService::normalizarCodigoPostal($sat->entrega_cp) === null) {
+            return ['ok' => false, 'mensaje' => 'Al pedido le falta calle, número, localidad o código postal de entrega. Cargá el envío a mano en MiCorreo.'];
+        }
+
+        $encab = $db->table($this->prefijo . 'pedidos_encab')->where('id', $idpedido)->first();
+        $comprador = $sat->comprador_id ? $db->table($this->prefijo . 'tienda_compradores')->where('id', $sat->comprador_id)->first() : null;
+        $det = $db->table($this->prefijo . 'pedidos_det')->where('idpedido', $idpedido)->get();
+        if ($det->isEmpty()) {
+            return ['ok' => false, 'mensaje' => 'El pedido no tiene artículos.'];
+        }
+
+        $items = $det->map(fn ($d) => ['codigo' => $d->codart, 'cantidad' => (float) $d->cantidad])->all();
+        $paquete = (new TiendaEnvioService($this->prefijo))->pesoCarrito($items);
+        $subtotal = $det->sum(fn ($d) => (float) $d->cantidad * ((float) $d->punitario - (float) ($d->descu ?? 0))) - (float) ($sat->descuento_promos ?? 0);
+
+        [$piso, $depto] = self::separarPisoDepto($sat->entrega_piso);
+        $nombre = trim((string) ($comprador->nombre ?? '')) ?: trim((string) ($encab->cliente ?? '')) ?: 'Comprador';
+
+        try {
+            $this->cliente($cred)->importarEnvio([
+                'ext_order_id' => 'T' . $idpedido,
+                'order_number' => (string) $idpedido,
+                'destinatario' => [
+                    'nombre' => $nombre,
+                    'telefono' => $comprador->telefono ?? null,
+                    'celular' => $comprador->telefono ?? null,
+                    'email' => $comprador->email ?? null,
+                ],
+                'tipo_entrega' => CorreoArgentinoService::ENTREGA_DOMICILIO,
+                'direccion' => [
+                    'calle' => $sat->entrega_calle,
+                    'numero' => $sat->entrega_numero,
+                    'piso' => $piso,
+                    'depto' => $depto,
+                    'localidad' => $sat->entrega_localidad,
+                    'provincia' => $provincia,
+                    'codigo_postal' => $sat->entrega_cp,
+                ],
+                'bulto' => [
+                    'peso_gramos' => $paquete['peso_gramos'], 'ancho_cm' => $paquete['ancho_cm'],
+                    'alto_cm' => $paquete['alto_cm'], 'largo_cm' => $paquete['largo_cm'],
+                ],
+                'valor_declarado' => max(0, round($subtotal, 2)),
+            ]);
+        } catch (CorreoArgentinoException $e) {
+            Log::warning('TiendaCorreo importar: ' . $e->getMessage(), ['prefijo' => $this->prefijo, 'idpedido' => $idpedido]);
+
+            return ['ok' => false, 'mensaje' => $e->getMessage()];
+        } catch (\Throwable $e) {
+            Log::warning('TiendaCorreo importar: ' . $e->getMessage(), ['prefijo' => $this->prefijo, 'idpedido' => $idpedido]);
+
+            return ['ok' => false, 'mensaje' => 'No se pudo importar el envío a MiCorreo.'];
+        }
+
+        $db->table($this->prefijo . 'tienda_pedidos')->where('idpedido', $idpedido)->update(['envio_importado' => now()]);
+        (new TiendaPedidoService($this->prefijo))->registrarEvento(
+            $idpedido,
+            $sat->estado_web,
+            'Envío importado a MiCorreo (' . $paquete['peso_gramos'] . ' g, ' . $paquete['ancho_cm'] . 'x' . $paquete['alto_cm'] . 'x' . $paquete['largo_cm'] . ' cm). Falta pagarlo e imprimir el rótulo en la web de MiCorreo.',
+            'comercio',
+            $usuario
+        );
+
+        return ['ok' => true, 'mensaje' => "Envío del pedido #{$idpedido} importado a MiCorreo. Entrá a la web de MiCorreo para pagarlo e imprimir el rótulo; después cargá acá el número de seguimiento al marcarlo despachado."];
+    }
+
+    /**
+     * El checkout guarda "Piso/Depto" en un solo campo; MiCorreo lo quiere separado
+     * y de hasta 3 caracteres cada uno. "3 B", "3º B", "PB 2", "piso 3 dto 4".
+     * @return array{0: string, 1: string}
+     */
+    public static function separarPisoDepto(?string $texto): array
+    {
+        $t = trim((string) $texto);
+        if ($t === '') {
+            return ['', ''];
+        }
+        $t = preg_replace('/\b(piso|dpto\.?|depto\.?|dto\.?|departamento)\b/iu', ' ', $t);
+        $t = str_replace(['º', '°', '/', '-', ','], ' ', $t);
+        $partes = preg_split('/\s+/', trim($t), -1, PREG_SPLIT_NO_EMPTY);
+        if (count($partes) === 1 && preg_match('/^(\d+)([A-Za-z]+)$/', $partes[0], $m)) {
+            $partes = [$m[1], $m[2]];
+        }
+
+        return [mb_substr($partes[0] ?? '', 0, 3), mb_substr($partes[1] ?? '', 0, 3)];
     }
 
     /** "3 a 6 días hábiles" a partir de los tiempos que informa la API; null si no vinieron. */
