@@ -45,13 +45,14 @@ class TiendaCorreoService
     }
 
     /**
-     * Cotiza el envio a domicilio de un bulto. Nunca lanza: si algo falla devuelve
-     * ok=false con el motivo, y el que llama decide si cae al tarifario manual.
+     * Cotiza un bulto a domicilio y a sucursal en una sola llamada (queda cacheada).
+     * Nunca lanza: si algo falla devuelve ok=false con el motivo, y el que llama
+     * decide si cae al tarifario manual. Cada tarifa: importe, producto, demora.
      *
      * @param  array{peso_gramos: int|float, ancho_cm: int|float, alto_cm: int|float, largo_cm: int|float}  $bulto
-     * @return array{ok: bool, importe?: float, producto?: string, demora?: ?string, valid_to?: ?string, error?: string}
+     * @return array{ok: bool, domicilio?: ?array, sucursal?: ?array, valid_to?: ?string, error?: string}
      */
-    public function cotizarDomicilio(string $cpOrigen, ?string $cpDestino, array $bulto, ?array $cred = null): array
+    public function cotizar(string $cpOrigen, ?string $cpDestino, array $bulto, ?array $cred = null): array
     {
         $cred ??= $this->credenciales();
         if (!$cred) {
@@ -63,19 +64,21 @@ class TiendaCorreoService
 
         try {
             $correo = new CorreoArgentinoService($cred);
-            $cotizacion = $correo->cotizar($cpOrigen, (string) $cpDestino, $bulto, CorreoArgentinoService::ENTREGA_DOMICILIO);
-            $tarifa = CorreoArgentinoService::tarifaPara($cotizacion, CorreoArgentinoService::ENTREGA_DOMICILIO);
-            if ($tarifa === null) {
-                return ['ok' => false, 'error' => 'Correo Argentino no devolvió tarifa a domicilio para ese código postal.'];
+            $cotizacion = $correo->cotizar($cpOrigen, (string) $cpDestino, $bulto);
+            $armar = function (?array $tarifa): ?array {
+                return $tarifa === null ? null : [
+                    'importe' => round((float) $tarifa['price'], 2),
+                    'producto' => (string) ($tarifa['productName'] ?: 'Paq.ar'),
+                    'demora' => self::textoDemora($tarifa['deliveryTimeMin'] ?? null, $tarifa['deliveryTimeMax'] ?? null),
+                ];
+            };
+            $domicilio = $armar(CorreoArgentinoService::tarifaPara($cotizacion, CorreoArgentinoService::ENTREGA_DOMICILIO));
+            $sucursal = $armar(CorreoArgentinoService::tarifaPara($cotizacion, CorreoArgentinoService::ENTREGA_SUCURSAL));
+            if ($domicilio === null && $sucursal === null) {
+                return ['ok' => false, 'error' => 'Correo Argentino no devolvió tarifas para ese código postal.'];
             }
 
-            return [
-                'ok' => true,
-                'importe' => round((float) $tarifa['price'], 2),
-                'producto' => (string) ($tarifa['productName'] ?: 'Paq.ar'),
-                'demora' => self::textoDemora($tarifa['deliveryTimeMin'] ?? null, $tarifa['deliveryTimeMax'] ?? null),
-                'valid_to' => $cotizacion['valid_to'] ?? null,
-            ];
+            return ['ok' => true, 'domicilio' => $domicilio, 'sucursal' => $sucursal, 'valid_to' => $cotizacion['valid_to'] ?? null];
         } catch (CorreoArgentinoException $e) {
             Log::warning('TiendaCorreo: cotización falló', ['prefijo' => $this->prefijo, 'cp_destino' => $cpDestino, 'error' => $e->getMessage()]);
 
@@ -182,11 +185,12 @@ class TiendaCorreoService
             return ['ok' => false, 'mensaje' => 'Falta la cuenta MiCorreo del comercio (Catálogo → Integraciones → Correo Argentino).'];
         }
 
+        $aSucursal = !empty($sat->entrega_sucursal_codigo);
         $provincia = CorreoArgentinoService::codigoProvincia($sat->entrega_provincia);
-        if ($provincia === null) {
+        if (!$aSucursal && $provincia === null) {
             return ['ok' => false, 'mensaje' => 'El pedido no tiene una provincia de entrega reconocible' . ($sat->entrega_provincia ? " ({$sat->entrega_provincia})" : '') . '. Cargá el envío a mano en MiCorreo.'];
         }
-        if (!$sat->entrega_calle || !$sat->entrega_numero || !$sat->entrega_localidad || CorreoArgentinoService::normalizarCodigoPostal($sat->entrega_cp) === null) {
+        if (!$aSucursal && (!$sat->entrega_calle || !$sat->entrega_numero || !$sat->entrega_localidad || CorreoArgentinoService::normalizarCodigoPostal($sat->entrega_cp) === null)) {
             return ['ok' => false, 'mensaje' => 'Al pedido le falta calle, número, localidad o código postal de entrega. Cargá el envío a mano en MiCorreo.'];
         }
 
@@ -214,14 +218,15 @@ class TiendaCorreoService
                     'celular' => $comprador->telefono ?? null,
                     'email' => $comprador->email ?? null,
                 ],
-                'tipo_entrega' => CorreoArgentinoService::ENTREGA_DOMICILIO,
+                'tipo_entrega' => $aSucursal ? CorreoArgentinoService::ENTREGA_SUCURSAL : CorreoArgentinoService::ENTREGA_DOMICILIO,
+                'sucursal' => $aSucursal ? $sat->entrega_sucursal_codigo : null,
                 'direccion' => [
                     'calle' => $sat->entrega_calle,
                     'numero' => $sat->entrega_numero,
                     'piso' => $piso,
                     'depto' => $depto,
                     'localidad' => $sat->entrega_localidad,
-                    'provincia' => $provincia,
+                    'provincia' => $provincia ?? '',
                     'codigo_postal' => $sat->entrega_cp,
                 ],
                 'bulto' => [
@@ -244,7 +249,7 @@ class TiendaCorreoService
         (new TiendaPedidoService($this->prefijo))->registrarEvento(
             $idpedido,
             $sat->estado_web,
-            'Envío importado a MiCorreo (' . $paquete['peso_gramos'] . ' g, ' . $paquete['ancho_cm'] . 'x' . $paquete['alto_cm'] . 'x' . $paquete['largo_cm'] . ' cm). Falta pagarlo e imprimir el rótulo en la web de MiCorreo.',
+            'Envío ' . ($aSucursal ? 'a sucursal ' . $sat->entrega_sucursal_codigo . ' ' : 'a domicilio ') . 'importado a MiCorreo (' . $paquete['peso_gramos'] . ' g, ' . $paquete['ancho_cm'] . 'x' . $paquete['alto_cm'] . 'x' . $paquete['largo_cm'] . ' cm). Falta pagarlo e imprimir el rótulo en la web de MiCorreo.',
             'comercio',
             $usuario
         );
@@ -271,6 +276,54 @@ class TiendaCorreoService
         }
 
         return [mb_substr($partes[0] ?? '', 0, 3), mb_substr($partes[1] ?? '', 0, 3)];
+    }
+
+    /**
+     * Sucursales del Correo con retiro habilitado en una provincia (codigo de una
+     * letra o nombre como lo escribe el comprador). Cacheadas 12 h por cuenta.
+     *
+     * @return array{ok: bool, lista?: list<array<string, mixed>>, error?: string}
+     */
+    public function sucursales(?string $provincia, ?array $cred = null): array
+    {
+        $cred ??= $this->credenciales();
+        if (!$cred) {
+            return ['ok' => false, 'error' => 'La API de Correo Argentino no está configurada.'];
+        }
+        $codigo = CorreoArgentinoService::codigoProvincia($provincia);
+        if ($codigo === null) {
+            return ['ok' => false, 'error' => 'No reconocemos la provincia para buscar sucursales.'];
+        }
+
+        try {
+            $lista = array_values(array_filter((new CorreoArgentinoService($cred))->sucursales($codigo), fn ($s) => $s['pickupAvailability']));
+
+            return ['ok' => true, 'lista' => $lista];
+        } catch (CorreoArgentinoException $e) {
+            Log::warning('TiendaCorreo sucursales: ' . $e->getMessage(), ['prefijo' => $this->prefijo, 'provincia' => $codigo]);
+
+            return ['ok' => false, 'error' => 'No pudimos cargar las sucursales del Correo en este momento.'];
+        } catch (\Throwable $e) {
+            Log::warning('TiendaCorreo sucursales: ' . $e->getMessage(), ['prefijo' => $this->prefijo]);
+
+            return ['ok' => false, 'error' => 'No pudimos cargar las sucursales del Correo en este momento.'];
+        }
+    }
+
+    /** "Sucursal Villa Crespo · Av. Corrientes 5000, CABA (1414)" para mostrar y guardar en el pedido. */
+    public static function textoSucursal(array $s): string
+    {
+        $dir = trim(($s['streetName'] ?? '') . ' ' . ($s['streetNumber'] ?? ''));
+        $loc = $s['locality'] ?? $s['city'] ?? '';
+        $texto = trim((string) $s['name']);
+        if ($dir !== '' || $loc !== '') {
+            $texto .= ' · ' . trim($dir . ($dir !== '' && $loc !== '' ? ', ' : '') . $loc);
+        }
+        if (!empty($s['postalCode'])) {
+            $texto .= ' (' . $s['postalCode'] . ')';
+        }
+
+        return $texto;
     }
 
     /** "3 a 6 días hábiles" a partir de los tiempos que informa la API; null si no vinieron. */

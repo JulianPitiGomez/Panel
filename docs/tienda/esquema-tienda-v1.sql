@@ -25,6 +25,7 @@
 --                  F4: tienda_fotos (galeria); F5: tienda_metricas; F6: tienda_pagos_cuenta, tienda_links, tienda_favoritos; F7: tienda_carritos
 --                  tienda_pedidos.entrega_fecha / entrega_franja_id / entrega_franja / agenda_cupo
 --                  Correo API: tienda_pedidos.entrega_calle / entrega_numero / entrega_piso / entrega_provincia / envio_importado
+--                              / entrega_sucursal_codigo / entrega_sucursal_nombre (retiro en sucursal)
 --                  (F1 agrego comision_saldo a tienda_pedidos y tienda_eventos; v1 todavia no salio a produccion,
 --                   por eso se edita en lugar de crear v2)
 -- =====================================================================
@@ -85,6 +86,9 @@ CREATE TABLE IF NOT EXISTS `{p}tienda_pedidos` (
   `entrega_numero`      VARCHAR(10)  DEFAULT NULL,
   `entrega_piso`        VARCHAR(20)  DEFAULT NULL,
   `entrega_provincia`   VARCHAR(40)  DEFAULT NULL,
+  -- retiro en sucursal del Correo (API MiCorreo): entrega_modo sigue siendo 'correo'
+  `entrega_sucursal_codigo` VARCHAR(20)  DEFAULT NULL,
+  `entrega_sucursal_nombre` VARCHAR(150) DEFAULT NULL,
   `entrega_zona_id`     INT UNSIGNED DEFAULT NULL,               -- tienda_zonas.id (F2)
   `envio_importe`       DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   `envio_transportista` VARCHAR(40)  DEFAULT NULL,

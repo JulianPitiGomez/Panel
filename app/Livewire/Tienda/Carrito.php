@@ -34,6 +34,11 @@ class Carrito extends Component
     public $entregaModo = '';
     public $opcionesEntrega = [];
     public $direccion = ['calle' => '', 'numero' => '', 'piso' => '', 'localidad' => '', 'provincia' => '', 'cp' => '', 'referencia' => '', 'lat' => null, 'lng' => null];
+
+    // Retiro en sucursal del Correo (opcion correo_sucursal, solo con la API de MiCorreo)
+    public $sucursalCodigo = '';
+    public $sucursales = [];            // sucursales de la provincia del comprador: code, name, texto, postalCode
+    public $sucursalesError = '';
     public $direccionesGuardadas = [];
     public $direccionSeleccionada = '';
     public $guardarDireccion = true;
@@ -117,11 +122,25 @@ class Carrito extends Component
 
     public function necesitaDireccion(?string $modo): bool
     {
-        return in_array($modo, [\App\Services\TiendaPedidoService::ENTREGA_FLOTA, \App\Services\TiendaPedidoService::ENTREGA_CORREO, \App\Services\TiendaPedidoService::ENTREGA_A_CONVENIR], true);
+        return in_array($modo, [\App\Services\TiendaPedidoService::ENTREGA_FLOTA, \App\Services\TiendaPedidoService::ENTREGA_CORREO, \App\Services\TiendaPedidoService::ENTREGA_A_CONVENIR, \App\Services\TiendaEnvioService::OPCION_CORREO_SUCURSAL], true);
     }
 
-    public function direccionCompleta(): bool
+    public function esSucursalCorreo(?string $modo = null): bool
     {
+        return ($modo ?? $this->entregaModo) === \App\Services\TiendaEnvioService::OPCION_CORREO_SUCURSAL;
+    }
+
+    /**
+     * La direccion alcanza para la modalidad: a domicilio hace falta calle y localidad;
+     * para retirar en una sucursal del Correo alcanza con localidad y codigo postal
+     * (la calle del comprador no se usa, la provincia y el CP eligen la sucursal).
+     */
+    public function direccionCompleta(?string $modo = null): bool
+    {
+        if ($this->esSucursalCorreo($modo)) {
+            return trim((string) $this->direccion['localidad']) !== '' && trim((string) $this->direccion['cp']) !== '';
+        }
+
         return trim((string) $this->direccion['calle']) !== '' && trim((string) $this->direccion['localidad']) !== '';
     }
 
@@ -136,10 +155,13 @@ class Carrito extends Component
                     return 'Elegí cómo querés recibir el pedido.';
                 }
                 if ($this->necesitaDireccion($this->entregaModo) && !$this->direccionCompleta()) {
-                    return 'Completá calle y localidad de la dirección de entrega.';
+                    return $this->esSucursalCorreo() ? 'Completá localidad y código postal para buscar sucursales del Correo.' : 'Completá calle y localidad de la dirección de entrega.';
                 }
                 if (!$this->opcionesEntrega[$this->entregaModo]['disponible']) {
                     return $this->opcionesEntrega[$this->entregaModo]['detalle'] ?: 'Esa forma de entrega no está disponible para tu dirección.';
+                }
+                if ($this->esSucursalCorreo() && !$this->sucursalElegida()) {
+                    return $this->sucursalesError ?: 'Elegí la sucursal del Correo donde querés retirar.';
                 }
                 return null;
             case 'cuando':
@@ -265,7 +287,10 @@ class Carrito extends Component
     public function resumenEleccion(): array
     {
         $entrega = $this->entregaModo && isset($this->opcionesEntrega[$this->entregaModo]) ? $this->opcionesEntrega[$this->entregaModo]['etiqueta'] : '';
-        if ($entrega && $this->necesitaDireccion($this->entregaModo) && $this->direccionCompleta()) {
+        if ($entrega && $this->esSucursalCorreo()) {
+            $s = $this->sucursalElegida();
+            $entrega .= $s ? ' · ' . $s['texto'] : '';
+        } elseif ($entrega && $this->necesitaDireccion($this->entregaModo) && $this->direccionCompleta()) {
             $entrega .= ' · ' . $this->textoDireccion(true);
         }
         $cuando = '';
@@ -325,8 +350,71 @@ class Carrito extends Component
 
         $this->envioImporte = $this->entregaModo ? (float) $this->opcionesEntrega[$this->entregaModo]['importe'] : 0.0;
 
+        $this->cargarSucursales();
         $this->cotizarAgenda();
         $this->cotizarPago();
+    }
+
+    /**
+     * Sucursales del Correo para retirar, cuando la modalidad es correo_sucursal: las de la
+     * provincia del comprador, primero las de su mismo codigo postal. Cacheadas por el servicio.
+     */
+    private function cargarSucursales(): void
+    {
+        $this->sucursalesError = '';
+        if (!$this->esSucursalCorreo() || !$this->direccionCompleta()) {
+            $this->sucursales = [];
+            $this->sucursalCodigo = '';
+            return;
+        }
+
+        $r = (new \App\Services\TiendaCorreoService($this->tablePrefix))->sucursales($this->direccion['provincia'] ?: null);
+        if (!$r['ok']) {
+            $this->sucursales = [];
+            $this->sucursalCodigo = '';
+            $this->sucursalesError = trim((string) $this->direccion['provincia']) === ''
+                ? 'Completá la provincia para buscar sucursales del Correo.'
+                : $r['error'];
+            return;
+        }
+
+        $cp = \App\Services\TiendaEnvioService::normalizarCp($this->direccion['cp']);
+        $lista = $r['lista'];
+        usort($lista, function ($a, $b) use ($cp) {
+            $aCerca = $cp !== '' && \App\Services\TiendaEnvioService::normalizarCp($a['postalCode'] ?? '') === $cp;
+            $bCerca = $cp !== '' && \App\Services\TiendaEnvioService::normalizarCp($b['postalCode'] ?? '') === $cp;
+            if ($aCerca !== $bCerca) {
+                return $aCerca ? -1 : 1;
+            }
+            return strcasecmp($a['name'], $b['name']);
+        });
+
+        $this->sucursales = array_map(fn ($s) => [
+            'code' => $s['code'], 'name' => $s['name'], 'postalCode' => $s['postalCode'] ?? null,
+            'texto' => \App\Services\TiendaCorreoService::textoSucursal($s),
+            'cerca' => $cp !== '' && \App\Services\TiendaEnvioService::normalizarCp($s['postalCode'] ?? '') === $cp,
+        ], $lista);
+
+        if ($this->sucursales === []) {
+            $this->sucursalesError = 'El Correo no tiene sucursales con retiro en esa provincia. Elegí envío a domicilio.';
+        }
+        if (!$this->sucursalElegida()) {
+            $this->sucursalCodigo = '';
+        }
+    }
+
+    private function sucursalElegida(): ?array
+    {
+        if ($this->sucursalCodigo === '') {
+            return null;
+        }
+        foreach ($this->sucursales as $s) {
+            if ($s['code'] === $this->sucursalCodigo) {
+                return $s;
+            }
+        }
+
+        return null;
     }
 
     /** Dias y franjas disponibles para este carrito y modalidad; ajusta la eleccion si dejo de valer. */
@@ -791,18 +879,30 @@ class Carrito extends Component
 
         // Entrega: recotizar con el servidor como verdad (no confiar en lo que quedo en pantalla)
         $this->entregaError = '';
-        $requiereDireccion = in_array($this->entregaModo, [\App\Services\TiendaPedidoService::ENTREGA_FLOTA, \App\Services\TiendaPedidoService::ENTREGA_CORREO, \App\Services\TiendaPedidoService::ENTREGA_A_CONVENIR], true);
+        $requiereDireccion = $this->necesitaDireccion($this->entregaModo);
+        $aSucursal = $this->esSucursalCorreo();
         if (!$this->entregaModo) {
             $this->entregaError = 'Elegí cómo querés recibir el pedido.';
             return;
         }
-        if ($requiereDireccion && (trim($this->direccion['calle']) === '' || trim($this->direccion['localidad']) === '')) {
-            $this->entregaError = 'Completá calle y localidad de la dirección de entrega.';
+        if ($requiereDireccion && !$this->direccionCompleta()) {
+            $this->entregaError = $aSucursal ? 'Completá localidad y código postal para buscar sucursales del Correo.' : 'Completá calle y localidad de la dirección de entrega.';
+            return;
+        }
+        if (!isset($this->opcionesEntrega[$this->entregaModo]) || !$this->opcionesEntrega[$this->entregaModo]['disponible']) {
+            $this->entregaError = 'Esa forma de entrega ya no está disponible. Elegí otra.';
+            return;
+        }
+        $sucursal = $aSucursal ? $this->sucursalElegida() : null;
+        if ($aSucursal && !$sucursal) {
+            $this->entregaError = 'Elegí la sucursal del Correo donde querés retirar.';
             return;
         }
         $opcion = $this->opcionesEntrega[$this->entregaModo];
         $entregaResumen = $opcion['etiqueta'];
-        if ($requiereDireccion) {
+        if ($sucursal) {
+            $entregaResumen .= ': ' . $sucursal['texto'];
+        } elseif ($requiereDireccion) {
             $entregaResumen .= ': ' . $this->textoDireccion(true);
         }
         if ($this->envioImporte > 0) {
@@ -907,8 +1007,13 @@ class Carrito extends Component
         // Fila satelite del ecommerce (comprador web, entrega, pago, comision, estado web)
         (new \App\Services\TiendaPedidoService($this->tablePrefix))->registrarSatelite($pedidoId, (int) session('tienda_config_id'), [
             'iva_incluido'      => $resumenIva['iva'],
-            'entrega_modo'      => $this->entregaModo,
-            'entrega_direccion' => $requiereDireccion ? mb_substr($this->textoDireccion(), 0, 160) : null,
+            // correo_sucursal es una opcion del checkout: en el pedido queda como 'correo' con la sucursal aparte
+            'entrega_modo'      => $aSucursal ? \App\Services\TiendaPedidoService::ENTREGA_CORREO : $this->entregaModo,
+            'entrega_sucursal_codigo' => $sucursal ? mb_substr($sucursal['code'], 0, 20) : null,
+            'entrega_sucursal_nombre' => $sucursal ? mb_substr($sucursal['texto'], 0, 150) : null,
+            'entrega_direccion' => $sucursal
+                ? mb_substr('Sucursal Correo Argentino: ' . $sucursal['texto'], 0, 160)
+                : ($requiereDireccion ? mb_substr($this->textoDireccion(), 0, 160) : null),
             'entrega_localidad' => $requiereDireccion ? mb_substr(trim($this->direccion['localidad']), 0, 60) : null,
             'entrega_cp'        => $requiereDireccion ? (mb_substr(trim($this->direccion['cp']), 0, 10) ?: null) : null,
             // desarmada, para importar el envio a MiCorreo desde el panel

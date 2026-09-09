@@ -162,11 +162,11 @@
 
                     {{-- Paso: entrega --}}
                     @if($paso === 'entrega')
-                        @php $iconosEntrega = ['retiro' => 'fa-store', 'flota' => 'fa-motorcycle', 'correo' => 'fa-truck', 'a_convenir' => 'fa-handshake']; @endphp
+                        @php $iconosEntrega = ['retiro' => 'fa-store', 'flota' => 'fa-motorcycle', 'correo' => 'fa-truck', 'correo_sucursal' => 'fa-building', 'a_convenir' => 'fa-handshake']; @endphp
                         <p class="t-label">¿Cómo lo recibís?</p>
                         <div class="grid sm:grid-cols-2 gap-2.5">
                             @foreach($opcionesEntrega as $op)
-                                @php $elegible = $op['disponible'] || ($this->necesitaDireccion($op['modo']) && !$this->direccionCompleta()); @endphp
+                                @php $elegible = $op['disponible'] || ($this->necesitaDireccion($op['modo']) && !$this->direccionCompleta($op['modo'])); @endphp
                                 <label class="t-option {{ $entregaModo === $op['modo'] ? 'is-on' : '' }} {{ !$elegible ? 'is-off' : '' }}">
                                     <input type="radio" wire:model.live="entregaModo" value="{{ $op['modo'] }}" @disabled(!$elegible) class="sr-only">
                                     <span class="t-option-ico"><i class="fas {{ $iconosEntrega[$op['modo']] ?? 'fa-box' }}"></i></span>
@@ -183,7 +183,7 @@
 
                         @if($this->necesitaDireccion($entregaModo))
                             <div class="mt-4 rounded-xl p-4 space-y-2.5" style="background-color: var(--tp-tint);">
-                                <p class="t-label !mb-0"><i class="fas fa-map-marker-alt mr-1" style="color: var(--tp);"></i> Dirección de entrega</p>
+                                <p class="t-label !mb-0"><i class="fas fa-map-marker-alt mr-1" style="color: var(--tp);"></i> {{ $this->esSucursalCorreo() ? 'Tu localidad y código postal (para buscar sucursales cerca)' : 'Dirección de entrega' }}</p>
                                 @if(count($direccionesGuardadas))
                                     <select wire:change="seleccionarDireccion($event.target.value)" class="t-input !py-2.5 text-sm">
                                         <option value="">Otra dirección…</option>
@@ -202,10 +202,28 @@
                                     <input type="text" wire:model.blur="direccion.cp" placeholder="Cód. postal" class="t-input !py-2.5 text-sm">
                                     <input type="text" wire:model.blur="direccion.referencia" placeholder="Referencia (timbre, entre calles…)" class="t-input !py-2.5 text-sm col-span-3">
                                 </div>
-                                @if(session('tienda_comprador_web_id') && !$direccionSeleccionada)
+                                @if(session('tienda_comprador_web_id') && !$direccionSeleccionada && !$this->esSucursalCorreo())
                                     <label class="flex items-center gap-2 text-xs t-soft"><input type="checkbox" wire:model="guardarDireccion" class="w-4 h-4 rounded"> Guardar esta dirección para la próxima</label>
                                 @endif
                             </div>
+                            @if($this->esSucursalCorreo() && $this->direccionCompleta())
+                                <div class="mt-3 rounded-xl p-4 space-y-2" style="background-color: var(--tp-tint);">
+                                    <p class="t-label !mb-0"><i class="fas fa-building mr-1" style="color: var(--tp);"></i> ¿En qué sucursal del Correo lo retirás?</p>
+                                    @if($sucursalesError)
+                                        <p class="text-sm" style="color: var(--tdanger);"><i class="fas fa-exclamation-circle mr-1"></i>{{ $sucursalesError }}</p>
+                                    @elseif(count($sucursales))
+                                        <select wire:model.live="sucursalCodigo" class="t-input !py-2.5 text-sm">
+                                            <option value="">Elegí una sucursal…</option>
+                                            @foreach($sucursales as $s)
+                                                <option value="{{ $s['code'] }}">{{ $s['cerca'] ? '★ ' : '' }}{{ $s['texto'] }}</option>
+                                            @endforeach
+                                        </select>
+                                        <p class="text-[11px] t-muted">★ sucursales de tu mismo código postal. Cuando el Correo la reciba te avisamos para que pases a buscarla.</p>
+                                    @else
+                                        <p class="text-sm t-muted"><i class="fas fa-spinner fa-spin mr-1"></i>Buscando sucursales…</p>
+                                    @endif
+                                </div>
+                            @endif
                         @endif
                         @if($entregaError)<p class="text-sm mt-3" style="color: var(--tdanger);"><i class="fas fa-exclamation-circle mr-1"></i>{{ $entregaError }}</p>@endif
                     @endif

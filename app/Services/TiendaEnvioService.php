@@ -31,6 +31,13 @@ class TiendaEnvioService
     public const TARIFA_PROVINCIA = 'provincia';
     public const TARIFA_CP        = 'cp';
 
+    /**
+     * Opcion de entrega que existe solo en el checkout (con la API de MiCorreo): retiro
+     * en una sucursal del Correo. En el pedido se guarda como entrega_modo 'correo' con
+     * entrega_sucursal_codigo/nombre, asi el seguimiento y el panel la tratan como correo.
+     */
+    public const OPCION_CORREO_SUCURSAL = 'correo_sucursal';
+
     public const PROVINCIAS = [
         'Buenos Aires', 'CABA', 'Catamarca', 'Chaco', 'Chubut', 'Córdoba', 'Corrientes', 'Entre Ríos',
         'Formosa', 'Jujuy', 'La Pampa', 'La Rioja', 'Mendoza', 'Misiones', 'Neuquén', 'Río Negro',
@@ -372,11 +379,12 @@ class TiendaEnvioService
     }
 
     /**
-     * Cotizacion a domicilio por la API de MiCorreo para el paquete que devuelve
-     * pesoCarrito(). Null si el comercio no usa la API, falta el CP de destino o
-     * del local, o el Correo no respondio (queda en el log y se cae al tarifario).
+     * Cotizacion por la API de MiCorreo (a domicilio y a sucursal) para el paquete
+     * que devuelve pesoCarrito(). Null si el comercio no usa la API, falta el CP de
+     * destino o del local, o el Correo no respondio (queda en el log y se cae al
+     * tarifario). Cada tarifa: importe, producto, demora; null si no la ofrece.
      *
-     * @return array{importe: float, producto: string, demora: ?string}|null
+     * @return array{domicilio: ?array, sucursal: ?array}|null
      */
     private function cotizarCorreoApi(array $cfg, ?string $cp, array $paquete): ?array
     {
@@ -393,12 +401,12 @@ class TiendaEnvioService
             return null;
         }
 
-        $r = $correo->cotizarDomicilio((string) $cfg['origen_cp'], $cp, [
+        $r = $correo->cotizar((string) $cfg['origen_cp'], $cp, [
             'peso_gramos' => $paquete['peso_gramos'], 'ancho_cm' => $paquete['ancho_cm'],
             'alto_cm' => $paquete['alto_cm'], 'largo_cm' => $paquete['largo_cm'],
         ], $cred);
 
-        return $r['ok'] ? ['importe' => (float) $r['importe'], 'producto' => $r['producto'], 'demora' => $r['demora']] : null;
+        return $r['ok'] ? ['domicilio' => $r['domicilio'], 'sucursal' => $r['sucursal']] : null;
     }
 
     public static function parsearProvincias($valor): array
@@ -552,12 +560,25 @@ class TiendaEnvioService
             $cot = !$api && $tieneDestino ? $this->cotizarCorreo($provincia, $cp, $peso['peso']) : null;
 
             if ($api) {
-                $out[TiendaPedidoService::ENTREGA_CORREO] = [
-                    'modo' => TiendaPedidoService::ENTREGA_CORREO, 'etiqueta' => 'Envío por Correo Argentino',
-                    'importe' => $api['importe'], 'disponible' => true,
-                    'detalle' => $api['producto'] . ' a domicilio' . ($api['demora'] ? ' · ' . $api['demora'] : '') . ' · ' . self::formatoPeso($peso['peso']),
-                    'zona_id' => null, 'transportista' => TiendaCorreoService::PROVEEDOR, 'cotizacion' => 'api',
-                ];
+                if ($api['domicilio']) {
+                    $d = $api['domicilio'];
+                    $out[TiendaPedidoService::ENTREGA_CORREO] = [
+                        'modo' => TiendaPedidoService::ENTREGA_CORREO, 'etiqueta' => 'Envío por Correo Argentino',
+                        'importe' => $d['importe'], 'disponible' => true,
+                        'detalle' => $d['producto'] . ' a domicilio' . ($d['demora'] ? ' · ' . $d['demora'] : '') . ' · ' . self::formatoPeso($peso['peso']),
+                        'zona_id' => null, 'transportista' => TiendaCorreoService::PROVEEDOR, 'cotizacion' => 'api',
+                    ];
+                }
+                if ($api['sucursal']) {
+                    // Opcion solo del checkout: se guarda como entrega_modo 'correo' + entrega_sucursal_codigo/nombre
+                    $s = $api['sucursal'];
+                    $out[self::OPCION_CORREO_SUCURSAL] = [
+                        'modo' => self::OPCION_CORREO_SUCURSAL, 'etiqueta' => 'Retiro en sucursal de Correo Argentino',
+                        'importe' => $s['importe'], 'disponible' => true,
+                        'detalle' => $s['producto'] . ' a sucursal' . ($s['demora'] ? ' · ' . $s['demora'] : '') . ' · elegís la sucursal más cómoda',
+                        'zona_id' => null, 'transportista' => TiendaCorreoService::PROVEEDOR, 'cotizacion' => 'api',
+                    ];
+                }
             } elseif ($cot) {
                 $out[TiendaPedidoService::ENTREGA_CORREO] = [
                     'modo' => TiendaPedidoService::ENTREGA_CORREO, 'etiqueta' => 'Envío por ' . $proveedor,

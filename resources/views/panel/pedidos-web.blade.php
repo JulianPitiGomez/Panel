@@ -182,7 +182,7 @@
                                                                 class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#0057A8]/10 text-[#0057A8] hover:bg-[#0057A8]/20">
                                                             <i class="fas fa-shipping-fast mr-1"></i>Generar envío en MiCorreo
                                                         </button>
-                                                        <p class="text-[11px] text-gray-400 mt-1">Manda la dirección del comprador y el peso y medidas del pedido a tu cuenta MiCorreo. Hace falta el pago confirmado.</p>
+                                                        <p class="text-[11px] text-gray-400 mt-1">Manda {{ !empty($p['entrega_sucursal_codigo']) ? 'la sucursal del Correo que eligió el comprador' : 'la dirección del comprador' }} y el peso y medidas del pedido a tu cuenta MiCorreo. Hace falta el pago confirmado.</p>
                                                     @endif
                                                 </div>
                                             @endif
