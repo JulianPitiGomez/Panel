@@ -979,7 +979,8 @@ class Carrito extends Component
                 'vendedor' => $vendedorNombre,
                 'fecha' => date('Y-m-d'),
                 'parafecha' => $this->parafecha,
-                'estado' => 'P',
+                // 'W' (web en revision): no aparece en Pedidos de gestion hasta que el comercio lo pasa desde Pedidos web
+                'estado' => \App\Services\TiendaEstadoPedido::estadoInicialWeb(),
                 // Misma columna y mismo texto base de siempre; se agrega como se entrega para que gestion lo vea
                 'observa' => mb_substr(($this->observaciones ? "Pedido Tienda Web: {$this->observaciones}" : 'Pedido desde Tienda Web') . ' | ' . $entregaResumen, 0, 200),
                 'nuevo' => true,

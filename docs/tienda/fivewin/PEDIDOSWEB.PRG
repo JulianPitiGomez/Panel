@@ -21,8 +21,8 @@
 **
 ** TODAVIA NO ESTA ENGANCHADO. Para ponerlo en marcha hace falta (ver README.md al lado):
 **   1. Agregar el modulo al menu (menu_nuevo, modulo 'PEDWEB') con permisos A,M,E,R.
-**   2. Que la tienda cree los pedidos con estado 'W' en vez de 'P' (cambio en el panel) y que
-**      el panel conozca la letra 'W' en config/tienda.php (estados_gestion, comprometen_stock).
+**   2. La tienda ya crea los pedidos en estado W (config tienda.pedidos_en_revision, TIENDA_PEDIDOS_EN_REVISION);
+**      hasta que este modulo ande, "Pasar a pedidos" tambien esta en la pestana Pedidos web del panel.
 **   3. Configurar TIENDA_GESTION_TOKEN en el .env del panel y poner el mismo valor en TOKEN_GESTION
 **      (abajo), junto con URL_PANEL. El endpoint ya existe (TiendaGestionController).
 **   4. Los avisos al comprador los manda el panel: desde aca queda el evento con notificado = 0

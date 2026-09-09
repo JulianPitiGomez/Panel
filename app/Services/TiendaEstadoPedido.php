@@ -12,6 +12,19 @@ class TiendaEstadoPedido
     public const EN_ARMADO = 'A';
     public const FACTURADO = 'F';
 
+    /**
+     * Pedido web en revision: entro por la tienda y el comercio todavia no lo paso a Pedidos.
+     * La ventana Pedidos de gestion lista solo 'P', asi que no lo ve hasta que lo pasan
+     * (desde el modulo Pedidos Web de gestion o desde la pestana del panel).
+     */
+    public const WEB_REVISION = 'W';
+
+    /** Estado con el que nace un pedido de la tienda: 'W' (en revision) o 'P' si la revision esta apagada. */
+    public static function estadoInicialWeb(): string
+    {
+        return config('tienda.pedidos_en_revision', true) ? self::WEB_REVISION : self::PENDIENTE;
+    }
+
     /** letra => etiqueta */
     public static function todos(): array
     {

@@ -53,12 +53,20 @@ return [
     |   Ver TiendaEstadoPedido.
     */
     'estados_gestion' => [
+        'W' => 'Web en revisión',   // entro por la tienda y el comercio todavia no lo paso a Pedidos
         'P' => 'Pendiente',
         'A' => 'En armado',
         'F' => 'Facturado',
         'N' => 'Anulado',
         'R' => 'Rechazado',
     ],
+
+    /*
+    | Los pedidos de la tienda nacen en 'W' (web en revision) y no aparecen en la ventana
+    | Pedidos de gestion hasta que el comercio los pasa (modulo Pedidos Web de gestion o
+    | pestana Pedidos web del panel). En false nacen directo en 'P' como antes.
+    */
+    'pedidos_en_revision' => filter_var(env('TIENDA_PEDIDOS_EN_REVISION', true), FILTER_VALIDATE_BOOLEAN),
 
     // Estados que revierten la comision (la conciliacion los busca)
     'estados_anulados' => ['N', 'R'],
@@ -88,8 +96,8 @@ return [
         'oca'              => 'https://www.oca.com.ar/envios/seguimiento?nro={nro}',
     ],
 
-    // Estados que comprometen stock (F2): armado, pendiente y en proceso. Facturado ya descontó.
-    'estados_comprometen_stock' => ['P', 'A'],
+    // Estados que comprometen stock (F2): web en revision, pendiente y en armado. Facturado ya descontó.
+    'estados_comprometen_stock' => ['W', 'P', 'A'],
 
     /*
     | Dominio propio (F6): a donde apuntan los CNAME de los comercios y las IPs

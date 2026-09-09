@@ -148,6 +148,16 @@
                                             $ant = $this->estadoAnterior($ew, $p['entrega_modo']);
                                             $pideSeguimiento = in_array('despachado', $sig) || ($ew === 'despachado');
                                         @endphp
+                                        @if($p['estado'] === \App\Services\TiendaEstadoPedido::WEB_REVISION && $ew !== 'cancelado')
+                                            <div class="mt-3 p-3 rounded-lg border border-amber-200 bg-amber-50" wire:click.stop>
+                                                <p class="text-[11px] uppercase text-amber-700 mb-1.5">En revisión: todavía no está en Pedidos de gestión</p>
+                                                <div class="flex flex-wrap items-center gap-3">
+                                                    <button wire:click="pasarAPedidos({{ $p['idpedido'] }})" wire:confirm="¿Pasar el pedido #{{ $p['idpedido'] }} a Pedidos de gestión para armarlo y facturarlo?{{ in_array($p['pago_estado'], ['pendiente', 'rechazado']) ? ' El pago todavía no está confirmado.' : '' }}"
+                                                            class="px-3 py-1.5 bg-[#1E1B35] text-white rounded-lg text-xs font-semibold hover:bg-[#2d2952]"><i class="fas fa-arrow-right mr-1"></i>Pasar a pedidos</button>
+                                                    <span class="text-[11px] text-amber-700">Cuando lo pasás, aparece en la ventana Pedidos de gestión como pendiente y nuevo.</span>
+                                                </div>
+                                            </div>
+                                        @endif
                                         <div class="mt-3 p-3 bg-white rounded-lg border border-gray-200" wire:click.stop>
                                             <p class="text-[11px] uppercase text-gray-400 mb-1.5">Estado del pedido web</p>
                                             <p class="text-sm text-gray-800 font-semibold mb-2">{{ $this->etiquetaEstadoWeb($ew, $p['entrega_modo']) }}</p>

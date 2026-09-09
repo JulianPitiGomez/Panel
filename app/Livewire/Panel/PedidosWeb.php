@@ -45,6 +45,44 @@ class PedidosWeb extends Component
         }
     }
 
+    /**
+     * El pedido web en revision (estado 'W') pasa a Pedidos de gestion como pendiente y nuevo.
+     * Mismo criterio que el modulo PEDIDOSWEB.PRG de Fivewin; queda aca como puente hasta
+     * que ese modulo este en marcha.
+     */
+    public function pasarAPedidos($id)
+    {
+        $this->conectar();
+        $id = (int) $id;
+        $fila = DB::connection('client_db')->table("{$this->tablePrefix}tienda_pedidos as t")
+            ->join("{$this->tablePrefix}pedidos_encab as e", 'e.id', '=', 't.idpedido')
+            ->where('t.idpedido', $id)->first(['e.estado', 't.estado_web', 't.pago_estado']);
+        if (!$fila) {
+            $this->mensaje = 'El pedido no vino de la tienda web.';
+            $this->tipoMensaje = 'error';
+            return;
+        }
+        if ($fila->estado !== TiendaEstadoPedido::WEB_REVISION) {
+            $this->mensaje = "El pedido #{$id} ya fue pasado a pedidos (" . TiendaEstadoPedido::etiqueta($fila->estado) . ').';
+            $this->tipoMensaje = 'error';
+            return;
+        }
+        if (TiendaSeguimientoService::normalizar($fila->estado_web) === TiendaSeguimientoService::CANCELADO) {
+            $this->mensaje = 'El pedido está cancelado; no corresponde pasarlo a pedidos.';
+            $this->tipoMensaje = 'error';
+            return;
+        }
+        DB::connection('client_db')->table("{$this->tablePrefix}pedidos_encab")
+            ->where('id', $id)->where('estado', TiendaEstadoPedido::WEB_REVISION)
+            ->update(['estado' => TiendaEstadoPedido::PENDIENTE, 'nuevo' => 1]);
+        (new TiendaPedidoService($this->tablePrefix))->registrarEvento($id, 'pasado_gestion', 'Pasado a Pedidos de gestión', 'comercio', session('cliente_nombre') ?: 'panel');
+        $this->mensaje = "Pedido #{$id} pasado a Pedidos: ya lo ven en gestión para armarlo y facturarlo."
+            . (in_array($fila->pago_estado, [TiendaPagoService::ESTADO_PENDIENTE, TiendaPagoService::ESTADO_RECHAZADO], true) ? ' Ojo: el pago todavía no está confirmado.' : '');
+        $this->tipoMensaje = 'success';
+        $this->cargar();
+        $this->verDetalle($id);
+    }
+
     /** Carga el envio del pedido en la cuenta MiCorreo del comercio (API). El pago del envio y el rotulo se hacen en la web de MiCorreo. */
     public function importarEnvioCorreo($id)
     {

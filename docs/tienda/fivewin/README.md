@@ -23,11 +23,12 @@ Las reglas de estados web (flujo por modo de entrega, etiquetas) son una copia d
 
 1. **Menú y permisos.** Agregar el módulo al menú de gestión (`menu_nuevo`, módulo `PEDWEB`) llamando a `PedidosWeb(cPermisos)`. Letras de permisos: `A` pasar a pedidos, `M` pagos / estados / envío, `E` exportar, `R` reporte.
 
-2. **Estado `W` en gestión.** La idea es que el pedido web entre "en revisión" y no aparezca en Pedidos hasta que el comercio lo pase. Para eso:
-   - En el panel, `app/Livewire/Tienda/Carrito.php` debe crear `pedidos_encab` con `estado = 'W'` en vez de `'P'`.
-   - En `config/tienda.php`: agregar `'W' => 'Web en revisión'` a `estados_gestion` y `'W'` a `estados_comprometen_stock` (el pedido en revisión también reserva stock).
-   - Revisar que la conciliación de comisiones (`TiendaComisionService`) trate `W` como pendiente.
+2. **Estado `W` en gestión (ya hecho en el panel).** El pedido web entra "en revisión" y no aparece en Pedidos hasta que el comercio lo pasa:
+   - La tienda crea `pedidos_encab` con `estado = 'W'` (`TiendaEstadoPedido::estadoInicialWeb()`). Se puede volver al comportamiento anterior con `TIENDA_PEDIDOS_EN_REVISION=false` en el `.env`.
+   - `config/tienda.php` conoce la letra (`estados_gestion`, `estados_comprometen_stock`): el pedido en revisión también reserva stock.
+   - La conciliación de comisiones solo mira anulados y rechazados, así que `W` no la afecta.
    - La ventana Pedidos de gestión filtra `estado = 'P'`, así que los `W` quedan afuera sin tocar `pedidos.prg`.
+   - Mientras este módulo no esté en marcha, la pestaña Pedidos web del panel tiene el botón "Pasar a pedidos" con la misma lógica.
 
 3. **Endpoint del panel para MiCorreo (ya existe).** El `.prg` hace:
    ```
