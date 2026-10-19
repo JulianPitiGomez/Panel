@@ -124,7 +124,7 @@
                 </button>
 
                 <!-- Catálogo / tienda: oculto para quien no la tiene, salvo que se esté ofreciendo el servicio (config/tienda.php) -->
-                @if(\App\Services\TiendaService::visibleEnPanel(session('client_id')))
+                @if(class_exists(\App\Services\TiendaService::class) && \App\Services\TiendaService::visibleEnPanel(session('client_id')))
                 <button
                     wire:click="navigateTo('fotos-productos'); if(window.innerWidth < 640) $wire.call('toggleSidebar')"
                     class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'fotos-productos' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
@@ -188,7 +188,7 @@
                                         Compras por Fechas
                                         @break
                                     @case('articulos-vendidos')
-                                        Articulos Vendidos
+                                        Artículos
                                         @break
                                     @case('cobranzas-clientes')
                                         Cobranzas a Clientes
@@ -249,7 +249,7 @@
                         @livewire('panel.compras-fechas')
                         @break
                     @case('articulos-vendidos')
-                        @livewire('panel.articulos-vendidos')
+                        @livewire('panel.articulos')
                         @break
                     @case('cobranzas-clientes')
                         @livewire('panel.cobranzas-clientes')
@@ -270,9 +270,9 @@
                         @livewire('panel.auditoria')
                         @break
                     @case('fotos-productos')
-                        @if(\App\Services\TiendaService::habilitada(session('client_id')))
+                        @if(class_exists(\App\Services\TiendaService::class) && \App\Services\TiendaService::habilitada(session('client_id')))
                             @livewire('panel.fotos-productos')
-                        @elseif(config('tienda.ofrecer_servicio'))
+                        @elseif(class_exists(\App\Services\TiendaService::class) && config('tienda.ofrecer_servicio'))
                             @include('panel.tienda-no-contratada')
                         @else
                             @livewire('panel.inicio')
