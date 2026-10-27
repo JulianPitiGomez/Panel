@@ -25,6 +25,7 @@ class Inicio extends Component
     // Listas
     public $productosMasVendidos = [];
     public $ventasPorDepartamento = [];
+    public $comprasPorProveedor = [];
 
     // Datos para gráfico
     public $ventasPorDia = [];
@@ -83,6 +84,7 @@ class Inicio extends Component
         $this->cargarDeudas();
         $this->cargarProductosMasVendidos();
         $this->cargarVentasPorDepartamento();
+        $this->cargarComprasPorProveedor();
         $this->cargarGraficoDiario();
         $this->calcularUtilidad();
         $this->dispatch('datos-actualizados');
@@ -244,6 +246,45 @@ class Inicio extends Component
             })->toArray();
         } catch (\Exception $e) {
             $this->ventasPorDepartamento = [];
+        }
+    }
+
+    private function cargarComprasPorProveedor()
+    {
+        try {
+            // Se agrega compras por proveedor primero y después se joinea a provee.
+            $proveedores = DB::connection('client_db')->select("
+                SELECT
+                    x.codpro,
+                    COALESCE(p.nombre, 'Sin proveedor') as proveedor,
+                    x.comprobantes,
+                    x.total
+                FROM (
+                    SELECT
+                        c.codpro,
+                        COUNT(*) as comprobantes,
+                        SUM(c.importe * IF(c.tipocomp='NC',-1,1)) as total
+                    FROM {$this->tablePrefix}compras c
+                    WHERE c.fecfac >= ?
+                    AND c.fecfac < ? + INTERVAL 1 DAY
+                    GROUP BY c.codpro
+                ) x
+                LEFT JOIN {$this->tablePrefix}provee p ON p.codigo = x.codpro
+                ORDER BY x.total DESC
+            ", [$this->fechaDesde, $this->fechaHasta]);
+
+            $totalGeneral = collect($proveedores)->sum('total');
+
+            $this->comprasPorProveedor = collect($proveedores)->map(function ($item) use ($totalGeneral) {
+                return [
+                    'proveedor' => $item->proveedor,
+                    'comprobantes' => $item->comprobantes,
+                    'total' => $item->total,
+                    'porcentaje' => $totalGeneral != 0 ? round(($item->total / $totalGeneral) * 100, 1) : 0,
+                ];
+            })->toArray();
+        } catch (\Exception $e) {
+            $this->comprasPorProveedor = [];
         }
     }
 

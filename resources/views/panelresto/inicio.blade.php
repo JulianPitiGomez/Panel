@@ -508,6 +508,60 @@
         @endif
     </div>
 
+    <!-- Compras por Proveedor -->
+    @if(count($comprasPorProveedor) > 0)
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-white rounded-xl shadow-md p-6 border border-gray-100">
+        <h3 class="text-lg font-primary font-semibold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-truck text-blue-500 mr-3"></i>
+            Compras por Proveedor
+        </h3>
+        <div class="overflow-x-auto overflow-y-auto" style="max-height: 340px;">
+            <table class="w-full">
+                <thead class="bg-gray-50 sticky top-0">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-secondary font-semibold text-gray-600">Proveedor</th>
+                        <th class="px-4 py-3 text-center text-xs font-secondary font-semibold text-gray-600">Comprobantes</th>
+                        <th class="px-4 py-3 text-right text-xs font-secondary font-semibold text-gray-600">Total</th>
+                        <th class="px-4 py-3 text-right text-xs font-secondary font-semibold text-gray-600">% del total</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    @foreach($comprasPorProveedor as $prov)
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-secondary text-gray-800">{{ $prov['proveedor'] }}</td>
+                        <td class="px-4 py-3 text-sm font-secondary text-center text-gray-600">{{ number_format($prov['comprobantes']) }}</td>
+                        <td class="px-4 py-3 text-sm font-secondary text-right font-semibold text-blue-800">${{ number_format($prov['total'], 2) }}</td>
+                        <td class="px-4 py-3 text-sm font-secondary text-right text-gray-600">{{ number_format($prov['porcentaje'], 1) }}%</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+                <tfoot class="bg-gray-50">
+                    <tr>
+                        <td class="px-4 py-3 text-sm font-secondary font-semibold text-gray-800">Total</td>
+                        <td class="px-4 py-3 text-sm font-secondary text-center font-semibold text-gray-800">{{ number_format(collect($comprasPorProveedor)->sum('comprobantes')) }}</td>
+                        <td class="px-4 py-3 text-sm font-secondary text-right font-bold text-blue-800">${{ number_format(collect($comprasPorProveedor)->sum('total'), 2) }}</td>
+                        <td class="px-4 py-3"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <!-- Gráfico de Proveedores -->
+    <div class="bg-white rounded-xl shadow-md p-6 border border-gray-100">
+        <h3 class="text-lg font-primary font-semibold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-chart-pie text-blue-500 mr-3"></i>
+            Distribución de Compras por Proveedor
+        </h3>
+        <div class="relative" style="height: 340px;"
+             data-proveedores="{{ json_encode($comprasPorProveedor) }}">
+            <canvas id="chartProveedoresResto"></canvas>
+        </div>
+    </div>
+    </div>
+    @endif
+
     <!-- Gráfico de Departamentos -->
     @if(count($ventasPorDepartamento) > 0)
     <div class="bg-white rounded-xl shadow-md p-6 border border-gray-100">
@@ -529,6 +583,7 @@
     document.addEventListener('livewire:init', () => {
         let chartVentasCompras = null;
         let chartDepartamentos = null;
+        let chartProveedores = null;
 
         const renderCharts = () => {
             // Gráfico de Ventas y Compras
@@ -675,6 +730,64 @@
                                     ticks: {
                                         callback: function(value) {
                                             return '$' + value.toLocaleString();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Gráfico de Proveedores (torta: 7 principales + Otros)
+            const ctxProv = document.getElementById('chartProveedoresResto');
+            if (chartProveedores) {
+                chartProveedores.destroy();
+                chartProveedores = null;
+            }
+            if (ctxProv) {
+                const proveedores = JSON.parse(ctxProv.parentElement.getAttribute('data-proveedores') || '[]')
+                    .filter(p => p.total > 0);
+
+                if (proveedores.length > 0) {
+                    const principales = proveedores.slice(0, 7);
+                    const otros = proveedores.slice(7).reduce((s, p) => s + Number(p.total), 0);
+                    const labels = principales.map(p => p.proveedor);
+                    const data = principales.map(p => Number(p.total));
+                    if (otros > 0) {
+                        labels.push('Otros');
+                        data.push(otros);
+                    }
+
+                    chartProveedores = new Chart(ctxProv, {
+                        type: 'doughnut',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                data: data,
+                                backgroundColor: [
+                                    'rgb(59, 130, 246)', 'rgb(255, 175, 34)', 'rgb(16, 185, 129)',
+                                    'rgb(147, 51, 234)', 'rgb(239, 68, 68)', 'rgb(20, 184, 166)',
+                                    'rgb(236, 72, 153)', 'rgb(156, 163, 175)'
+                                ],
+                                borderColor: '#fff',
+                                borderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: { boxWidth: 12 }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            const total = context.dataset.data.reduce((s, v) => s + v, 0);
+                                            const pct = total > 0 ? (context.parsed / total * 100).toFixed(1) : 0;
+                                            return context.label + ': $' + context.parsed.toLocaleString() + ' (' + pct + '%)';
                                         }
                                     }
                                 }
