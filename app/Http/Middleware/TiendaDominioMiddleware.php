@@ -37,7 +37,8 @@ class TiendaDominioMiddleware
 
         // URLs limpias: raiz en el dominio del cliente y sin el /web/{slug}
         $esquema = str_starts_with((string) config('app.url'), 'https') ? 'https' : $request->getScheme();
-        URL::forceRootUrl($esquema . '://' . $host);
+        // getHttpHost conserva el puerto si no es el estandar (local :8000); en produccion es igual a $host
+        URL::forceRootUrl($esquema . '://' . strtolower($request->getHttpHost()));
         $patron = '#^/web/' . preg_quote($slug, '#') . '(?=/|$)#i';
         URL::formatPathUsing(function ($path) use ($patron) {
             $limpio = preg_replace($patron, '', $path);

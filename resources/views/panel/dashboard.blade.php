@@ -236,7 +236,7 @@
         </header>
 
         <!-- Contenido Principal -->
-        <main id="main-content" class="flex-1 overflow-y-auto p-4 lg:p-6 bg-gray-200">
+        <main id="main-content" class="relative flex-1 overflow-y-auto p-4 lg:p-6 bg-gray-200">
             <div class="max-w-7xl mx-auto h-full">
                 @switch($currentPage)
                     @case('inicio')

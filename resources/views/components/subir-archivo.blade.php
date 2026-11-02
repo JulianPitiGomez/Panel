@@ -44,7 +44,7 @@
      x-on:livewire-upload-error="subiendo = false; error = true"
      {{ $attributes->merge(['class' => 'w-full']) }}>
     <label @dragover.prevent="arrastrando = true" @dragleave.prevent="arrastrando = false" @drop.prevent="soltar($event)"
-           class="block cursor-pointer rounded-xl border-2 border-dashed transition-colors {{ $compacto ? 'px-3 py-2' : 'px-4 py-5' }}"
+           class="relative block cursor-pointer rounded-xl border-2 border-dashed transition-colors {{ $compacto ? 'px-3 py-2' : 'px-4 py-5' }}"
            :style="arrastrando ? 'border-color: {{ $acento }}; background-color: {{ $acentoSuave }};' : 'border-color: {{ $borde }};'">
         <input type="file" wire:model="{{ $model }}" @if($accept) accept="{{ $accept }}" @endif @if($multiple) multiple @endif x-ref="input" @change="elegir($event.target.files)" class="sr-only">
 

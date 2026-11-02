@@ -293,12 +293,15 @@ class GestorPedidosVendedor extends Component
     public $linkMensaje = '';
     public $linkVence = '';
 
-    /** La tienda web del comercio esta habilitada y tiene URL: recien ahi tiene sentido el link. */
+    /**
+     * La tienda web del comercio esta habilitada, tiene URL y sus tablas creadas: recien ahi tiene
+     * sentido el link. Sin el esquema aplicado (tienda_links, etc.) el boton no se muestra.
+     */
     public function tiendaDisponible(): bool
     {
         $cliente = \App\Models\Cliente::find(session('client_id'));
 
-        return $cliente && $cliente->tienda && \App\Services\TiendaService::habilitada($cliente->id)
+        return $cliente && $cliente->tienda && \App\Services\TiendaService::habilitada($cliente->id) && \App\Services\TiendaService::esquemaAlDia($cliente->id)
             && !\App\Services\TiendaService::esVitrina(\App\Services\TiendaService::modo($cliente->id));
     }
 
