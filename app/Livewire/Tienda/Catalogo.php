@@ -109,6 +109,11 @@ class Catalogo extends Component
         $this->layoutCatalogo = $datos['layout_catalogo'] ?? 'top';
         $this->estiloTarjeta = $datos['estilo_tarjeta'] ?? 'estandar';
         $this->columnasDesktop = $datos['columnas_desktop'] ?? 4;
+        // Filas completas: unos 18 productos redondeados al multiplo de las columnas (2/3 -> 18, 4/5 -> 20);
+        // siempre par, asi en el celular (2 columnas) tampoco queda una fila a medias
+        $cols = max(1, (int) $this->columnasDesktop);
+        $this->porPagina = (int) (ceil(18 / $cols) * $cols);
+        $this->porPagina += $this->porPagina % 2;
         $this->ordenDefecto = $datos['orden_defecto'] ?? 'nombre_asc';
         $this->estiloHeader = $datos['estilo_header'] ?? 'completo';
         $this->modoCantidad = $datos['modo_cantidad'] ?? 'rapido';
@@ -456,8 +461,19 @@ class Catalogo extends Component
             'nombre_desc' => ['a.NOMBRE', 'desc'],
             'precio_asc' => ['a.PRECIOVEN', 'asc'],
             'precio_desc' => ['a.PRECIOVEN', 'desc'],
+            'codigo_asc' => ['a.CODIGO', 'asc'],
             default => ['a.NOMBRE', 'asc'],
         };
+
+        // Orden por grupo: se trae el nombre del grupo para ordenar y para el separador de la grilla;
+        // los articulos sin grupo van al final
+        if ($tablaGrupo = $this->tablaGrupoOrden()) {
+            [$tabla, $columna] = $tablaGrupo;
+            $query->leftJoin("{$this->tablePrefix}{$tabla} as g", 'a.' . $columna, '=', 'g.CODIGO')
+                ->addSelect(DB::raw("NULLIF(TRIM(g.NOMBRE), '') as grupo"))
+                ->orderByRaw("NULLIF(TRIM(g.NOMBRE), '') IS NULL")
+                ->orderBy('g.NOMBRE');
+        }
 
         $traer = function () use ($query, $ordenColumna) {
             $productos = $query
@@ -493,6 +509,24 @@ class Catalogo extends Component
         $this->promosPagina = $this->textosPromo($promoSrv, $productos->pluck('CODIGO')->all());
 
         return $productos;
+    }
+
+    /** Ordenes que agrupan la grilla: orden => [tabla, columna de articu]. */
+    private const ORDEN_GRUPOS = [
+        'depto' => ['deptos', 'DEPTO'],
+        'rubro' => ['rubros', 'RUBRO'],
+        'marca' => ['marcas', 'MARCA'],
+    ];
+
+    private function tablaGrupoOrden(): ?array
+    {
+        return self::ORDEN_GRUPOS[$this->ordenDefecto] ?? null;
+    }
+
+    /** True si la grilla va con separadores por grupo (orden por departamento, rubro o marca). */
+    public function agrupaGrilla(): bool
+    {
+        return $this->tablaGrupoOrden() !== null;
     }
 
     /** codigo => [textos] de las promos vigentes que valen para todas las formas de pago activas. */

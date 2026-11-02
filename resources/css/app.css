@@ -39,6 +39,10 @@
     .t-section .t-section-ico { width: 2rem; height: 2rem; border-radius: 9999px; background-color: var(--tp-soft); color: var(--tp-dark); display: flex; align-items: center; justify-content: center; font-size: .85rem; flex-shrink: 0; }
     .t-section h2 { font-family: var(--tfont-titulos); font-weight: 700; font-size: 1.05rem; color: var(--tt); line-height: 1.2; }
     .t-section .t-section-link { margin-left: auto; font-size: .8rem; }
+    /* Separador de grupo dentro de la grilla (orden por departamento, rubro o marca) */
+    .t-grupo { grid-column: 1 / -1; margin-bottom: 0; }
+    .t-grupo:not(:first-child) { margin-top: .75rem; }
+    .t-grupo::after { content: ''; flex: 1; height: 1px; background-color: var(--tborde); }
 
     /* Botones */
     .t-btn { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; background-color: var(--tp); color: var(--tp-ink); font-weight: 600; border-radius: .75rem; padding: .65rem 1rem; line-height: 1.2; transition: background-color .15s ease, transform .1s ease, box-shadow .15s ease; box-shadow: 0 1px 2px rgb(0 0 0 / 0.08); cursor: pointer; }

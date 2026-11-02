@@ -9,6 +9,8 @@
         $cols = ['2' => 'md:grid-cols-2', '3' => 'md:grid-cols-3', '5' => 'md:grid-cols-5'][(string) $columnasDesktop] ?? 'md:grid-cols-4';
         $compacta = $estiloTarjeta === 'compacta';
         $detallada = $estiloTarjeta === 'detallada';
+        $agrupa = $this->agrupaGrilla();
+        $grupoActual = false;   // false = todavia no se mostro ningun separador
     @endphp
     <div class="grid grid-cols-2 {{ $cols }} gap-3 sm:gap-4 transition-opacity" wire:loading.class="opacity-60" wire:target="busqueda, toggleFiltro, quitarFiltro, limpiarFiltros, irAPagina, paginaSiguiente, paginaAnterior, toggleSoloPromos">
         @foreach($productos as $producto)
@@ -23,6 +25,13 @@
                 $nombre = \App\Services\TiendaEstiloService::nombreBonito($producto->NOMBRE, $codigo);
                 $accion = $modoCantidad === 'modal' ? 'abrirModalCantidad' : 'agregarAlCarrito';
             @endphp
+            @if($agrupa && ($producto->grupo ?? null) !== $grupoActual)
+                @php $grupoActual = $producto->grupo ?? null; @endphp
+                <div class="t-section t-grupo" wire:key="grupo-{{ md5((string) $grupoActual) }}">
+                    <span class="t-section-ico"><i class="fas fa-layer-group"></i></span>
+                    <h2>{{ $grupoActual ?? 'Otros' }}</h2>
+                </div>
+            @endif
             <div class="t-card t-card-hover overflow-hidden flex flex-col group relative" wire:key="prod-{{ $codigo }}">
                 <a href="{{ $this->urlProducto($codigo) }}" wire:click.prevent="abrirModalCantidad('{{ $codigo }}')" class="block relative t-img aspect-square overflow-hidden">
                     @if($foto)

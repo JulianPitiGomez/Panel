@@ -801,7 +801,12 @@
                             <option value="nombre_desc">Nombre Z-A</option>
                             <option value="precio_asc">Precio menor a mayor</option>
                             <option value="precio_desc">Precio mayor a menor</option>
+                            <option value="codigo_asc">Código</option>
+                            <option value="depto">Por departamento (agrupado)</option>
+                            <option value="rubro">Por rubro (agrupado)</option>
+                            <option value="marca">Por marca (agrupado)</option>
                         </select>
+                        <p class="text-xs text-gray-500 mt-1">Agrupado: la tienda muestra un título con el nombre de cada grupo y adentro los productos de la A a la Z.</p>
                     </div>
 
                     {{-- Estilo de header --}}
