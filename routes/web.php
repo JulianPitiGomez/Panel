@@ -43,7 +43,7 @@ Route::prefix('panel')->middleware(['client:panel'])->group(function () {
     Route::post('/authenticate', [PanelAuthController::class, 'authenticate'])->name('authenticate.panel');
     Route::get('/logout', [PanelAuthController::class, 'logout'])->name('logout.panel');
 
-    Route::get('/', \App\Livewire\PanelResto\Dashboard::class)->name('panelresto.dashboard');
+    Route::get('/', \App\Livewire\Panelresto\Dashboard::class)->name('panelresto.dashboard');
     
 });*/
 

@@ -1,5 +1,5 @@
 <?php
-namespace App\Livewire\PanelResto;
+namespace App\Livewire\Panelresto;
 
 use Livewire\Component;
 use Livewire\WithPagination;
