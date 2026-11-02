@@ -123,13 +123,15 @@
                     <span class="font-secondary font-medium">Config. Delivery</span>
                 </button>
 
-                <!-- Configurar Kiosco -->
+                <!-- Configurar Kiosco: solo clientes habilitados (config/kiosco.php) -->
+                @if(\App\Services\KioscoService::habilitado(session('client_id')))
                 <button
                     wire:click="navigateTo('configurar-kiosco'); if(window.innerWidth < 640) $wire.call('toggleSidebar')"
                     class="w-full flex items-center px-4 py-3 text-left rounded-xl transition-all duration-200 hover:bg-[#FFAF22]/10 hover:translate-x-1 group {{ $currentPage === 'configurar-kiosco' ? 'bg-[#FFAF22] text-white shadow-lg' : 'text-white hover:text-[#FFAF22]' }}">
                     <i class="fas fa-tablet-alt mr-3 text-lg {{ $currentPage === 'configurar-kiosco' ? 'text-white' : 'text-[#FFAF22] group-hover:text-[#FFAF22]' }}"></i>
                     <span class="font-secondary font-medium">Kiosco</span>
                 </button>
+                @endif
 
                 <!-- Auditoría -->
                 <button
@@ -293,7 +295,11 @@
                         @livewire('panelresto.configurar-delivery')
                         @break
                     @case('configurar-kiosco')
-                        @livewire('panelresto.configurar-kiosco')
+                        @if(\App\Services\KioscoService::habilitado(session('client_id')))
+                            @livewire('panelresto.configurar-kiosco')
+                        @else
+                            @livewire('panelresto.inicio')
+                        @endif
                         @break
                     @case('auditoria')
                         @livewire('panelresto.auditoria')

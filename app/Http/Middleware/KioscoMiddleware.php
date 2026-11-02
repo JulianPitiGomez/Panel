@@ -20,7 +20,7 @@ class KioscoMiddleware
         $clientId = session('kiosco_client_id');
         $cliente = Cliente::find($clientId);
 
-        if (!$cliente) {
+        if (!$cliente || !\App\Services\KioscoService::habilitado($cliente->id)) {
             session()->forget(['kiosco_authenticated', 'kiosco_client_id']);
             return redirect()->route('kiosco.login');
         }

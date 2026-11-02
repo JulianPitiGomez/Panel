@@ -30,6 +30,11 @@ class KioscoLogin extends Component
             return;
         }
 
+        if (!\App\Services\KioscoService::habilitado($cliente->id)) {
+            $this->error = 'El kiosco no está disponible para esta cuenta.';
+            return;
+        }
+
         // Buscar config del kiosco en config_clientes_web
         $configWeb = DB::connection('config')
             ->table('config_clientes_web')

@@ -60,6 +60,10 @@ class KioscoRestaurant extends Component
 
     public function mount()
     {
+        // Solo clientes habilitados (config/kiosco.php); cubre tambien /panel/kiosco
+        $clientId = session('kiosco_client_id') ?: session('client_id');
+        abort_unless(\App\Services\KioscoService::habilitado($clientId ? (int) $clientId : null), 404);
+
         $this->setupClientDatabase();
         $this->initializeSession();
         $this->loadInitialData();
