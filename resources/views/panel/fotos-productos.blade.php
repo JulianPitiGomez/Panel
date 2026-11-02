@@ -112,6 +112,27 @@
                 </div>
             </div>
 
+            <!-- Clientes invitados desde gestion -->
+            @if(!empty($invitaciones) && ($invitaciones['activos'] + $invitaciones['invitados'] + $invitaciones['vencidos']) > 0)
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+                <h3 class="text-lg font-primary font-semibold text-gray-800 mb-1 flex items-center">
+                    <i class="fas fa-envelope-open-text text-[#FFAF22] mr-2"></i> Tus clientes en la tienda
+                </h3>
+                <p class="text-xs text-gray-400 mb-3">A cada cliente con mail en gestión le llega una invitación para elegir su contraseña.</p>
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="p-3 rounded-xl bg-gray-50"><p class="text-2xl font-bold text-gray-800">{{ $invitaciones['activos'] }}</p><p class="text-xs text-gray-500">Ya entran</p></div>
+                    <div class="p-3 rounded-xl bg-gray-50"><p class="text-2xl font-bold text-gray-800">{{ $invitaciones['invitados'] }}</p><p class="text-xs text-gray-500">Invitados, sin entrar todavía</p></div>
+                    <div class="p-3 rounded-xl bg-gray-50"><p class="text-2xl font-bold text-gray-800">{{ $invitaciones['vencidos'] }}</p><p class="text-xs text-gray-500">Invitación vencida</p></div>
+                </div>
+                @if($invitaciones['vencidos'] > 0)
+                    <button wire:click="reenviarInvitaciones" class="mt-3 px-3 py-1.5 bg-[#FFAF22] text-white rounded-lg text-xs font-semibold hover:bg-[#E89B0A]"><i class="fas fa-paper-plane mr-1"></i>Reenviar las vencidas</button>
+                @endif
+                @if($mensajeInvitaciones)
+                    <p class="text-xs text-green-600 mt-2">{{ $mensajeInvitaciones }}</p>
+                @endif
+            </div>
+            @endif
+
             <!-- Compradores pendientes de aprobacion -->
             @if(count($compradoresPendientes))
             <div class="bg-white rounded-xl shadow-sm border border-amber-200 p-4 sm:p-6">
@@ -313,9 +334,16 @@
                             @elseif($tiendaModo === \App\Services\TiendaService::MODO_VITRINA)
                                 <i class="fas fa-eye text-blue-500 mr-1"></i> Solo catálogo: sin carrito ni cuentas. Ideal para mostrar precios sin vender online.
                             @else
-                                <i class="fas fa-lock text-orange-500 mr-1"></i> Solo tus clientes registrados (los importás desde gestión) pueden ver y comprar.
+                                <i class="fas fa-lock text-orange-500 mr-1"></i> Solo tus clientes pueden ver y comprar. Con el mail cargado en gestión les llega una invitación para elegir su contraseña.
                             @endif
                         </p>
+                        @if($tiendaModo !== \App\Services\TiendaService::MODO_VITRINA)
+                            <label class="flex items-center gap-2 mt-3 text-xs text-gray-600 cursor-pointer">
+                                <input type="checkbox" wire:model.live="datosComercio.tienda_invitar_compradores" class="w-4 h-4 rounded text-[#FFAF22]">
+                                Invitar a la tienda a mis clientes de gestión que tengan mail
+                            </label>
+                            <p class="text-[10px] text-gray-400 ml-6">Se guarda con el botón "Guardar datos" de abajo. Si les cambiás el mail en gestión, también cambia en la tienda.</p>
+                        @endif
                         @if($tiendaModo === \App\Services\TiendaService::MODO_PUBLICA)
                             <label class="flex items-center gap-2 mt-3 text-xs text-gray-600 cursor-pointer">
                                 <input type="checkbox" wire:model.live="datosComercio.tienda_registro_aprobacion" class="w-4 h-4 rounded text-[#FFAF22]">

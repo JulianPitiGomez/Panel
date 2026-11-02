@@ -38,6 +38,13 @@ class TiendaService
     /** Claves dentro del JSON de config_clientes_web.configuracion */
     public const CLAVE_MODO = 'tienda_modo';
     public const CLAVE_ESQUEMA = 'tienda_esquema_version';
+    /** Invitar automaticamente a los clientes de gestion con mail (default: si). */
+    public const CLAVE_INVITAR = 'tienda_invitar_compradores';
+
+    public static function invitaCompradores(array $datos): bool
+    {
+        return (bool) ($datos[self::CLAVE_INVITAR] ?? true);
+    }
 
     /** Version del esquema satelite (docs/tienda/esquema-tienda-vN.sql) que espera este codigo */
     public const ESQUEMA_VERSION = 1;

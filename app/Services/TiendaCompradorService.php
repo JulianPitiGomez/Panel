@@ -119,6 +119,166 @@ class TiendaCompradorService
         return $resumen;
     }
 
+    // ------------------------------------------- sincronizacion con gestion
+
+    /** Horas que dura el enlace de la invitacion (el de recuperar clave dura 48). */
+    public const HORAS_INVITACION = 168;
+
+    /**
+     * Gestion manda: deja tienda_compradores al dia con el mail de cada cliente de gestion.
+     *
+     *  - Cliente con mail valido que todavia no es comprador: se crea INVITADO (sin
+     *    contrasena: password_hash vacio, nadie puede entrar hasta que elija una con
+     *    el enlace de la invitacion).
+     *  - Comprador enlazado (codcli) al que le cambiaron el mail en gestion: se le
+     *    cambia el mail. Si todavia no habia elegido contrasena, se lo vuelve a invitar
+     *    al mail nuevo. Si el mail nuevo ya es de otro comprador, no se toca (conflicto).
+     *  - Comprador sin codcli (registro web) cuyo mail aparece en gestion: se enlaza.
+     *  - Mail vacio o invalido en gestion: no se hace nada (no se borra ningun comprador).
+     *  - Varios clientes con el mismo mail: gana el CODIGO mas bajo.
+     *
+     * No manda mails: deja marcados los que hay que invitar (ver invitacionesPorEnviar()).
+     * Devuelve contadores y el detalle de lo que hizo (o haria, con $dryRun).
+     */
+    public function sincronizarDesdeGestion(bool $dryRun = false, bool $crearInvitados = true): array
+    {
+        $resumen = ['creados' => 0, 'mail_cambiado' => 0, 'enlazados' => 0, 'conflictos' => 0, 'detalle' => []];
+
+        $compradores = $this->tabla('tienda_compradores')->get(['id', 'email', 'password_hash', 'codcli']);
+        $porEmail = [];
+        $porCodcli = [];
+        foreach ($compradores as $c) {
+            $porEmail[mb_strtolower(trim($c->email))] = $c;
+            if ($c->codcli) {
+                $porCodcli[(int) $c->codcli] = $c;
+            }
+        }
+
+        $clientes = $this->tabla('clientes')
+            ->select('CODIGO', 'NOMBRE', 'MAIL', 'DNI', 'TELEFONO')
+            ->whereRaw('TRIM(MAIL) <> ""')
+            ->orderBy('CODIGO')
+            ->get();
+
+        $vistos = [];
+        foreach ($clientes as $cli) {
+            $email = mb_strtolower(trim((string) $cli->MAIL));
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL) || isset($vistos[$email])) {
+                continue;
+            }
+            $vistos[$email] = true;
+            $codcli = (int) $cli->CODIGO;
+            $nombre = trim((string) $cli->NOMBRE) ?: "Cliente {$codcli}";
+            $actual = $porCodcli[$codcli] ?? null;
+
+            // 1) Ya es comprador enlazado a este cliente
+            if ($actual) {
+                if (mb_strtolower(trim($actual->email)) === $email) {
+                    continue;
+                }
+                $otro = $porEmail[$email] ?? null;
+                if ($otro && $otro->id !== $actual->id) {
+                    $resumen['conflictos']++;
+                    $resumen['detalle'][] = ['codcli' => $codcli, 'nombre' => $nombre, 'email' => $email, 'resultado' => 'conflicto (el mail ya es del comprador #' . $otro->id . ')'];
+                    continue;
+                }
+                if (!$dryRun) {
+                    $cambios = ['email' => $email];
+                    if ($actual->password_hash === '') {
+                        // Invitado que nunca entro: se lo invita de nuevo al mail nuevo
+                        $cambios += ['token_validacion' => null, 'token_vence' => null];
+                    }
+                    $this->tabla('tienda_compradores')->where('id', $actual->id)->update($cambios);
+                }
+                unset($porEmail[mb_strtolower(trim($actual->email))]);
+                $actual->email = $email;
+                $porEmail[$email] = $actual;
+                $resumen['mail_cambiado']++;
+                $resumen['detalle'][] = ['codcli' => $codcli, 'nombre' => $nombre, 'email' => $email, 'resultado' => 'mail cambiado'];
+                continue;
+            }
+
+            // 2) El mail ya es de un comprador (registro web o enlazado a otro cliente)
+            if (isset($porEmail[$email])) {
+                $otro = $porEmail[$email];
+                if (!$otro->codcli) {
+                    if (!$dryRun) {
+                        $this->tabla('tienda_compradores')->where('id', $otro->id)->update(['codcli' => $codcli]);
+                    }
+                    $otro->codcli = $codcli;
+                    $porCodcli[$codcli] = $otro;
+                    $resumen['enlazados']++;
+                    $resumen['detalle'][] = ['codcli' => $codcli, 'nombre' => $nombre, 'email' => $email, 'resultado' => 'enlazado al comprador #' . $otro->id];
+                }
+                continue;
+            }
+
+            // 3) Cliente nuevo para la tienda: se crea invitado (si el comercio no lo apago)
+            if (!$crearInvitados) {
+                continue;
+            }
+            if (!$dryRun) {
+                $id = $this->tabla('tienda_compradores')->insertGetId([
+                    'email' => $email,
+                    'password_hash' => '',          // sin contrasena hasta que acepte la invitacion
+                    'email_validado' => 0,
+                    'nombre' => mb_substr($nombre, 0, 100),
+                    'telefono' => mb_substr(trim((string) $cli->TELEFONO), 0, 40) ?: null,
+                    'documento' => ((int) $cli->DNI) > 0 ? (string) (int) $cli->DNI : null,
+                    'estado' => self::ESTADO_APROBADO,
+                    'codcli' => $codcli,
+                    'creado' => now(),
+                ]);
+                $nuevo = (object) ['id' => $id, 'email' => $email, 'password_hash' => '', 'codcli' => $codcli];
+                $porEmail[$email] = $nuevo;
+                $porCodcli[$codcli] = $nuevo;
+            }
+            $resumen['creados']++;
+            $resumen['detalle'][] = ['codcli' => $codcli, 'nombre' => $nombre, 'email' => $email, 'resultado' => $dryRun ? 'se invitaria' : 'invitado'];
+        }
+
+        return $resumen;
+    }
+
+    /**
+     * Invitados a los que todavia no se les mando el enlace (recien creados o con el
+     * mail cambiado). Los que ya tienen un enlace, vigente o vencido, no entran: el
+     * reenvio de los vencidos es a pedido del comercio (reenviarInvitacionesVencidas).
+     */
+    public function invitacionesPorEnviar(int $limite): array
+    {
+        return $this->tabla('tienda_compradores')
+            ->where('password_hash', '')
+            ->whereNull('token_vence')
+            ->where('estado', self::ESTADO_APROBADO)
+            ->orderBy('id')
+            ->limit($limite)
+            ->get()
+            ->all();
+    }
+
+    /** Vuelve a poner en cola a los invitados cuyo enlace vencio sin usar. Devuelve cuantos. */
+    public function reenviarInvitacionesVencidas(): int
+    {
+        return $this->tabla('tienda_compradores')
+            ->where('password_hash', '')
+            ->whereNotNull('token_vence')
+            ->where('token_vence', '<', now())
+            ->update(['token_validacion' => null, 'token_vence' => null]);
+    }
+
+    /** Cuantos compradores hay activos, invitados esperando y con la invitacion vencida. */
+    public function resumenInvitaciones(): array
+    {
+        $t = fn () => $this->tabla('tienda_compradores');
+
+        return [
+            'activos' => $t()->where('password_hash', '<>', '')->where('email_validado', 1)->count(),
+            'invitados' => $t()->where('password_hash', '')->where(fn ($q) => $q->whereNull('token_vence')->orWhere('token_vence', '>=', now()))->count(),
+            'vencidos' => $t()->where('password_hash', '')->whereNotNull('token_vence')->where('token_vence', '<', now())->count(),
+        ];
+    }
+
     /** Busca un comprador por mail (o null). */
     public function porEmail(string $email): ?object
     {
@@ -132,6 +292,7 @@ class TiendaCompradorService
     public const LOGIN_PENDIENTE = 'pendiente';          // cuenta esperando aprobacion del comercio
     public const LOGIN_RECHAZADO = 'rechazado';
     public const LOGIN_SIN_VALIDAR = 'sin_validar';      // registro web sin confirmar el mail
+    public const LOGIN_SIN_CLAVE = 'sin_clave';          // invitado desde gestion que todavia no eligio contrasena
 
     // ----------------------------------------------------------- registro (F5)
 
@@ -184,13 +345,13 @@ class TiendaCompradorService
         return ['ok' => true, 'error' => null, 'comprador' => $this->tabla('tienda_compradores')->where('id', $id)->first(), 'token' => $token];
     }
 
-    /** Genera y guarda un token (validacion de mail o cambio de clave) valido por 48 hs. */
-    public function nuevoToken(int $id): string
+    /** Genera y guarda un token (validacion de mail, cambio de clave o invitacion), por defecto valido 48 hs. */
+    public function nuevoToken(int $id, int $horas = 48): string
     {
         $token = bin2hex(random_bytes(24));
         $this->tabla('tienda_compradores')->where('id', $id)->update([
             'token_validacion' => hash('sha256', $token),
-            'token_vence' => now()->addHours(48),
+            'token_vence' => now()->addHours($horas),
         ]);
         return $token;
     }
@@ -293,6 +454,10 @@ class TiendaCompradorService
     public function autenticar(string $email, string $password): array
     {
         $comprador = $this->porEmail($email);
+
+        if ($comprador && $comprador->password_hash === '' && $comprador->estado === self::ESTADO_APROBADO) {
+            return ['resultado' => self::LOGIN_SIN_CLAVE, 'comprador' => $comprador];
+        }
 
         if (!$comprador || !Hash::check($password, $comprador->password_hash)) {
             return ['resultado' => self::LOGIN_CREDENCIALES, 'comprador' => null];

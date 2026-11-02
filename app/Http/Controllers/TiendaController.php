@@ -390,6 +390,12 @@ class TiendaController extends Controller
                 return back()->withInput($request->only('email'))
                     ->withErrors(['email' => 'Todavía no confirmaste tu mail. Te reenviamos el enlace: revisá tu correo.']);
 
+            case TiendaCompradorService::LOGIN_SIN_CLAVE:
+                // Invitado desde gestion que nunca eligio contrasena: se le reenvia la invitacion
+                (new \App\Services\TiendaInvitacionService((int) session('tienda_config_id'), session('tienda_prefix')))->enviar($login['comprador']);
+                return back()->withInput($request->only('email'))
+                    ->withErrors(['email' => 'Todavía no elegiste tu contraseña. Te mandamos un mail con el enlace para crearla.']);
+
             case TiendaCompradorService::LOGIN_PENDIENTE:
                 return back()->withInput($request->only('email'))
                     ->withErrors(['email' => 'Tu cuenta todavía está pendiente de aprobación por el comercio.']);

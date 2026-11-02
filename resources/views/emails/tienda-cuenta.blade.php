@@ -21,7 +21,7 @@
                             <a href="{{ $url }}" style="display:inline-block; background-color: {{ $colorBoton }}; color:#ffffff; text-decoration:none; font-weight: 700; padding: 12px 26px; border-radius: 8px;">{{ $boton }}</a>
                         </p>
                         <p style="margin:0; color:#9ca3af; font-size: 12px;">Si el botón no funciona, copiá este enlace en el navegador:<br><a href="{{ $url }}" style="color:#6b7280; word-break: break-all;">{{ $url }}</a></p>
-                        <p style="margin:16px 0 0; color:#9ca3af; font-size: 12px;">El enlace vence en 48 horas.</p>
+                        <p style="margin:16px 0 0; color:#9ca3af; font-size: 12px;">El enlace vence en {{ $vence ?? '48 horas' }}.</p>
                     </td>
                 </tr>
             </table>

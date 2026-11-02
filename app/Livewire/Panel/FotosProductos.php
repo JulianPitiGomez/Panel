@@ -73,6 +73,7 @@ class FotosProductos extends Component
         'tienda_meta_titulo' => '',
         'tienda_meta_descripcion' => '',
         'tienda_registro_aprobacion' => false,   // F5: los registros web esperan aprobacion del comercio
+        'tienda_invitar_compradores' => true,    // invitar solos a los clientes de gestion con mail (tienda:sincronizar-compradores)
     ];
 
     // Tienda config
@@ -565,15 +566,29 @@ class FotosProductos extends Component
     // ------------------------------------------------ compradores pendientes (F5)
 
     public $compradoresPendientes = [];
+    public $invitaciones = [];   // activos / invitados / vencidos (sincronizacion con gestion)
+    public $mensajeInvitaciones = '';
 
     private function cargarCompradoresPendientes()
     {
         $this->setupClientDatabase();
         try {
-            $this->compradoresPendientes = array_map(fn ($c) => (array) $c, (new \App\Services\TiendaCompradorService($this->tablePrefix))->pendientes());
+            $srv = new \App\Services\TiendaCompradorService($this->tablePrefix);
+            $this->compradoresPendientes = array_map(fn ($c) => (array) $c, $srv->pendientes());
+            $this->invitaciones = $srv->resumenInvitaciones();
         } catch (\Throwable $e) {
             $this->compradoresPendientes = [];
+            $this->invitaciones = [];
         }
+    }
+
+    /** Vuelve a mandar la invitacion a los que no la usaron a tiempo (sale en la proxima corrida, <= 15 min). */
+    public function reenviarInvitaciones()
+    {
+        $this->setupClientDatabase();
+        $n = (new \App\Services\TiendaCompradorService($this->tablePrefix))->reenviarInvitacionesVencidas();
+        $this->mensajeInvitaciones = $n ? "Listo: en unos minutos les llega de nuevo el mail a {$n} cliente" . ($n > 1 ? 's' : '') . '.' : 'No hay invitaciones vencidas.';
+        $this->cargarCompradoresPendientes();
     }
 
     public function aprobarComprador($id)
