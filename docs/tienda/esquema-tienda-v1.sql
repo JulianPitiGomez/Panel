@@ -10,7 +10,10 @@
 --  * tienda_pedidos.idpedido NO lleva FOREIGN KEY a pedidos_encab a proposito:
 --    si Fivewin borra un pedido, la fila satelite tiene que quedar huerfana
 --    para que la conciliacion la detecte y la marque para revision (ver plan).
---  * Idempotente: CREATE TABLE IF NOT EXISTS. La version aplicada se anota en
+--  * Idempotente: CREATE TABLE IF NOT EXISTS + (al final) ADD COLUMN IF NOT EXISTS.
+--    Sirve igual para una base sin nada que para una que ya tiene las tablas con una
+--    forma anterior: crea lo que falta y completa las columnas. Se puede correr de nuevo.
+--    Requiere MariaDB >= 10.0.2 (ADD COLUMN IF NOT EXISTS; produccion es 10.0.24). La version aplicada se anota en
 --    config_clientes_web.configuracion -> "tienda_esquema_version".
 --  * El comando artisan que recorre las 250 bases se hace al ir a produccion;
 --    mientras tanto este archivo se aplica a mano en bcn_base1.
@@ -29,6 +32,15 @@
 --                  (F1 agrego comision_saldo a tienda_pedidos y tienda_eventos; v1 todavia no salio a produccion,
 --                   por eso se edita en lugar de crear v2)
 -- =====================================================================
+
+-- Foto principal por articulo (la lee tambien gestion). Tabla de gestion que la tienda usa
+-- sin chequear: algunas bases no la tienen. Misma forma que en las bases que ya la usan.
+CREATE TABLE IF NOT EXISTS `{p}articu_fotos` (
+  `id`     INT(10)      NOT NULL AUTO_INCREMENT,
+  `codigo` INT(14)      DEFAULT NULL,
+  `url`    VARCHAR(254) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- Quien compra en la web. NO es lo mismo que clientes de gestion: se enlaza
 -- por codcli recien cuando compra por primera vez (o cuando el comercio lo aprueba).
@@ -94,6 +106,14 @@ CREATE TABLE IF NOT EXISTS `{p}tienda_pedidos` (
   `envio_transportista` VARCHAR(40)  DEFAULT NULL,
   `envio_seguimiento`   VARCHAR(60)  DEFAULT NULL,
   `envio_importado`     DATETIME     DEFAULT NULL,               -- cuando se importo el envio a la cuenta MiCorreo del comercio
+  -- agenda de entrega (F2)
+  `entrega_fecha`       DATE         DEFAULT NULL,
+  `entrega_franja_id`   INT UNSIGNED DEFAULT NULL,               -- tienda_agenda_franjas.id
+  `entrega_franja`      VARCHAR(20)  DEFAULT NULL,               -- texto de la franja al confirmar (ej. 09:00-13:00)
+  `agenda_cupo`         TINYINT(1)   NOT NULL DEFAULT 0,         -- 1 = ocupa cupo de la agenda
+  -- promociones (F3): el descuento va aca, no en pedidos_det
+  `descuento_promos`    DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `promos_aplicadas`    TEXT         DEFAULT NULL,               -- JSON con las promos aplicadas
   -- pago
   `pago_medio`          VARCHAR(20)  DEFAULT NULL,               -- mercadopago | transferencia | cuenta_corriente | a_convenir
   `pago_estado`         VARCHAR(12)  NOT NULL DEFAULT 'pendiente', -- pendiente | aprobado | rechazado | no_aplica
@@ -400,3 +420,256 @@ CREATE TABLE IF NOT EXISTS `{p}tienda_carritos` (
   KEY `idx_abierto` (`comprador_id`, `convertido`),
   KEY `idx_abandono` (`convertido`, `avisado`, `actualizado`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =====================================================================
+-- Completar columnas: en las bases donde alguna tabla ya existia con una forma
+-- anterior, agrega las columnas que le falten (no toca las que ya estan).
+-- Generado a partir de los CREATE de arriba: al sumar una columna nueva a un
+-- CREATE, sumarla tambien aca (ADD COLUMN IF NOT EXISTS, misma definicion).
+-- =====================================================================
+
+ALTER TABLE `{p}tienda_compradores`
+  ADD COLUMN IF NOT EXISTS `email` VARCHAR(120) NOT NULL,
+  ADD COLUMN IF NOT EXISTS `password_hash` VARCHAR(255) NOT NULL,
+  ADD COLUMN IF NOT EXISTS `email_validado` TINYINT(1) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `token_validacion` VARCHAR(64) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `token_vence` DATETIME DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `nombre` VARCHAR(100) NOT NULL,
+  ADD COLUMN IF NOT EXISTS `telefono` VARCHAR(40) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `documento` VARCHAR(20) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `estado` VARCHAR(12) NOT NULL DEFAULT 'aprobado',
+  ADD COLUMN IF NOT EXISTS `motivo_rechazo` VARCHAR(200) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `codcli` INT DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `creado` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ADD COLUMN IF NOT EXISTS `ultimo_ingreso` DATETIME DEFAULT NULL;
+
+ALTER TABLE `{p}tienda_direcciones`
+  ADD COLUMN IF NOT EXISTS `comprador_id` INT UNSIGNED NOT NULL,
+  ADD COLUMN IF NOT EXISTS `alias` VARCHAR(40) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `calle` VARCHAR(100) NOT NULL,
+  ADD COLUMN IF NOT EXISTS `numero` VARCHAR(10) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `piso` VARCHAR(20) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `localidad` VARCHAR(60) NOT NULL,
+  ADD COLUMN IF NOT EXISTS `provincia` VARCHAR(40) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `cp` VARCHAR(10) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `referencia` VARCHAR(200) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `predeterminada` TINYINT(1) NOT NULL DEFAULT 0;
+
+ALTER TABLE `{p}tienda_pedidos`
+  ADD COLUMN IF NOT EXISTS `comprador_id` INT UNSIGNED DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `entrega_modo` VARCHAR(12) NOT NULL DEFAULT 'a_convenir',
+  ADD COLUMN IF NOT EXISTS `entrega_direccion` VARCHAR(160) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `entrega_localidad` VARCHAR(60) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `entrega_cp` VARCHAR(10) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `entrega_calle` VARCHAR(100) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `entrega_numero` VARCHAR(10) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `entrega_piso` VARCHAR(20) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `entrega_provincia` VARCHAR(40) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `entrega_sucursal_codigo` VARCHAR(20) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `entrega_sucursal_nombre` VARCHAR(150) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `entrega_zona_id` INT UNSIGNED DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `envio_importe` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  ADD COLUMN IF NOT EXISTS `envio_transportista` VARCHAR(40) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `envio_seguimiento` VARCHAR(60) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `envio_importado` DATETIME DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `entrega_fecha` DATE DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `entrega_franja_id` INT UNSIGNED DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `entrega_franja` VARCHAR(20) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `agenda_cupo` TINYINT(1) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `descuento_promos` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  ADD COLUMN IF NOT EXISTS `promos_aplicadas` TEXT DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `pago_medio` VARCHAR(20) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `pago_estado` VARCHAR(12) NOT NULL DEFAULT 'pendiente',
+  ADD COLUMN IF NOT EXISTS `pago_referencia` VARCHAR(80) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `pago_importe_unico` DECIMAL(10,2) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `pago_comprobante` VARCHAR(254) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `iva_incluido` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  ADD COLUMN IF NOT EXISTS `comision_base` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  ADD COLUMN IF NOT EXISTS `comision_pct` DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+  ADD COLUMN IF NOT EXISTS `comision_importe` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  ADD COLUMN IF NOT EXISTS `comision_estado` VARCHAR(12) NOT NULL DEFAULT 'pendiente',
+  ADD COLUMN IF NOT EXISTS `comision_saldo` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  ADD COLUMN IF NOT EXISTS `estado_web` VARCHAR(16) NOT NULL DEFAULT 'recibido',
+  ADD COLUMN IF NOT EXISTS `creado` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE `{p}tienda_eventos`
+  ADD COLUMN IF NOT EXISTS `idpedido` INT NOT NULL,
+  ADD COLUMN IF NOT EXISTS `estado` VARCHAR(20) NOT NULL,
+  ADD COLUMN IF NOT EXISTS `detalle` VARCHAR(255) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `origen` VARCHAR(20) NOT NULL DEFAULT 'sistema',
+  ADD COLUMN IF NOT EXISTS `usuario` VARCHAR(60) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `notificado` TINYINT(1) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `fecha` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE `{p}tienda_envios_config`
+  ADD COLUMN IF NOT EXISTS `retiro_local` TINYINT(1) NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS `retiro_texto` VARCHAR(200) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `flota_propia` TINYINT(1) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `correo_activo` TINYINT(1) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `correo_proveedor` VARCHAR(20) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `a_convenir` TINYINT(1) NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS `origen_direccion` VARCHAR(160) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `origen_cp` VARCHAR(10) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `origen_lat` DECIMAL(10,7) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `origen_lng` DECIMAL(10,7) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `peso_default` DECIMAL(8,3) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `bulto_default` VARCHAR(40) DEFAULT NULL;
+
+ALTER TABLE `{p}tienda_zonas`
+  ADD COLUMN IF NOT EXISTS `nombre` VARCHAR(60) NOT NULL,
+  ADD COLUMN IF NOT EXISTS `tipo` VARCHAR(10) NOT NULL DEFAULT 'radio',
+  ADD COLUMN IF NOT EXISTS `poligono` TEXT DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `cp_lista` TEXT DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `radio_km` DECIMAL(6,2) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `tarifa` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  ADD COLUMN IF NOT EXISTS `tarifa_por_km` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  ADD COLUMN IF NOT EXISTS `minimo_gratis` DECIMAL(10,2) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `demora_estimada` VARCHAR(60) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `activa` TINYINT(1) NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS `orden` INT NOT NULL DEFAULT 0;
+
+ALTER TABLE `{p}tienda_pagos_config`
+  ADD COLUMN IF NOT EXISTS `transferencia_activa` TINYINT(1) NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS `transferencia_titular` VARCHAR(100) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `transferencia_banco` VARCHAR(60) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `transferencia_cbu` VARCHAR(30) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `transferencia_alias` VARCHAR(40) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `transferencia_texto` VARCHAR(200) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `cuenta_corriente_activa` TINYINT(1) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `mercadopago_activa` TINYINT(1) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `a_convenir_activa` TINYINT(1) NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS `debin_activa` TINYINT(1) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `debin_texto` VARCHAR(255) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `forpag_mercadopago` INT DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `forpag_transferencia` INT DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `forpag_cuenta_corriente` INT DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `forpag_a_convenir` INT DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `forpag_debin` INT DEFAULT NULL;
+
+ALTER TABLE `{p}tienda_integraciones`
+  ADD COLUMN IF NOT EXISTS `servicio` VARCHAR(20) NOT NULL,
+  ADD COLUMN IF NOT EXISTS `proveedor` VARCHAR(30) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `credenciales` TEXT DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `modelo` VARCHAR(40) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `activa` TINYINT(1) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `verificada` TINYINT(1) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `verificada_fecha` DATETIME DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `verificada_dato` VARCHAR(120) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `ultimo_error` VARCHAR(255) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `creado` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE `{p}tienda_articu`
+  ADD COLUMN IF NOT EXISTS `visible_web` TINYINT(1) NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS `destacado` TINYINT(1) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `orden` INT NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `descripcion_larga` TEXT DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `peso` DECIMAL(8,3) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `alto` DECIMAL(8,2) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `ancho` DECIMAL(8,2) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `largo` DECIMAL(8,2) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `bultos` INT DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `anticipacion_horas` INT DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `consume_cupo` TINYINT(1) NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS `meta_titulo` VARCHAR(120) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `meta_descripcion` VARCHAR(255) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `ia_sugerencia` TEXT DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `ia_fecha` DATETIME DEFAULT NULL;
+
+ALTER TABLE `{p}tienda_correo_tarifas`
+  ADD COLUMN IF NOT EXISTS `nombre` VARCHAR(60) NOT NULL,
+  ADD COLUMN IF NOT EXISTS `tipo` VARCHAR(10) NOT NULL DEFAULT 'provincia',
+  ADD COLUMN IF NOT EXISTS `provincias` TEXT DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `cp_desde` INT DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `cp_hasta` INT DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `peso_desde` DECIMAL(8,3) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `peso_hasta` DECIMAL(8,3) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `precio` DECIMAL(10,2) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `demora_estimada` VARCHAR(60) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `activa` TINYINT(1) NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS `orden` INT NOT NULL DEFAULT 0;
+
+ALTER TABLE `{p}tienda_agenda`
+  ADD COLUMN IF NOT EXISTS `activa` TINYINT(1) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `anticipacion_min_horas` INT NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `anticipacion_max_dias` INT NOT NULL DEFAULT 14,
+  ADD COLUMN IF NOT EXISTS `margen_minutos` INT NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `hora_corte` TIME DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `cupo_diario` INT DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `cupo_unidades_diario` INT DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `abierta` TINYINT(1) NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS `recibe_cerrada` TINYINT(1) NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS `muestra_cerrada` TINYINT(1) NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS `permite_lo_antes_posible` TINYINT(1) NOT NULL DEFAULT 1;
+
+ALTER TABLE `{p}tienda_agenda_franjas`
+  ADD COLUMN IF NOT EXISTS `dia_semana` TINYINT NOT NULL,
+  ADD COLUMN IF NOT EXISTS `hora_desde` TIME NOT NULL,
+  ADD COLUMN IF NOT EXISTS `hora_hasta` TIME NOT NULL,
+  ADD COLUMN IF NOT EXISTS `cupo_franja` INT DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `cupo_unidades` INT DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `vale_envio` TINYINT(1) NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS `vale_retiro` TINYINT(1) NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS `activa` TINYINT(1) NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS `orden` INT NOT NULL DEFAULT 0;
+
+ALTER TABLE `{p}tienda_agenda_excepciones`
+  ADD COLUMN IF NOT EXISTS `fecha` DATE NOT NULL,
+  ADD COLUMN IF NOT EXISTS `cerrado` TINYINT(1) NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS `motivo` VARCHAR(80) DEFAULT NULL;
+
+ALTER TABLE `{p}tienda_fotos`
+  ADD COLUMN IF NOT EXISTS `codigo` BIGINT NOT NULL,
+  ADD COLUMN IF NOT EXISTS `clave` VARCHAR(200) NOT NULL,
+  ADD COLUMN IF NOT EXISTS `url_thumb` VARCHAR(254) NOT NULL,
+  ADD COLUMN IF NOT EXISTS `url_medium` VARCHAR(254) NOT NULL,
+  ADD COLUMN IF NOT EXISTS `url_original` VARCHAR(254) NOT NULL,
+  ADD COLUMN IF NOT EXISTS `orden` INT NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `principal` TINYINT(1) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `creado` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE `{p}tienda_metricas`
+  ADD COLUMN IF NOT EXISTS `cantidad` INT UNSIGNED NOT NULL DEFAULT 0;
+
+ALTER TABLE `{p}tienda_pagos_cuenta`
+  ADD COLUMN IF NOT EXISTS `comprador_id` INT UNSIGNED NOT NULL,
+  ADD COLUMN IF NOT EXISTS `codcli` INT NOT NULL,
+  ADD COLUMN IF NOT EXISTS `importe` DECIMAL(12,2) NOT NULL,
+  ADD COLUMN IF NOT EXISTS `importe_unico` DECIMAL(12,2) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `medio` VARCHAR(20) NOT NULL,
+  ADD COLUMN IF NOT EXISTS `estado` VARCHAR(20) NOT NULL DEFAULT 'pendiente',
+  ADD COLUMN IF NOT EXISTS `referencia` VARCHAR(80) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `comprobante` VARCHAR(255) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `observa` VARCHAR(255) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `creado` DATETIME NOT NULL,
+  ADD COLUMN IF NOT EXISTS `confirmado` DATETIME DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `usuario` VARCHAR(60) DEFAULT NULL;
+
+ALTER TABLE `{p}tienda_links`
+  ADD COLUMN IF NOT EXISTS `token` VARCHAR(64) NOT NULL,
+  ADD COLUMN IF NOT EXISTS `idpedido_borrador` INT NOT NULL,
+  ADD COLUMN IF NOT EXISTS `codcli` INT NOT NULL,
+  ADD COLUMN IF NOT EXISTS `codven` VARCHAR(10) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `vendedor` VARCHAR(60) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `items` TEXT NOT NULL,
+  ADD COLUMN IF NOT EXISTS `observa` VARCHAR(200) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `creado` DATETIME NOT NULL,
+  ADD COLUMN IF NOT EXISTS `vence` DATETIME NOT NULL,
+  ADD COLUMN IF NOT EXISTS `veces_abierto` INT UNSIGNED NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `ultima_apertura` DATETIME DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `usado` DATETIME DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `idpedido_final` INT DEFAULT NULL;
+
+ALTER TABLE `{p}tienda_favoritos`
+  ADD COLUMN IF NOT EXISTS `creado` DATETIME NOT NULL;
+
+ALTER TABLE `{p}tienda_carritos`
+  ADD COLUMN IF NOT EXISTS `comprador_id` INT UNSIGNED NOT NULL,
+  ADD COLUMN IF NOT EXISTS `items` TEXT NOT NULL,
+  ADD COLUMN IF NOT EXISTS `cantidad` INT NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `total` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `creado` DATETIME NOT NULL,
+  ADD COLUMN IF NOT EXISTS `actualizado` DATETIME NOT NULL,
+  ADD COLUMN IF NOT EXISTS `convertido` DATETIME DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `idpedido` INT DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `avisado` DATETIME DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `aviso_resultado` VARCHAR(120) DEFAULT NULL;

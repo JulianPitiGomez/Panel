@@ -144,11 +144,15 @@ class ImagenProductoService
             return null;
         }
 
+        // @: libpng avisa (warning) con perfiles de color mal armados pero la imagen
+        // abre bien; sin la arroba Laravel convierte el aviso en excepcion.
         $imagen = match ($info['mime']) {
-            'image/jpeg' => imagecreatefromjpeg($ruta),
-            'image/png'  => imagecreatefrompng($ruta),
-            'image/webp' => imagecreatefromwebp($ruta),
-            'image/gif'  => imagecreatefromgif($ruta),
+            'image/jpeg' => @imagecreatefromjpeg($ruta),
+            'image/png'  => @imagecreatefrompng($ruta),
+            'image/webp' => @imagecreatefromwebp($ruta),
+            'image/gif'  => @imagecreatefromgif($ruta),
+            'image/avif' => function_exists('imagecreatefromavif') ? @imagecreatefromavif($ruta) : null,
+            'image/bmp', 'image/x-ms-bmp' => function_exists('imagecreatefrombmp') ? @imagecreatefrombmp($ruta) : null,
             default      => null,
         };
 
