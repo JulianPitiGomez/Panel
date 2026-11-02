@@ -25,8 +25,13 @@
             <a href="{{ $this->urlProducto($codigoMini) }}" wire:click.prevent="abrirModalCantidad('{{ $codigoMini }}')">{{ $nombreMini }}</a>
         </p>
         <div class="flex items-center justify-between gap-2 mt-auto pt-2">
-            <span class="t-precio text-sm">${{ number_format($this->obtenerPrecio($h), 2, ',', '.') }}</span>
-            @if(!$esVitrina)
+            @php $precioMini = (float) $this->obtenerPrecio($h); @endphp
+            @if($precioMini <= 0)
+                <span class="t-precio text-sm">Consultar</span>
+            @else
+                <span class="t-precio text-sm">${{ number_format($precioMini, 2, ',', '.') }}</span>
+            @endif
+            @if(!$esVitrina && $precioMini > 0)
                 <button wire:click="{{ $modoCantidad === 'modal' ? 'abrirModalCantidad' : 'agregarAlCarrito' }}('{{ $codigoMini }}')" class="t-btn !rounded-full w-8 h-8 !p-0 flex-shrink-0" title="Agregar al carrito">
                     <i class="fas fa-plus text-xs"></i>
                 </button>

@@ -18,6 +18,7 @@
                 $codigo = (string) $producto->CODIGO;
                 $foto = $producto->foto_url ?: session('tienda_foto_default');
                 $precio = $this->obtenerPrecio($producto);
+                $sinPrecio = (float) $precio <= 0;   // precio 0 en gestion: "Consultar", no se agrega al carrito
                 $ivaCard = $this->ivaIncluido($producto);
                 $sinStock = !$vendeSinStock && $this->disponibleDe($codigo) <= 0;
                 $promosCard = $this->promosDe($codigo);
@@ -71,12 +72,18 @@
                     <div class="mt-auto pt-2">
                         <div class="flex items-end justify-between gap-2">
                             <div class="min-w-0">
-                                <span class="t-precio {{ $compacta ? 'text-base' : 'text-lg' }} block leading-none">${{ number_format($precio, 2, ',', '.') }}</span>
-                                @if($ivaCard > 0)
-                                    <span class="block text-[10px] t-muted mt-1">IVA incl. ${{ number_format($ivaCard, 2, ',', '.') }}</span>
+                                @if($sinPrecio)
+                                    <span class="t-precio {{ $compacta ? 'text-sm' : 'text-base' }} block leading-none">Consultar</span>
+                                @else
+                                    <span class="t-precio {{ $compacta ? 'text-base' : 'text-lg' }} block leading-none">${{ number_format($precio, 2, ',', '.') }}</span>
+                                    @if($ivaCard > 0)
+                                        <span class="block text-[10px] t-muted mt-1">IVA incl. ${{ number_format($ivaCard, 2, ',', '.') }}</span>
+                                    @endif
                                 @endif
                             </div>
-                            @if(!$esVitrina && $compacta)
+                            @if($sinPrecio && $compacta && $this->urlConsulta($nombre))
+                                <a href="{{ $this->urlConsulta($nombre) }}" target="_blank" rel="noopener" class="t-btn-outline t-btn-sm !rounded-full w-9 h-9 !p-0 flex-shrink-0" title="Consultar por WhatsApp"><i class="fab fa-whatsapp"></i></a>
+                            @elseif(!$esVitrina && $compacta && !$sinPrecio)
                                 <button wire:click="{{ $accion }}('{{ $codigo }}')" @disabled($sinStock) wire:loading.attr="disabled" wire:target="agregarAlCarrito('{{ $codigo }}')"
                                         class="t-btn t-btn-sm !rounded-full w-9 h-9 !p-0 flex-shrink-0" title="Agregar al carrito">
                                     <span wire:loading.remove wire:target="agregarAlCarrito('{{ $codigo }}')"><i class="fas fa-plus"></i></span>
@@ -84,7 +91,11 @@
                                 </button>
                             @endif
                         </div>
-                        @if(!$esVitrina && !$compacta)
+                        @if($sinPrecio && !$compacta)
+                            @if($this->urlConsulta($nombre))
+                                <a href="{{ $this->urlConsulta($nombre) }}" target="_blank" rel="noopener" class="t-btn-outline t-btn-sm w-full mt-2.5"><i class="fab fa-whatsapp"></i> Consultar</a>
+                            @endif
+                        @elseif(!$esVitrina && !$compacta)
                             <button wire:click="{{ $accion }}('{{ $codigo }}')" @disabled($sinStock) wire:loading.attr="disabled" wire:target="agregarAlCarrito('{{ $codigo }}')"
                                     class="t-btn t-btn-sm w-full mt-2.5">
                                 <span wire:loading.remove wire:target="agregarAlCarrito('{{ $codigo }}')"><i class="fas fa-cart-plus"></i> {{ $sinStock ? 'Sin stock' : 'Agregar' }}</span>

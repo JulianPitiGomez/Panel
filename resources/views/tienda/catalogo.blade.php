@@ -245,8 +245,13 @@
                         <p class="text-[11px] t-muted">#{{ $productoModal['codigo'] }}</p>
                         <h3 class="t-h text-xl font-bold leading-tight t-text mt-0.5">{{ $nombreFicha }}</h3>
                         <div class="mt-3 flex items-end gap-2 flex-wrap">
-                            <span class="t-precio text-3xl">${{ number_format($productoModal['precio'], 2, ',', '.') }}</span>
-                            @if(($productoModal['iva'] ?? 0) > 0)
+                            @php $fichaSinPrecio = (float) $productoModal['precio'] <= 0; @endphp
+                            @if($fichaSinPrecio)
+                                <span class="t-precio text-2xl">Precio a consultar</span>
+                            @else
+                                <span class="t-precio text-3xl">${{ number_format($productoModal['precio'], 2, ',', '.') }}</span>
+                            @endif
+                            @if(!$fichaSinPrecio && ($productoModal['iva'] ?? 0) > 0)
                                 <span class="text-xs t-muted mb-1.5">IVA {{ \App\Services\TiendaPrecioService::etiquetaTasa($productoModal['tasa']) }} incl. ${{ number_format($productoModal['iva'], 2, ',', '.') }}</span>
                             @endif
                         </div>
@@ -266,7 +271,14 @@
                             <div class="mt-4 text-sm t-soft leading-relaxed whitespace-pre-line max-h-40 overflow-y-auto">{{ $productoModal['descripcion'] }}</div>
                         @endif
 
-                        @if(!$esVitrina)
+                        @if($fichaSinPrecio)
+                            <div class="mt-auto pt-5">
+                                <p class="text-sm t-soft mb-3">Este producto no tiene precio publicado. Consultalo con el comercio.</p>
+                                @if($this->urlConsulta($nombreFicha))
+                                    <a href="{{ $this->urlConsulta($nombreFicha) }}" target="_blank" rel="noopener" class="t-btn t-btn-lg w-full"><i class="fab fa-whatsapp"></i> Consultar por WhatsApp</a>
+                                @endif
+                            </div>
+                        @elseif(!$esVitrina)
                             <div class="mt-auto pt-5">
                                 <label class="t-label">Cantidad</label>
                                 <div class="flex items-center gap-2">

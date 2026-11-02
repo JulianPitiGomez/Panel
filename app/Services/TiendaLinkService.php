@@ -139,6 +139,10 @@ class TiendaLinkService
             if ($usaLista) {
                 $precio = isset($especiales[$p->CODIGO]) ? (float) $especiales[$p->CODIGO] : ($lispre == 2 ? (float) $p->REVENTA : (float) $p->PRECIOVEN);
             }
+            if ($precio <= 0) {
+                $salteados[] = $p->NOMBRE . ' (sin precio)';
+                continue;
+            }
             $cant = (float) $it['cantidad'];
             $carrito[] = [
                 'codigo'     => $p->CODIGO,

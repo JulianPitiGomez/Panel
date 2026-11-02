@@ -710,6 +710,20 @@ class Catalogo extends Component
         return $lispre == 2 ? $producto->REVENTA : $producto->PRECIOVEN;
     }
 
+    /**
+     * Enlace para consultar un producto sin precio: WhatsApp del comercio con el
+     * producto en el mensaje, o null si el comercio no cargo telefono.
+     */
+    public function urlConsulta(string $nombre): ?string
+    {
+        $tel = preg_replace('/\D/', '', (string) (session('tienda_datos')['telefono'] ?? ''));
+        if (strlen($tel) < 8) {
+            return null;
+        }
+
+        return 'https://wa.me/' . $tel . '?text=' . rawurlencode('Hola, quería consultar el precio de ' . $nombre);
+    }
+
     public function abrirModalCantidad($codigo)
     {
         $this->setupClientDatabase();
@@ -820,6 +834,12 @@ class Catalogo extends Component
         }
 
         $precio = $this->obtenerPrecio($producto);
+
+        // Sin precio (0 en gestion para este comprador): no se vende por la web, se consulta
+        if ((float) $precio <= 0) {
+            $this->avisoStock = "{$producto->NOMBRE} no tiene precio publicado: consultalo con el comercio.";
+            return;
+        }
 
         // Buscar si ya existe en el carrito
         $existente = false;

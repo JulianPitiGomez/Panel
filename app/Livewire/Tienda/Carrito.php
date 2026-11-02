@@ -865,6 +865,16 @@ class Carrito extends Component
             }
         }
 
+        // Sin precio (0 en gestion): no se vende por la web, se consulta
+        $sinPrecio = array_filter($this->carrito, fn ($i) => (float) ($i['precio'] ?? 0) <= 0);
+        if (!empty($sinPrecio)) {
+            $nombres = collect($sinPrecio)->pluck('nombre')->unique()->implode(', ');
+            $this->carrito = array_values(array_filter($this->carrito, fn ($i) => (float) ($i['precio'] ?? 0) > 0));
+            session(['tienda_carrito' => $this->carrito]);
+            session()->flash('error', "Estos productos no tienen precio publicado y se quitaron del carrito (consultalos con el comercio): {$nombres}. Revisá el pedido y confirmá de nuevo.");
+            return;
+        }
+
         // Revalidar stock al confirmar: entre armar el carrito y confirmar pueden pasar horas
         if (!\App\Services\TiendaStockService::vendeSinStock(session('tienda_datos', []))) {
             $faltantes = (new \App\Services\TiendaStockService($this->tablePrefix))->faltantes($this->carrito);

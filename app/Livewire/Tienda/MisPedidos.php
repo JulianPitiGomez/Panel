@@ -270,6 +270,9 @@ class MisPedidos extends Component
                 continue;   // ya no se vende
             }
             $precio = (float) ($especiales[$r->codart] ?? ($lispre == 2 ? $p->REVENTA : $p->PRECIOVEN));
+            if ($precio <= 0) {
+                continue;   // hoy no tiene precio: se consulta, no se repite
+            }
             $carrito[] = [
                 'codigo' => $p->CODIGO, 'nombre' => $p->NOMBRE, 'precio' => $precio,
                 'precio_ven' => $p->PRECIOVEN, 'precio_rev' => $p->REVENTA,
