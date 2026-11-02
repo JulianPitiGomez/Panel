@@ -24,6 +24,13 @@
     @include('tienda.partials.estilo')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-8BMR2QMZ4D"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-8BMR2QMZ4D');
+    </script>
 
     <style>
         html, body { overflow-x: hidden; max-width: 100vw; overscroll-behavior-x: none; -webkit-text-size-adjust: 100%; }

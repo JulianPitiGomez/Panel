@@ -23,6 +23,7 @@ class Auditoria extends Component
         4 => 'CANCELACION DE VENTA',
         5 => 'CIERRE DE TURNO',
         6 => 'DESCUENTO',
+        7 => 'FORMA DE PAGO DISTINTA',
     ];
 
     public function mount()

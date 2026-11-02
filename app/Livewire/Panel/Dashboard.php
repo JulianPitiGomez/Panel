@@ -20,7 +20,13 @@ class Dashboard extends Component
 
     public function navigateTo($page)
     {
+        $previous = $this->currentPage;
         $this->currentPage = $page;
+        if ($page === 'buscador-precios') {
+            $this->sidebarOpen = false;
+        } elseif ($previous === 'buscador-precios') {
+            $this->dispatch('exit-fullscreen');
+        }
         $this->dispatch('scroll-to-top');
     }
 

@@ -96,6 +96,7 @@ class DashboardVendedor extends Component
         $this->clientesFiltrados = DB::connection('client_db')
             ->table("{$this->tablePrefix}clientes")
             ->where('VENDEDOR', $this->vendedorCodigo)
+            ->where('ZONA', '!=','2')
             ->orderBy('NOMBRE')
             ->limit(10)
             ->get();
@@ -112,6 +113,7 @@ class DashboardVendedor extends Component
                 ->orWhere('DIRECCION', 'like', '%' . $this->busqueda . '%')
                 ->orWhere('CODIGO', 'like', '%' . $this->busqueda . '%');
             })
+            ->where('ZONA', '!=','2')
             ->orderBy('NOMBRE')
             ->limit(10)
             ->get();

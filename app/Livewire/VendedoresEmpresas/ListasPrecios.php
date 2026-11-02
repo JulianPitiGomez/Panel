@@ -135,6 +135,11 @@ class ListasPrecios extends Component
         $this->resetPage();
     }
 
+    public function updatedSoloEnListaEspecial()
+    {
+        $this->resetPage();
+    }
+
     public function updatedFechaDesde()
     {
         $this->resetPage();
@@ -150,6 +155,7 @@ class ListasPrecios extends Component
         $this->busqueda = '';
         $this->depto = '';
         $this->listaEspecial = '';
+        $this->soloEnListaEspecial = false;
     }
 
     public function imprimirLista($modo = 'ver')
@@ -207,6 +213,12 @@ class ListasPrecios extends Component
             $params[] = $this->depto;
         }
 
+        // Sólo los artículos que están cargados en la lista especial elegida
+        if ($this->soloEnListaEspecial && !empty($this->listaEspecial)) {
+            $query .= " AND a.CODIGO IN (SELECT CODART FROM ma_lispredet WHERE CODLIS = ?)";
+            $params[] = $this->listaEspecial;
+        }
+
         $query .= " ORDER BY a.NOMBRE ASC";
 
         return ['query' => $query, 'params' => $params];
@@ -228,18 +240,6 @@ class ListasPrecios extends Component
         $queryData = $this->construirQuery();
         $query = $queryData['query'];
         $queryParams = $queryData['params'];
-
-        if (!empty($o['soloEnListaEspecial']) && !empty($this->listaEspecial) && !empty($preciosEspeciales)) {
-            $codigos = array_keys($preciosEspeciales);
-            $placeholders = implode(',', array_fill(0, count($codigos), '?'));
-            $query = preg_replace(
-                '/ORDER BY/i',
-                "AND a.CODIGO IN ($placeholders) ORDER BY",
-                $query,
-                1
-            );
-            $queryParams = array_merge($queryParams, $codigos);
-        }
 
         $query .= " LIMIT {$limiteMaximo}";
         $productos = DB::connection('client_db')->select($query, $queryParams);
@@ -362,6 +362,7 @@ class ListasPrecios extends Component
         $this->busqueda = $request->get('busqueda', '');
         $this->depto = $request->get('depto', '');
         $this->listaEspecial = $request->get('listaEspecial', '');
+        $this->soloEnListaEspecial = (bool) $request->get('soloEnListaEspecial', 0);
 
         $modo = $request->get('modo', 'ver');
 

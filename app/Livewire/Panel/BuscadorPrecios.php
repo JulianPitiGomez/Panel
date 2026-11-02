@@ -22,7 +22,7 @@ class BuscadorPrecios extends Component
     public $esPromocion = false;
     
     // Control de tiempo
-    public $tiempoMostrar = 10; // segundos
+    public $tiempoMostrar = 5; // segundos
     
     protected $tablePrefix;
 
@@ -85,7 +85,7 @@ class BuscadorPrecios extends Component
         $this->esPromocion = $this->promocion !== null;
         $this->mostrarInfo = true;
         
-        // Limpiar la pantalla después de 10 segundos
+        // Limpiar la pantalla después de los segundos configurados
         $this->dispatch('iniciar-temporizador', tiempo: $this->tiempoMostrar);
     }
 

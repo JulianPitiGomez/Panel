@@ -177,6 +177,11 @@ class ListasPrecios extends Component
         $this->resetPage();
     }
 
+    public function updatedSoloEnListaEspecial()
+    {
+        $this->resetPage();
+    }
+
     public function updatedFechaDesde()
     {
         $this->resetPage();
@@ -195,6 +200,7 @@ class ListasPrecios extends Component
         $this->depto = '';
         $this->proveedor = '';
         $this->listaEspecial = '';
+        $this->soloEnListaEspecial = false;
         $this->fechaDesde = '';
         $this->fechaHasta = '';
     }
@@ -381,6 +387,12 @@ class ListasPrecios extends Component
             $params[] = $this->fechaHasta;
         }
 
+        // Sólo los artículos que están cargados en la lista especial elegida
+        if ($this->soloEnListaEspecial && !empty($this->listaEspecial)) {
+            $query .= " AND a.CODIGO IN (SELECT CODART FROM {$this->tablePrefix}lispredet WHERE CODLIS = ?)";
+            $params[] = $this->listaEspecial;
+        }
+
         $query .= " ORDER BY a.FECMOD DESC";
 
         return ['query' => $query, 'params' => $params];
@@ -408,19 +420,6 @@ class ListasPrecios extends Component
         $queryData = $this->construirQuery();
         $query = $queryData['query'];
         $queryParams = $queryData['params'];
-
-        // Filtro "solo artículos en lista especial"
-        if (!empty($o['soloEnListaEspecial']) && !empty($this->listaEspecial) && !empty($preciosEspeciales)) {
-            $codigos = array_keys($preciosEspeciales);
-            $placeholders = implode(',', array_fill(0, count($codigos), '?'));
-            $query = preg_replace(
-                '/ORDER BY/i',
-                "AND a.CODIGO IN ($placeholders) ORDER BY",
-                $query,
-                1
-            );
-            $queryParams = array_merge($queryParams, $codigos);
-        }
 
         $query .= " LIMIT {$limiteMaximo}";
         $productos = DB::connection('client_db')->select($query, $queryParams);
@@ -492,6 +491,7 @@ class ListasPrecios extends Component
         $this->depto = $request->get('depto', '');
         $this->proveedor = $request->get('proveedor', '');
         $this->listaEspecial = $request->get('listaEspecial', '');
+        $this->soloEnListaEspecial = (bool) $request->get('soloEnListaEspecial', 0);
         $this->fechaDesde = $request->get('fechaDesde', '');
         $this->fechaHasta = $request->get('fechaHasta', '');
 

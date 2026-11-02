@@ -197,6 +197,13 @@
                             <option value="{{ $lista->CODIGO }}">{{ $lista->NOMBRE }}</option>
                         @endforeach
                     </select>
+                    @if(!empty($listaEspecial))
+                        <label class="flex items-center gap-2 mt-2 text-sm text-gray-700 cursor-pointer">
+                            <input type="checkbox" wire:model.live="soloEnListaEspecial"
+                                   class="w-4 h-4 rounded text-[#FFAF22] focus:ring-[#FFAF22]">
+                            <span>Solo mostrar los artículos de esta lista</span>
+                        </label>
+                    @endif
                 </div>
             </div>
             <div class="flex justify-end gap-3">
@@ -282,7 +289,7 @@
             <!-- Opciones de salida -->
             <div class="border-t border-gray-200 pt-3 mt-2">
                 <h4 class="text-sm font-medium text-gray-700 mb-2">Qué mostrar en el PDF</h4>
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 text-sm">
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
                     <label class="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" wire:model="mostrarLista1"
                                class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500">
@@ -297,11 +304,6 @@
                         <input type="checkbox" wire:model="mostrarListaEspecial"
                                class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500">
                         <span>Lista especial</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer" title="Cuando hay una lista especial seleccionada, oculta los productos que no están en esa lista">
-                        <input type="checkbox" wire:model="soloEnListaEspecial"
-                               class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500">
-                        <span>Sólo ítems en lista especial</span>
                     </label>
                     <label class="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" wire:model="mostrarTotales"

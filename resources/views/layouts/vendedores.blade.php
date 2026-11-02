@@ -18,6 +18,13 @@
     
     <!-- Livewire Styles -->
     @livewireStyles
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-8BMR2QMZ4D"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-8BMR2QMZ4D');
+    </script>
 </head>
 <body class="font-sans antialiased" x-data="{ mostrarConfirmacionSalir: false }">
     <!-- Modal de confirmación para cerrar sesión -->

@@ -36,14 +36,17 @@ class Monitor extends Component
     public function cargarPedidos()
     {
         $this->setupClientDatabase();
-        
+
         if (!$this->tablePrefix) {
+            \Log::warning('Monitor: tablePrefix no disponible en cargarPedidos');
+            $this->pedidosEnPreparacion = [];
+            $this->pedidosListos = [];
             return;
         }
 
         try {
             // Pedidos en preparación (estado = 2)
-            $this->pedidosEnPreparacion = DB::connection('client_db')
+            $preparacion = DB::connection('client_db')
                 ->table($this->tablePrefix . 'mostrador')
                 ->select('id', 'nombre')
                 ->where('estado', 2)
@@ -52,7 +55,7 @@ class Monitor extends Component
                 ->toArray();
 
             // Pedidos listos (estado = 3)
-            $this->pedidosListos = DB::connection('client_db')
+            $listos = DB::connection('client_db')
                 ->table($this->tablePrefix . 'mostrador')
                 ->select('id', 'nombre')
                 ->where('estado', 3)
@@ -60,8 +63,20 @@ class Monitor extends Component
                 ->get()
                 ->toArray();
 
+            // Solo actualizar si los datos cambiaron (para evitar re-renders innecesarios)
+            if ($preparacion !== $this->pedidosEnPreparacion) {
+                $this->pedidosEnPreparacion = $preparacion;
+            }
+
+            if ($listos !== $this->pedidosListos) {
+                $this->pedidosListos = $listos;
+            }
+
         } catch (\Exception $e) {
-            // En caso de error, inicializar arrays vacíos
+            \Log::error('Monitor: Error al cargar pedidos', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             $this->pedidosEnPreparacion = [];
             $this->pedidosListos = [];
         }

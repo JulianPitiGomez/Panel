@@ -1,7 +1,7 @@
-<div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex flex-col"
+<div class="h-full bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex flex-col overflow-hidden"
      x-data="{
          temporizadorActivo: null,
-         iniciarTemporizador(tiempo = 10) {
+         iniciarTemporizador(tiempo = 5) {
              if (this.temporizadorActivo) {
                  clearInterval(this.temporizadorActivo);
              }
@@ -42,7 +42,7 @@
              }, 1000);
          }
      }"
-     @iniciar-temporizador.window="iniciarTemporizador($event.detail.tiempo || 10)"
+     @iniciar-temporizador.window="iniciarTemporizador($event.detail.tiempo || 5)"
      @enfocar-campo.window="setTimeout(() => { document.getElementById('codigoInput')?.focus(); document.getElementById('codigoInput')?.select(); }, 100)">
     <!-- Header -->
     <div class="bg-gray-800 border-b border-gray-700 p-4">
@@ -58,7 +58,7 @@
     </div>
 
     <!-- Contenido Principal -->
-    <div class="flex-1 flex flex-col justify-center items-center p-4">
+    <div class="flex-1 min-h-0 flex flex-col justify-center items-center p-4 overflow-y-auto">
         
         @if(!$mostrarInfo)
         <!-- Estado Inicial - Esperando Código -->
@@ -220,8 +220,9 @@
             
             <!-- Botón Manual de Limpiar -->
             <div class="mt-6">
-                <button 
-                    wire:click="limpiarPantalla" 
+                <button
+                    type="button"
+                    x-on:click="$wire.call('limpiarPantalla').then(() => { setTimeout(() => { const input = document.getElementById('codigoInput'); if (input) { input.focus(); input.select(); } }, 200); })"
                     class="px-8 py-4 bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-secondary text-lg transition-colors duration-200">
                     <i class="fas fa-refresh mr-2"></i>
                     Nueva Consulta

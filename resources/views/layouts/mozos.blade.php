@@ -19,6 +19,13 @@
 
     <!-- Livewire Styles -->
     @livewireStyles
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-8BMR2QMZ4D"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-8BMR2QMZ4D');
+    </script>
 </head>
 <body class="font-sans antialiased bg-gray-100 overflow-hidden overscroll-none" style="height: 100vh; height: 100dvh;">
     <div class="h-full flex flex-col">
