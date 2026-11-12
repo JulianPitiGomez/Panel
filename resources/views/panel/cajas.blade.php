@@ -760,7 +760,8 @@
                                 @endif
                                 
                                 @php
-                                    if($detalle->concepto != '**VENTAS TOTALES TURNO**') {
+                                    $total = 0;
+                                    if(!$this->esConceptoInformativo($detalle->concepto)) {
                                         $total = ($detalle->debe ?? 0) - ($detalle->haber ?? 0);
                                     }
                                 @endphp
@@ -776,37 +777,39 @@
                         </div>
                         @endforeach
                         
-                            <!-- Totales -->
+                            <!-- Resumen del cierre (igual al del Fivewin: las ventas totales del turno no suman a los ingresos) -->
+                            @php $resumen = $this->getResumenCierre(); @endphp
                             <div class="bg-gray-100 border border-gray-300 rounded-lg p-2 md:p-3 mt-3 md:mt-4">
-                                <h5 class="text-xs md:text-sm font-secondary font-bold text-gray-900 mb-1 md:mb-2">TOTALES GENERALES</h5>
+                                <h5 class="text-xs md:text-sm font-secondary font-bold text-gray-900 mb-1 md:mb-2">RESUMEN DEL CIERRE</h5>
                                 <div class="grid grid-cols-1 gap-1 text-xs">
                                     <div class="flex justify-between">
-                                        <span class="text-gray-600">Total Debe:</span>
-                                        <span class="font-bold text-green-600">
-                                            ${{ number_format($this->calcularTotalDetalle($detallesCaja, 'debe'), 2) }}
-                                        </span>
+                                        <span class="text-gray-600">Ingresos:</span>
+                                        <span class="font-bold text-green-600">${{ number_format($resumen['ingresos'], 2) }}</span>
                                     </div>
                                     <div class="flex justify-between">
-                                        <span class="text-gray-600">Total Haber:</span>
-                                        <span class="font-bold text-red-600">
-                                            ${{ number_format($this->calcularTotalDetalle($detallesCaja, 'haber'), 2) }}
-                                        </span>
+                                        <span class="text-gray-600">Egresos:</span>
+                                        <span class="font-bold text-red-600">${{ number_format($resumen['egresos'], 2) }}</span>
                                     </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-600">Total Efectivo:</span>
-                                        <span class="font-bold text-blue-600">
-                                            ${{ number_format($this->calcularTotalDetalle($detallesCaja, 'efectivo'), 2) }}
-                                        </span>
-                                    </div>
-                                    @php
-                                        $totalGeneral = $this->calcularTotalDetalle($detallesCaja, 'debe') - $this->calcularTotalDetalle($detallesCaja, 'haber');
-                                    @endphp
                                     <div class="flex justify-between pt-1 border-t border-gray-300">
-                                        <span class="text-gray-900 font-bold">Diferencia:</span>
-                                        <span class="font-bold {{ $totalGeneral > 0 ? 'text-green-600' : ($totalGeneral < 0 ? 'text-red-600' : 'text-gray-600') }}">
-                                            ${{ number_format($totalGeneral, 2) }}
+                                        <span class="text-gray-600">Total efectivo en caja:</span>
+                                        <span class="font-bold text-blue-600">${{ number_format($resumen['efectivo'], 2) }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Efectivo declarado:</span>
+                                        <span class="font-bold text-gray-900">${{ number_format($resumen['declarado'], 2) }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-900 font-bold">{{ $resumen['saldo'] > 0 ? 'Faltante:' : ($resumen['saldo'] < 0 ? 'Sobrante:' : 'Resultado:') }}</span>
+                                        <span class="{{ $this->getClaseSaldo($resumen['saldo']) }}">
+                                            {{ $resumen['saldo'] == 0 ? 'Exacto' : '$' . number_format(abs($resumen['saldo']), 2) }}
                                         </span>
                                     </div>
+                                    @if($resumen['ventas'] != 0)
+                                    <div class="flex justify-between pt-1 border-t border-gray-300">
+                                        <span class="text-gray-600">Venta del turno:</span>
+                                        <span class="font-bold text-gray-900">${{ number_format($resumen['ventas'], 2) }}</span>
+                                    </div>
+                                    @endif
                                 </div>
                             </div>
                         @else

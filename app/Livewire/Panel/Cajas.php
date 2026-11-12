@@ -401,6 +401,38 @@ class Cajas extends Component
         return $detalles->sum($campo);
     }
 
+    /**
+     * En el cierre del Fivewin los conceptos que empiezan con '*' (las ventas totales
+     * del turno) son informativos: esa plata ya está en los ingresos por forma de pago.
+     */
+    public function esConceptoInformativo($concepto)
+    {
+        return str_starts_with(ltrim((string) $concepto), '*');
+    }
+
+    /**
+     * Resumen del cierre igual al del Fivewin (cietur.prg): ingresos sin los renglones
+     * informativos, efectivo declarado = efectivo en caja - saldo, y la venta del turno aparte.
+     */
+    public function getResumenCierre()
+    {
+        $detalles = collect($this->detallesCaja);
+        $movimientos = $detalles->reject(fn ($d) => $this->esConceptoInformativo(data_get($d, 'concepto')));
+        $efectivo = (float) $detalles->sum(fn ($d) => (float) data_get($d, 'efectivo', 0));
+        $saldo = (float) data_get($this->cajaSeleccionada, 'saldo', 0);
+
+        return [
+            'ingresos'  => (float) $movimientos->sum(fn ($d) => (float) data_get($d, 'debe', 0)),
+            'egresos'   => (float) $movimientos->sum(fn ($d) => (float) data_get($d, 'haber', 0)),
+            'efectivo'  => $efectivo,
+            'declarado' => $efectivo - $saldo,
+            'saldo'     => $saldo,
+            'ventas'    => (float) $detalles
+                ->filter(fn ($d) => $this->esConceptoInformativo(data_get($d, 'concepto')))
+                ->sum(fn ($d) => (float) data_get($d, 'debe', 0)),
+        ];
+    }
+
     public function updatedTipoCaja()
     {
         $this->resetPage();
