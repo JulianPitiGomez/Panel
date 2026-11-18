@@ -219,20 +219,23 @@ class Inicio extends Component
             // Se agrega ventas_det por artículo PRIMERO (usa índice de fecha) y
             // recién después se joinea el resultado chico a articu/deptos.
             // Evita que el optimizador escanee toda ventas_det (era ~79s → ~65ms).
+            // Las NC restan (igual que en productos más vendidos) y se usa LEFT JOIN
+            // para que lo vendido sin artículo/depto válido caiga en "Sin Departamento"
+            // en vez de desaparecer del total.
             $departamentos = DB::connection('client_db')->select("
                 SELECT
                     COALESCE(de.nombre, 'Sin Departamento') as departamento,
                     COUNT(DISTINCT x.codart) as cantidad_ventas,
                     SUM(x.total_vendido) as total_vendido
                 FROM (
-                    SELECT d.codart, SUM(d.importe) as total_vendido
+                    SELECT d.codart, SUM(d.importe * IF(LEFT(d.nrofac,2) = 'NC',-1,1)) as total_vendido
                     FROM {$this->tablePrefix}ventas_det d
                     WHERE d.fecha >= ?
                     AND d.fecha < ? + INTERVAL 1 DAY
                     GROUP BY d.codart
                 ) x
-                INNER JOIN {$this->tablePrefix}articu a ON a.codigo = x.codart
-                INNER JOIN {$this->tablePrefix}deptos de ON de.codigo = a.depto
+                LEFT JOIN {$this->tablePrefix}articu a ON a.codigo = x.codart
+                LEFT JOIN {$this->tablePrefix}deptos de ON de.codigo = a.depto
                 GROUP BY de.nombre
                 ORDER BY total_vendido DESC
             ", [$this->fechaDesde, $this->fechaHasta]);
